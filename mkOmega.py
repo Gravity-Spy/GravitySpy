@@ -93,7 +93,7 @@ g.write("java -Xmx16m -jar {0}/packwplot.jar \
         plotType=spectrogram_whitened \
         plotTimeRanges='{5}' \
         sampleFrequency={6} \
-        colorMap=bone \
+        colorMap=jet \
         plotFrequencyRange='[10 inf]' \
         plotNormalizedEnergyRange='[0.0 25.5]'  \
         searchTimeRange=64 \
