@@ -40,6 +40,7 @@ def parse_commandline():
                         default='/home/scoughlin/public_html/GlitchZoo/L_O1_Plots/')
     parser.add_option("-s", "--submitpath", help="path to script/submit directory [./submits]",
                         default=os.getcwd() + '/submits')
+    parser.add_option("-r", "--SNR", help="SNR Threshold",default="6")
     parser.add_option("-g", "--gpsStart", help="gps Start Time of Query for meta data and omega scans",default="0")
     parser.add_option("-e", "--gpsEnd", help="gps End Time",default=0)
     parser.add_option("-m", "--maxJobs", help="How many subjects in a given subfolder",default=1000)
@@ -54,7 +55,7 @@ def parse_commandline():
 # Define snr_freq_threshold function that removes rows where SNR <6 and removes any triggers whose peak_freqeuency was above 2048 Hz and below 10.
 
 def snr_freq_threshold(row):
-    if (row.snr >= 6) and (row.peak_frequency <= 2048) and (row.peak_frequency >= 10):
+    if (row.snr >= float(opts.SNR)) and (row.peak_frequency <= 2048) and (row.peak_frequency >= 10):
         passthresh = True
     else:
         passthresh = False
@@ -65,6 +66,8 @@ def snr_freq_threshold(row):
 ####################
 # Parse commandline arguments
 opts = parse_commandline()
+
+print "You have selected a SNR cut of {0}".format(opts.SNR)
 
 # Obtain segments from L1 that are analysis ready
 analysis_ready = DataQualityFlag.query('L1:DMT-ANALYSIS_READY:1',opts.gpsStart,opts.gpsEnd)
