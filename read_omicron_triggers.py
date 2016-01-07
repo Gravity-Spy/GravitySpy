@@ -134,16 +134,14 @@ if int(opts.runlocal) == 0:
 # Initialize some variables 
 
 curJob  = 1
-numJobs = 1
-iUpload = 1
 
 # Take imagepath (such as L_O1_Plots) add a directory indicating the gpsStart and gpsEnd times
 imagepathname = opts.imagepath + '/' + opts.gpsStart + '_' + opts.gpsEnd + '/'
-system_call = 'mkdir -p ' + imagepathname + str(iUpload)
+system_call = 'mkdir -p ' + imagepathname
 print(system_call)
 os.system(system_call)
 
-metadata =  open(imagepathname + str(iUpload) + '/metadata.txt', "w+")
+metadata =  open(imagepathname + '/metadata.txt', "w+")
 metadata.write('ID Date Filename1 Filename2 Filename3 Filename4\n')
 metadata.close()
 
@@ -153,36 +151,12 @@ g =  open(script, "w+") # write mode
 
 if opts.verbose == True:
     for omicrontrigger in omicrontriggers:
-        g.write('python ' + os.getcwd() + '/mkOmega.py -v -t {0}.{1} -u {2} -k {3} -n {4} -c {5} -o {6} -j {7}{8}/\n'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns,opts.username,opts.keytab,opts.nds2name,opts.channelname,opts.outpath,imagepathname,iUpload))
-	numJobs = numJobs + 1
+        g.write('python ' + os.getcwd() + '/mkOmega.py -v -t {0}.{1} -u {2} -k {3} -n {4} -c {5} -o {6} -j {7}/\n'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns,opts.username,opts.keytab,opts.nds2name,opts.channelname,opts.outpath,imagepathname))
 
-        if numJobs > opts.maxJobs:
-            numJobs = 1
-
-            # move to next image and image metadata outpath
-            iUpload = iUpload+1
-            system_call = 'mkdir -p ' + imagepathname + str(iUpload)
-            print(system_call)
-            os.system(system_call)
-            metadata =  open(imagepathname + str(iUpload) + '/metadata.txt', "w+")
-            metadata.write('ID Date Filename1 Filename2 Filename3 Filename4\n')
-            metadata.close()
 else:   
     for omicrontrigger in omicrontriggers:
-        g.write('python ' + os.getcwd() + '/mkOmega.py -t {0}.{1} -u {2} -k {3} -n {4} -c {5} -o {6} -j {7}{8}/\n'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns,opts.username,opts.keytab,opts.nds2name,opts.channelname,opts.outpath,imagepathname,iUpload))
-        numJobs = numJobs + 1
+        g.write('python ' + os.getcwd() + '/mkOmega.py -t {0}.{1} -u {2} -k {3} -n {4} -c {5} -o {6} -j {7}/\n'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns,opts.username,opts.keytab,opts.nds2name,opts.channelname,opts.outpath,imagepathname))
 
-        if numJobs > opts.maxJobs:
-            numJobs = 1
-
-            # move to next image and image metadata outpath
-            iUpload = iUpload+1
-            system_call = 'mkdir -p ' + imagepathname + str(iUpload)
-            print(system_call)
-            os.system(system_call)
-            metadata =  open(imagepathname + str(iUpload) + '/metadata.txt', "w+")
-            metadata.write('ID Date Filename1 Filename2 Filename3 Filename4\n')
-            metadata.close()
 # At the end there are two things we want to do. First we want to take the uniqueIDs which are created during the mkOmega part of the processing and add them to the glitch metadata we created before generating the images.
 
 g.write("sed -i '1 i\#Detector GPSTime UniqueID' ./IDFolder/ID.txt\n")
@@ -194,4 +168,4 @@ g.write('cp metadata_' + str(opts.gpsStart) + '_' + str(opts.gpsEnd) + '.txt ' +
 
 # Run converttocsv.py to convert image metadata to CSV to prep for upload.
 
-g.write('python converttocsv.py --imagepath {0} --iUploadMax {1}'.format(imagepathname,(iUpload+1)))
+g.write('python converttocsv.py --imagepath {0}'.format(imagepathname))

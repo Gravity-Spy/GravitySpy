@@ -16,7 +16,6 @@ def parse_commandline():
     """
     parser = optparse.OptionParser()
     parser.add_option("-j", "--imagepath", help="path to images")
-    parser.add_option("-i", "--iUploadMax", help="Number of subfolders")
     opts, args = parser.parse_args()
 
     return opts
@@ -31,11 +30,10 @@ opts = parse_commandline()
 
 # take image metadata and convert to csv
 
-for iUpload in xrange(1,int(opts.iUploadMax)):
-        txt_file = opts.imagepath + str(iUpload) + '/metadata.txt'
-        csv_file = opts.imagepath + str(iUpload) + '/metadata.csv'
-        in_txt = csv.reader(open(txt_file, "rb"), delimiter = ' ')
-        out_csv = csv.writer(open(csv_file, 'wb'))
-        out_csv.writerows(in_txt)
-        system_call = 'tar -czvf ' + opts.imagepath + str(iUpload) + '/L_O1_plots_' + str(iUpload) + '.tar ' + opts.imagepath + str(iUpload) + '/*.png'
-        os.system(system_call)
+txt_file = opts.imagepath + str(iUpload) + '/metadata.txt'
+csv_file = opts.imagepath + str(iUpload) + '/metadata.csv'
+in_txt = csv.reader(open(txt_file, "rb"), delimiter = ' ')
+out_csv = csv.writer(open(csv_file, 'wb'))
+out_csv.writerows(in_txt)
+system_call = 'tar -czvf ' + opts.imagepath + '/L_O1_plots.tar ' + opts.imagepath  + '/*.png'
+os.system(system_call)
