@@ -195,6 +195,3 @@ g.write('cp metadata_' + str(opts.gpsStart) + '_' + str(opts.gpsEnd) + '.txt ' +
 # Run converttocsv.py to convert image metadata to CSV to prep for upload.
 
 g.write('python converttocsv.py --imagepath {0} --iUploadMax {1}'.format(imagepathname,(iUpload+1)))
-# Secondly, we want to make a call to API to take the images we just created (and CSV metadata) and upload them in batches to the API.
-g.write('python callAPI.py --imagepath{')
-g.close()
