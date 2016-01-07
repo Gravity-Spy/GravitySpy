@@ -40,6 +40,7 @@ def parse_commandline():
     parser.add_option("-j", "--imagepath", help="path to directory for images",
                         default='/home/scoughlin/public_html/GlitchZoo/L_O1_Plots/')
     parser.add_option("-f", "--sampfrequency", help="sample frequency", default=4096)
+    parser.add_option("-z", "--normalizedSNR", help="SNR Normalization value",default="25.5")
     parser.add_option("-t", "--centraltime", help="center GPS time (sub second accuracy is available eg. 1089567667.341)")
     parser.add_option("-v", "--verbose", action="store_true", default=False,
                       help="Run verbosely. (Default: False)")
@@ -95,10 +96,10 @@ g.write("java -Xmx16m -jar {0}/packwplot.jar \
         sampleFrequency={6} \
         colorMap=jet \
         plotFrequencyRange='[10 inf]' \
-        plotNormalizedEnergyRange='[0.0 25.5]'  \
+        plotNormalizedEnergyRange='[0.0 {7}]'  \
         searchTimeRange=64 \
         searchFrequencyRange='[0 inf]' \
-        searchQRange='[4.0 64.0]'\n".format(os.getcwd(),opts.nds2name,opts.channelname,opts.centraltime,tempdir,opts.boxtime,opts.sampfrequency))
+        searchQRange='[4.0 64.0]'\n".format(os.getcwd(),opts.nds2name,opts.channelname,opts.centraltime,tempdir,opts.boxtime,opts.sampfrequency,opts.normalizedSNR))
 g.close()
 
 if opts.verbose == True:

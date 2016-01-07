@@ -41,6 +41,7 @@ def parse_commandline():
     parser.add_option("-s", "--submitpath", help="path to script/submit directory [./submits]",
                         default=os.getcwd() + '/submits')
     parser.add_option("-r", "--SNR", help="SNR Threshold",default="6")
+    parser.add_option("-z", "--normalizedSNR", help="SNR Normalization value",default="25.5")
     parser.add_option("-g", "--gpsStart", help="gps Start Time of Query for meta data and omega scans",default="0")
     parser.add_option("-e", "--gpsEnd", help="gps End Time",default=0)
     parser.add_option("-m", "--maxJobs", help="How many subjects in a given subfolder",default=1000)
@@ -151,11 +152,11 @@ g =  open(script, "w+") # write mode
 
 if opts.verbose == True:
     for omicrontrigger in omicrontriggers:
-        g.write('python ' + os.getcwd() + '/mkOmega.py -v -t {0}.{1} -u {2} -k {3} -n {4} -c {5} -o {6} -j {7}/\n'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns,opts.username,opts.keytab,opts.nds2name,opts.channelname,opts.outpath,imagepathname))
+        g.write('python ' + os.getcwd() + '/mkOmega.py -v -t {0}.{1} -u {2} -k {3} -n {4} -c {5} -o {6} -j {7} -z {8}\n'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns,opts.username,opts.keytab,opts.nds2name,opts.channelname,opts.outpath,imagepathname,opts.normalizedSNR))
 
 else:   
     for omicrontrigger in omicrontriggers:
-        g.write('python ' + os.getcwd() + '/mkOmega.py -t {0}.{1} -u {2} -k {3} -n {4} -c {5} -o {6} -j {7}/\n'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns,opts.username,opts.keytab,opts.nds2name,opts.channelname,opts.outpath,imagepathname))
+        g.write('python ' + os.getcwd() + '/mkOmega.py -t {0}.{1} -u {2} -k {3} -n {4} -c {5} -o {6} -j {7} -z {8}\n'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns,opts.username,opts.keytab,opts.nds2name,opts.channelname,opts.outpath,imagepathname,opts.normalizedSNR))
 
 # At the end there are two things we want to do. First we want to take the uniqueIDs which are created during the mkOmega part of the processing and add them to the glitch metadata we created before generating the images.
 
