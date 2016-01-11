@@ -112,7 +112,11 @@ os.system(system_call)
 os.chdir('{0}'.format(tempdir))
 
 pngnames = os.listdir('./')
-strformontage = ""
+
+# fail safe for if image was not created because the server was down. Function will identify the image trying to be made and write a backup function call and associated metadata backup.
+if len(pngnames) ==1:
+	system_call = 'grep "{0}" >>submits/job-1_bckup.sh'.format(opts.centraltime)
+
 
 for iFile in xrange(1,len(pngnames)):
 
@@ -141,5 +145,3 @@ os.system(system_call)
 system_call = 'rm -rf {0}/*'.format(opts.outpath)
 os.system(system_call)
 
-#system_call = 'cp ' + os.getcwd() + '/IDFolder/ID.txt /home/scoughlin/public_html/GlitchZoo/L_ER8_Plots/'
-#os.system(system_call)

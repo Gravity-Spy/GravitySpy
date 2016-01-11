@@ -30,7 +30,7 @@ def parse_commandline():
     parser.add_option("-c", "--channelname", help="channel name",
                         default="L1:GDS-CALIB_STRAIN")
     parser.add_option("-b", "--boxtime", help="Different time ranges (1 would represent +-0.5 around central time) for displaying the glitch) For Example: '[0.5 1 4 16]' would give you four differnt images with those different times boxes",
-                        default="[0.5 1 4 16]")
+                        default=[0.5,1,2,4])
     parser.add_option("-n", "--nds2name", help="ip address or URL of the nds2\
                         server to use [nds.ligo.caltech.edu]",
                         default="nds.ligo.caltech.edu")
@@ -44,6 +44,7 @@ def parse_commandline():
     parser.add_option("-z", "--normalizedSNR", help="SNR Normalization value",default="25.5")
     parser.add_option("-g", "--gpsStart", help="gps Start Time of Query for meta data and omega scans",default="0")
     parser.add_option("-e", "--gpsEnd", help="gps End Time",default=0)
+    parser.add_option("-f", "--sampfrequency", help="sample frequency", default=4096)
     parser.add_option("-m", "--maxJobs", help="How many subjects in a given subfolder",default=1000)
     parser.add_option("-l", "--runlocal", help="run locally",default=1)
     parser.add_option("-v", "--verbose", action="store_true", default=False,
@@ -61,6 +62,93 @@ def snr_freq_threshold(row):
     else:
         passthresh = False
     return passthresh
+
+#taking place of mkOmega.py
+def make_images(centraltime,nds2name,channelname,outpath,imagepathname,normalizedSNR,boxtime,verbose,imagepath,sampfrequency):
+
+    # Make temporary directory to create the images in
+    system_call = 'mktemp -d {0}/AAA.XXXXXXXXXX'.format(outpath)
+    os.system(system_call)
+    
+    tempname = os.listdir("{0}/".format(outpath))
+    tempdir = ('{0}/'.format(outpath) + tempname[0])
+    uniqueid = tempname[0].split('.')[1]
+    print('unique id is {0}'.format(uniqueid))
+
+    # Use random folder name as I.D. Tag but first check if this gps time 
+    # already has a I.D. tag and use that if it does.
+    idfile =  open(os.getcwd() + '/IDFolder/ID.txt', "a+")
+    idfile.write('{0} {1} {2}\n'.format(channelname,centraltime,uniqueid))
+    idfile.close()
+    # Open file for writing metadata for images
+    metadata =  open(imagepath + '/metadata.txt', "a+")
+
+
+    script = os.path.join(tempdir,'temprun.sh')
+    g =  open(script, "w+") # write mode
+    g.write("#!/bin/bash\n")
+    g.write("java -Xmx16m -jar {0}/packwplot.jar \
+        frameType=NDS2 \
+        ndsServer={1} \
+        channelName={2} \
+        eventTime={3} \
+        outputDirectory={4} \
+        plotType=spectrogram_whitened \
+        plotTimeRanges='{5}' \
+        sampleFrequency={6} \
+        colorMap=jet \
+        plotFrequencyRange='[10 inf]' \
+        plotNormalizedEnergyRange='[0.0 {7}]'  \
+        searchTimeRange=64 \
+        searchFrequencyRange='[0 inf]' \
+        searchQRange='[4.0 64.0]'\n".format(os.getcwd(),nds2name,channelname,centraltime,tempdir,boxtime,sampfrequency,normalizedSNR))
+    g.close()
+
+    if verbose == True:
+        system_call = 'cat {0}/temprun.sh'.format(tempdir)
+        os.system(system_call)
+
+    system_call = 'source {0}/temprun.sh'.format(tempdir)
+    os.system(system_call)
+
+    os.chdir('{0}'.format(tempdir))
+
+    pngnames = os.listdir('./')
+
+    # If image is not created server must be down. Exit fucntion
+    if len(pngnames) ==1:
+	sys.exit()
+
+    for iFile in xrange(1,len(pngnames)):
+
+    	if channelname == "L1:GDS-CALIB_STRAIN":
+             system_call = 'convert {0} -chop 0x35 {1}/L1_{2}_{3}.png'.format(pngnames[iFile],outpath,uniqueid,boxtime[iFile-1])
+    	elif channelname == "H1:GDS-CALIB_STRAIN":
+             system_call = 'convert {0} -chop 0x35 {1}/H1_{2}_{3}.png'.format(pngnames[iFile],outpath,uniqueid,boxtime[iFile-1])
+        os.system(system_call)
+
+    # Create .csv to upload metadata of images to the project builder
+    if channelname == "L1:GDS-CALIB_STRAIN":
+        metadata.write('{0} 20151016 L1_{1}_{2}.png L1_{3}_{4}.png L1_{5}_{6}.png L1_{7}_{8}.png\n'.format(uniqueid,uniqueid,boxtime[0],uniqueid,boxtime[1],uniqueid,boxtime[2],uniqueid,boxtime[3]))
+    elif channelname == "H1:GDS-CALIB_STRAIN":
+    	metadata.write('{0} 20151016 H1_{1}_{2}.png H1_{3}_{4}.png H1_{5}_{6}.png H1_{7}_{8}.png\n'.format(uniqueid,uniqueid,boxtime[0],uniqueid,boxtime[1],uniqueid,boxtime[2],uniqueid,boxtime[3]))
+    metadata.close()
+
+    system_call = 'rm -rf {0}/'.format(tempdir)
+    os.system(system_call)
+
+    if channelname == "L1:GDS-CALIB_STRAIN":
+    	system_call = 'cp {0}/L1_{1}*.png {2}'.format(outpath,uniqueid,imagepath)
+    elif channelname == "H1:GDS-CALIB_STRAIN":
+    	system_call = 'cp {0}/H1_{1}*.png {2}'.format(outpath,uniqueid,imagepath)
+    os.system(system_call)
+
+    system_call = 'rm -rf {0}/*'.format(outpath)
+    os.system(system_call)
+
+    os.chdir('..')
+    print(os.listdir('.')) 
+    return uniqueid
 
 ####################
 ## MAIN CODE ######
@@ -93,9 +181,7 @@ print "Final trigger length: {0}".format(len(omicrontriggers))
 with open('metadata_' + str(opts.gpsStart) + '_' + str(opts.gpsEnd) + '.txt','w+') as f:
     # SNR, Amplitude, peak_freq, cent_freq, duration,bandwidth
     f.write('# SNR, Amplitude, peak_freq, cent_freq, duration,bandwidth\n')
-    for omicrontrigger in omicrontriggers:
-	f.write('{0} {1} {2} {3} {4} {5}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth))
-    f.close()
+    f.close
 
 # This script takes the peak_time and creates a number of jobs to generate Omega plots centered on those times. These images are used using mkOmega.py.
 
@@ -132,10 +218,6 @@ if int(opts.runlocal) == 0:
         print >> sys.stderr, "Use --username to specify it."
         sys.exit(1)
 
-# Initialize some variables 
-
-curJob  = 1
-
 # Take imagepath (such as L_O1_Plots) add a directory indicating the gpsStart and gpsEnd times
 imagepathname = opts.imagepath + '/' + opts.gpsStart + '_' + opts.gpsEnd + '/'
 system_call = 'mkdir -p ' + imagepathname
@@ -145,28 +227,27 @@ os.system(system_call)
 metadata =  open(imagepathname + '/metadata.txt', "w+")
 metadata.write('ID Date Filename1 Filename2 Filename3 Filename4\n')
 metadata.close()
-
-outputLocation = opts.submitpath
-script         = os.path.join(outputLocation,'job-' + str(curJob) + '.sh')
-g =  open(script, "w+") # write mode
+idfile =  open(os.getcwd() + '/IDFolder/ID.txt', "a+")
+idfile.write('# Channel GPSTime UniqueID\n')
+idfile.close()
 
 if opts.verbose == True:
     for omicrontrigger in omicrontriggers:
-        g.write('python ' + os.getcwd() + '/mkOmega.py -v -t {0}.{1} -u {2} -k {3} -n {4} -c {5} -o {6} -j {7} -z {8}\n'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns,opts.username,opts.keytab,opts.nds2name,opts.channelname,opts.outpath,imagepathname,opts.normalizedSNR))
-
+        uniqueid = make_images('{0}.{1}'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns),opts.nds2name,opts.channelname,opts.outpath,imagepathname,opts.normalizedSNR,opts.boxtime,opts.verbose,imagepathname,opts.sampfrequency)
+	with open('metadata_' + str(opts.gpsStart) + '_' + str(opts.gpsEnd) + '.txt','a+') as f:
+	    f.write('{0} {1} {2} {3} {4} {5} {6}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth,uniqueid))
+	    f.close()
 else:   
     for omicrontrigger in omicrontriggers:
-        g.write('python ' + os.getcwd() + '/mkOmega.py -t {0}.{1} -u {2} -k {3} -n {4} -c {5} -o {6} -j {7} -z {8}\n'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns,opts.username,opts.keytab,opts.nds2name,opts.channelname,opts.outpath,imagepathname,opts.normalizedSNR))
+        uniqueid = make_images('{0}.{1}'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns),opts.nds2name,opts.channelname,opts.outpath,imagepathname,opts.normalizedSNR,opts.boxtime,opts.verbose,imagepathname,opts.sampfrequency)
 
-# At the end there are two things we want to do. First we want to take the uniqueIDs which are created during the mkOmega part of the processing and add them to the glitch metadata we created before generating the images.
+        f.write('{0} {1} {2} {3} {4} {5} {6}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth,uniqueid))
+# We must now convert image metadata to CSV to prep for upload.
 
-g.write("sed -i '1 i\#Detector GPSTime UniqueID' ./IDFolder/ID.txt\n")
-g.write("awk < ./IDFolder/ID.txt '{print $3}' > justID.txt\n")
-g.write('cp metadata_' + str(opts.gpsStart) + '_' + str(opts.gpsEnd) + '.txt metadata_' + str(opts.gpsStart) + '_' + str(opts.gpsEnd) + '_backup.txt\n')
-g.write('paste -d" " metadata_' + str(opts.gpsStart) + '_' + str(opts.gpsEnd) + '.txt justID.txt>metadatamerge.txt\n')
-g.write('mv metadatamerge.txt metadata_' + str(opts.gpsStart) + '_' + str(opts.gpsEnd) + '.txt\n')
-g.write('cp metadata_' + str(opts.gpsStart) + '_' + str(opts.gpsEnd) + '.txt ' +imagepathname + '\n')  
-
-# Run converttocsv.py to convert image metadata to CSV to prep for upload.
-
-g.write('python converttocsv.py --imagepath {0}'.format(imagepathname))
+txt_file = opts.imagepath  + '/metadata.txt'
+csv_file = opts.imagepath  + '/metadata.csv'
+in_txt = csv.reader(open(txt_file, "rb"), delimiter = ' ')
+out_csv = csv.writer(open(csv_file, 'wb'))
+out_csv.writerows(in_txt)
+system_call = 'tar -czvf ' + opts.imagepath + '/L_O1_plots.tar ' + opts.imagepath  + '/*.png'
+os.system(system_call)

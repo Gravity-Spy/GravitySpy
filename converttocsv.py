@@ -30,8 +30,8 @@ opts = parse_commandline()
 
 # take image metadata and convert to csv
 
-txt_file = opts.imagepath + str(iUpload) + '/metadata.txt'
-csv_file = opts.imagepath + str(iUpload) + '/metadata.csv'
+txt_file = opts.imagepath  + '/metadata.txt'
+csv_file = opts.imagepath  + '/metadata.csv'
 in_txt = csv.reader(open(txt_file, "rb"), delimiter = ' ')
 out_csv = csv.writer(open(csv_file, 'wb'))
 out_csv.writerows(in_txt)
