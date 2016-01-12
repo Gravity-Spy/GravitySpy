@@ -16,6 +16,8 @@ Options:
                         with those different times boxes [Default:[0.5,1,2,4]
   --channelname=CHANNELNAME
                         channel name [Default:GDS-CALIB_STRAIN]
+  --colorMap=COLORMAP   What color would you like the omegascans to be?
+                        [Default: jet] [Options: bone, copper,hot]
   --detector=DETECTOR   detector name [L1 or H1]. [No Default must supply]
   --gpsStart=GPSSTART   gps Start Time of Query for meta data and omega scans.
                         [No Default must supply]
@@ -37,7 +39,5 @@ Options:
                         up yet)
   --sampfrequency=SAMPFREQUENCY
                         sample frequency for omegascan iamges [Default: 4096]
-  --submitpath=SUBMITPATH
-                        path to script/submit directory [Default: ./submits]
   --SNR=SNR             SNR Threshold for omicron triggers. [Default: 6]
   --verbose             Run verbosely. (Default: False)

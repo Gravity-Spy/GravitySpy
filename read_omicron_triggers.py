@@ -15,7 +15,7 @@
 # ---- Import standard modules to the python path.
 from gwpy.table.lsctables import SnglBurstTable
 from gwpy.segments import DataQualityFlag
-import os,sys,time, glob, optparse, subprocess
+import os,sys,time, glob, optparse, subprocess, csv
 import numpy as np
 
 def parse_commandline():
@@ -27,6 +27,7 @@ def parse_commandline():
                         default=[0.5,1,2,4])
     parser.add_option("--channelname", help="channel name [Default:GDS-CALIB_STRAIN]",
                         default="GDS-CALIB_STRAIN")
+    parser.add_option("--colorMap", help="What color would you like the omegascans to be? [Default: jet] [Options: bone, copper,hot]", default="jet")
     parser.add_option("--detector", help="detector name [L1 or H1]. [No Default must supply]")
     parser.add_option("--gpsStart", help="gps Start Time of Query for meta data and omega scans. [No Default must supply]")
     parser.add_option("--gpsEnd", help="gps End Time [No Default must supply]")
@@ -58,7 +59,7 @@ def snr_freq_threshold(row):
     return passthresh
 
 #taking place of mkOmega.py
-def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normalizedSNR,boxtime,verbose,imagepath,sampfrequency):
+def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normalizedSNR,boxtime,verbose,imagepath,sampfrequency,colorMap):
 
     # Make temporary directory to create the images in
     system_call = 'mktemp -d {0}/AAA.XXXXXXXXXX'.format(outpath)
@@ -90,12 +91,12 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
         plotType=spectrogram_whitened \
         plotTimeRanges='{5}' \
         sampleFrequency={6} \
-        colorMap=jet \
+        colorMap={7} \
         plotFrequencyRange='[10 inf]' \
-        plotNormalizedEnergyRange='[0.0 {7}]'  \
+        plotNormalizedEnergyRange='[0.0 {8}]'  \
         searchTimeRange=64 \
         searchFrequencyRange='[0 inf]' \
-        searchQRange='[4.0 64.0]'\n".format(os.getcwd(),nds2name,detchannelname,centraltime,tempdir,boxtime,sampfrequency,normalizedSNR))
+        searchQRange='[4.0 64.0]'\n".format(os.getcwd(),nds2name,detchannelname,centraltime,tempdir,boxtime,sampfrequency,colorMap,normalizedSNR))
     g.close()
 
     if verbose == True:
@@ -135,7 +136,6 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
     os.system(system_call)
 
     os.chdir('../..')
-    print(os.listdir('.')) 
     return uniqueid
 
 ####################
@@ -151,6 +151,12 @@ print "You have selected detector channel combination {0}".format(detchannelname
 
 # Let the user know which SNR cut they have selected.
 print "You have selected a SNR cut of {0}".format(opts.SNR)
+
+# Let the user know which SNR normalization max they have selected.
+print "You have selected a SNR normalization max of {0}".format(opts.normalizedSNR)
+
+# Let the user know which colormpa color they have  selected.
+print "You have selected a colormap color of {0}".format(opts.colorMap)
 
 # Obtain segments from L1 that are analysis ready
 analysis_ready = DataQualityFlag.query('{0}:DMT-ANALYSIS_READY:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
@@ -223,7 +229,7 @@ idfile.close()
 if opts.verbose == True:
     for omicrontrigger in omicrontriggers:
 	# Run the function make_images which will generate the iamge and create an uniqueID to assign to that image
-        uniqueid = make_images('{0}.{1}'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns),opts.nds2name,detchannelname,opts.outpath,imagepathname,opts.normalizedSNR,opts.boxtime,opts.verbose,imagepathname,opts.sampfrequency)
+        uniqueid = make_images('{0}.{1}'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns),opts.nds2name,detchannelname,opts.outpath,imagepathname,opts.normalizedSNR,opts.boxtime,opts.verbose,imagepathname,opts.sampfrequency,opts.colorMap)
 	
         # For this trigger write all the metadata of the trigger plus the unqiueID generated during make_images 
 	with open('metadata_' + detGPSstr + '.txt','a+') as f:
@@ -232,7 +238,7 @@ if opts.verbose == True:
 else:   
     for omicrontrigger in omicrontriggers:
         # Run the function make_images which will generate the iamge and create an uniqueID to assign to that image
-        uniqueid = make_images('{0}.{1}'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns),opts.nds2name,detchannelname,opts.outpath,imagepathname,opts.normalizedSNR,opts.boxtime,opts.verbose,imagepathname,opts.sampfrequency)
+        uniqueid = make_images('{0}.{1}'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns),opts.nds2name,detchannelname,opts.outpath,imagepathname,opts.normalizedSNR,opts.boxtime,opts.verbose,imagepathname,opts.sampfrequency,opts.colorMap)
 
 	# For this trigger write all the metadata of the trigger plus the unqiueID generated during make_images 
 	with open('metadata_' + detGPSstr + '.txt','a+') as f:
