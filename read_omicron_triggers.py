@@ -40,8 +40,6 @@ def parse_commandline():
                         default=os.getcwd() + '/png')
     parser.add_option("--runlocal", help="run locally (running as a condor job has not been set up yet)",default=1)
     parser.add_option("--sampfrequency", help="sample frequency for omegascan iamges [Default: 4096]", default=4096)
-    parser.add_option("--submitpath", help="path to script/submit directory [Default: ./submits]",
-                        default=os.getcwd() + '/submits')
     parser.add_option("--SNR", help="SNR Threshold for omicron triggers. [Default: 6]",default="6")
     parser.add_option("--verbose", action="store_true", default=False,
                       help="Run verbosely. (Default: False)")
@@ -110,14 +108,17 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
     os.chdir('{0}'.format(tempdir))
 
     pngnames = os.listdir('./')
+    if verbose == True:
+	print(pngnames)
 
     # If image is not created server must be down. Exit fucntion
     if len(pngnames) ==1:
+	print "O NO!"
 	sys.exit()
 
-    for iFile in xrange(1,len(pngnames)):
+    for iTime in xrange(0,len(boxtime)):
 
-        system_call = 'convert {0} -chop 0x35 {1}/{2}_{3}_{4}.png'.format(pngnames[iFile],outpath,opts.detector,uniqueid,boxtime[iFile-1])
+        system_call = 'convert *{0}_{1}* -chop 0x35 {2}/{3}_{4}_{5}.png'.format(detchannelname,boxtime[iTime],outpath,opts.detector,uniqueid,boxtime[iTime])
         os.system(system_call)
 
     # Create .csv to upload metadata of images to the project builder
@@ -133,7 +134,7 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
     system_call = 'rm -rf {0}/*'.format(outpath)
     os.system(system_call)
 
-    os.chdir('..')
+    os.chdir('../..')
     print(os.listdir('.')) 
     return uniqueid
 
@@ -182,11 +183,14 @@ with open('metadata_' + detGPSstr + '.txt','w+') as f:
 
 # This script takes the peak_time and creates a number of jobs to generate Omega plots centered on those times. These images are used using mkOmega.py.
 
+# Take imagepath add a directory indicating the detector and the gpsStart and gpsEnd times
+imagepathname = os.path.expanduser(opts.imagepath) + '/' + detGPSstr + '/'
+system_call = 'mkdir -p ' + imagepathname
+os.system(system_call)
+
 # create the paths
 
 system_call = 'mkdir -p ' + opts.outpath
-os.system(system_call)
-system_call = 'mkdir -p ' + opts.submitpath
 os.system(system_call)
 system_call = 'mkdir -p ' + os.getcwd() + '/IDFolder/'
 os.system(system_call)
@@ -197,7 +201,7 @@ if opts.verbose == True:
     print('output directory:' + opts.outpath)
     print('channel name:'     + opts.channelname)
     print('NDS2 file:'        + opts.nds2name)
-    print('SubmitDir:'        + opts.submitpath)
+    print('Path to Images:'   + imagepathname)
 
 # Depending on if you are running locally or not. If running locally then you must run kinit before submitting mkOmega jobs. If you have a keytab account then you must specificy your username and password.
  
@@ -206,12 +210,6 @@ if int(opts.runlocal) == 1:
 if int(opts.runlocal) == 0:
         print >> sys.stderr, "FIXME:Not running locally has not been set up yet"
         sys.exit(1)
-
-# Take imagepath add a directory indicating the detector and the gpsStart and gpsEnd times
-imagepathname = opts.imagepath + '/' + detGPSstr + '/'
-system_call = 'mkdir -p ' + imagepathname
-print(system_call)
-os.system(system_call)
 
 # open a txt file where the image metadata for consumption by the Zooniverse servers will be stored.
 metadata =  open(imagepathname + '/metadata.txt', "w+")
