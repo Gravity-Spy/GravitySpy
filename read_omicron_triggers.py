@@ -224,9 +224,14 @@ glitchmetadata.write('# SNR, Amplitude, peak_freq, cent_freq, duration, bandwidt
 glitchmetadata.close()
 
 # open Id.txt which will store the link between GPS time and Randomly Generated Unqiue ID of an image
-idfile =  open('ID.txt', "w+")
-idfile.write('# Channel GPSTime UniqueID\n')
-idfile.close()
+# if there is already an Id.txt file, just append the new IDs to it
+if os.path.isfile('ID.txt')==False:
+	idfile =  open('ID.txt', "w+")
+	idfile.write('# Channel GPSTime UniqueID\n')
+	idfile.close()
+else:
+	idfile =  open('ID.txt', "a+")
+	idfile.close()
 
 for omicrontrigger in omicrontriggers:
     # Run the function make_images which will generate the iamge and create an uniqueID to assign to that image
