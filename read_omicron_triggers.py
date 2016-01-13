@@ -31,8 +31,8 @@ def parse_commandline():
     parser.add_option("--detector", help="detector name [L1 or H1]. [No Default must supply]")
     parser.add_option("--gpsStart", help="gps Start Time of Query for meta data and omega scans. [No Default must supply]")
     parser.add_option("--gpsEnd", help="gps End Time [No Default must supply]")
-    parser.add_option("--imagepath", help="path to directory for images NO matter what path you select {detectorname}_{gpsStart}_{gpsEnd} will be added as a subdirectory [Default ~/public_html/GlitchZoo/]",
-                        default='~/public_html/GlitchZoo/')
+    parser.add_option("--imagepath", help="path to directory for images NO matter what path you select {detectorname}_{gpsStart}_{gpsEnd} will be added as a subdirectory [Default ~/public_html/GravitySpy/]",
+                        default='~/public_html/GravitySpy/')
     parser.add_option("--nds2name", help="ip address or URL of the nds2\
                         server to use [Default: nds.ligo.caltech.edu]",
                         default="nds.ligo.caltech.edu")
