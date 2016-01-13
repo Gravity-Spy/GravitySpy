@@ -4,7 +4,7 @@ This repo contains code for the GravitySpy Citizen Science project.
 RUN source /home/detchar/opt/gwpysoft/etc/gwpy-user-env.sh
 RUN ligo-proxy-init albert.einstein
 RUN kinit albert.einstein@LIGO.ORG
-1.) RUN python read_omicron_triggers.py --gpsStart 1127700000 --gpsEnd 1127800000 --detector H1/L1
+1.) RUN python read_omicron_triggers.py --gpsStart 1127700000 --gpsEnd 1127701500 --detector H1/L1
 
 Here is the current help information. If you update the function with new flags or change the meaning of a flag please edit this part of the README.
 
