@@ -72,11 +72,11 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
 
     # Use random folder name as I.D. Tag but first check if this gps time 
     # already has a I.D. tag and use that if it does.
-    idfile =  open(os.getcwd() + '/IDFolder/ID.txt', "a+")
+    idfile =  open('ID.txt', "a+")
     idfile.write('{0} {1} {2}\n'.format(detchannelname,centraltime,uniqueid))
     idfile.close()
     # Open file for writing metadata for images
-    metadata =  open(imagepath + '/metadata.txt', "a+")
+    metadata =  open(imagepath + '/imagemetadata.txt', "a+")
 
 
     script = os.path.join(tempdir,'temprun.sh')
@@ -114,7 +114,8 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
 
     # If image is not created server must be down. Exit fucntion
     if len(pngnames) ==1:
-	print "O NO!"
+	print "OH NO!"
+	# write file to indicate at what GPStime the image generation failed.
 	sys.exit()
 
     for iTime in xrange(0,len(boxtime)):
@@ -168,8 +169,9 @@ print "Segments for which the ANALYSIS READY Flag is active: {0}".format(analysi
 omicrontriggers = SnglBurstTable.fetch(detchannelname,'Omicron',\
 opts.gpsStart,opts.gpsEnd,filt=snr_freq_threshold)
 
-print omicrontriggers.columnnames
-print "Original trigger length before ANALYSIS READY flag filter: {0}".format(len(omicrontriggers) )
+print "List of available metadata information for a given glitch provided by omicron: {0}".format(omicrontriggers.columnnames)
+
+print "Number of triggers after SNR and Freq cuts but before ANALYSIS READY flag filtering: {0}".format(len(omicrontriggers))
 
 # Filter the raw omicron triggers against the ANALYSIS READY flag.
 omicrontriggers = omicrontriggers.vetoed(analysis_ready.active)
@@ -180,25 +182,17 @@ print "Final trigger length: {0}".format(len(omicrontriggers))
 
 detGPSstr = opts.detector + '_'  + str(opts.gpsStart) + '_' + str(opts.gpsEnd)
 
-# Write some metadata to a .txt file
-
-with open('metadata_' + detGPSstr + '.txt','w+') as f:
-    # SNR, Amplitude, peak_freq, cent_freq, duration,bandwidth, UniqueID
-    f.write('# SNR, Amplitude, peak_freq, cent_freq, duration,bandwidth, UniqueID\n')
-    f.close
-
-# This script takes the peak_time and creates a number of jobs to generate Omega plots centered on those times. These images are used using mkOmega.py.
-
 # Take imagepath add a directory indicating the detector and the gpsStart and gpsEnd times
 imagepathname = os.path.expanduser(opts.imagepath) + '/' + detGPSstr + '/'
 system_call = 'mkdir -p ' + imagepathname
 os.system(system_call)
 
-# create the paths
+# create a path where the images will get generated
 
 system_call = 'mkdir -p ' + opts.outpath
 os.system(system_call)
-system_call = 'mkdir -p ' + os.getcwd() + '/IDFolder/'
+# Create the path to the glitch metadata
+system_call = 'mkdir -p glitchmetadata'
 os.system(system_call)
 
 # If verbose spit out input parameters to terminal
@@ -218,37 +212,40 @@ if int(opts.runlocal) == 0:
         sys.exit(1)
 
 # open a txt file where the image metadata for consumption by the Zooniverse servers will be stored.
-metadata =  open(imagepathname + '/metadata.txt', "w+")
+metadata =  open(imagepathname + '/imagemetadata.txt', "w+")
 metadata.write('ID Date Filename1 Filename2 Filename3 Filename4\n')
 metadata.close()
+
+# Open metadata file for GLITCH metadata information
+glitchmetadata = open('./glitchmetadata/' + detGPSstr + '.txt',"w+") 
+# Headers indicating the metadata WE have selected as of right now.
+# SNR, Amplitude, peak_freq, cent_freq, duration, bandwidth, UniqueID
+glitchmetadata.write('# SNR, Amplitude, peak_freq, cent_freq, duration, bandwidth, UniqueID\n')
+glitchmetadata.close()
+
 # open Id.txt which will store the link between GPS time and Randomly Generated Unqiue ID of an image
-idfile =  open(os.getcwd() + '/IDFolder/ID.txt', "a+")
+idfile =  open('ID.txt', "w+")
 idfile.write('# Channel GPSTime UniqueID\n')
 idfile.close()
 
-if opts.verbose == True:
-    for omicrontrigger in omicrontriggers:
-	# Run the function make_images which will generate the iamge and create an uniqueID to assign to that image
-        uniqueid = make_images('{0}.{1}'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns),opts.nds2name,detchannelname,opts.outpath,imagepathname,opts.normalizedSNR,opts.boxtime,opts.verbose,imagepathname,opts.sampfrequency,opts.colorMap)
+for omicrontrigger in omicrontriggers:
+    # Run the function make_images which will generate the iamge and create an uniqueID to assign to that image
+    uniqueid = make_images('{0}.{1}'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns),opts.nds2name,detchannelname,opts.outpath,imagepathname,opts.normalizedSNR,opts.boxtime,opts.verbose,imagepathname,opts.sampfrequency,opts.colorMap)
 	
-        # For this trigger write all the metadata of the trigger plus the unqiueID generated during make_images 
-	with open('metadata_' + detGPSstr + '.txt','a+') as f:
-	    f.write('{0} {1} {2} {3} {4} {5} {6}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth,uniqueid))
-	    f.close()
-else:   
-    for omicrontrigger in omicrontriggers:
-        # Run the function make_images which will generate the iamge and create an uniqueID to assign to that image
-        uniqueid = make_images('{0}.{1}'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns),opts.nds2name,detchannelname,opts.outpath,imagepathname,opts.normalizedSNR,opts.boxtime,opts.verbose,imagepathname,opts.sampfrequency,opts.colorMap)
+    # For this trigger write all the metadata of the trigger plus the unqiueID generated during make_images 
+    with open('./glitchmetadata/' + detGPSstr + '.txt','a+') as f:
+	f.write('{0} {1} {2} {3} {4} {5} {6}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth,uniqueid))
+	f.close()
 
-	# For this trigger write all the metadata of the trigger plus the unqiueID generated during make_images 
-	with open('metadata_' + detGPSstr + '.txt','a+') as f:
-            f.write('{0} {1} {2} {3} {4} {5} {6}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth,uniqueid))
-	    f.close()
+# House Cleaning
+
+system_call = 'rm -rf {0}'.format(opts.outpath)
+os.system(system_call)
 
 # We must now convert image metadata to CSV to prep for upload.
 
-txt_file = imagepathname  + '/metadata.txt'
-csv_file = imagepathname  + '/metadata.csv'
+txt_file = imagepathname  + '/imagemetadata.txt'
+csv_file = imagepathname  + '/imagemetadata.csv'
 in_txt = csv.reader(open(txt_file, "rb"), delimiter = ' ')
 out_csv = csv.writer(open(csv_file, 'wb'))
 out_csv.writerows(in_txt)
