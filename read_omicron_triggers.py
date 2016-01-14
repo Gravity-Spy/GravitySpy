@@ -31,17 +31,20 @@ def parse_commandline():
     parser.add_option("--detector", help="detector name [L1 or H1]. [No Default must supply]")
     parser.add_option("--gpsStart", help="gps Start Time of Query for meta data and omega scans. [No Default must supply]")
     parser.add_option("--gpsEnd", help="gps End Time [No Default must supply]")
+    parser.add_option("--freqHigh", help="upper frequency bound cut off for the glitches. [Default: 2048]",type=int,default=2048)
+    parser.add_option("--freqLow", help="lower frequency bound cut off for the glitches. [Default: 10]",type=int,default=10)
     parser.add_option("--imagepath", help="path to directory for images NO matter what path you select {detectorname}_{gpsStart}_{gpsEnd} will be added as a subdirectory [Default ~/public_html/GravitySpy/]",
                         default='~/public_html/GravitySpy/')
     parser.add_option("--nds2name", help="ip address or URL of the nds2\
                         server to use [Default: nds.ligo.caltech.edu]",
                         default="nds.ligo.caltech.edu")
-    parser.add_option("--normalizedSNR", help="SNR Normalization value. [Default: 25.5]",default="25.5")
+    parser.add_option("--normalizedSNR", help="SNR Normalization value. [Default: 25.5]",type=float,default=25.5)
+    parser.add_option("--maxSNR", help="This flag gives you the option to supply a upper limit to the SNR of the glitches [Default: 0 (i.e. none)]",type=float,default=0)
     parser.add_option("--outpath", help="path to output directory [Default: ./png] (This is where the images are created but you will not have to go in this folder as the iamges are transferred to your public_html imagepath folder)",
                         default=os.getcwd() + '/png')
-    parser.add_option("--runlocal", help="run locally (running as a condor job has not been set up yet)",default=1)
-    parser.add_option("--sampfrequency", help="sample frequency for omegascan iamges [Default: 4096]", default=4096)
-    parser.add_option("--SNR", help="SNR Threshold for omicron triggers. [Default: 6]",default="6")
+    parser.add_option("--runlocal", help="run locally (running as a condor job has not been set up yet)",type=int,default=1)
+    parser.add_option("--sampfrequency", help="sample frequency for omegascan iamges [Default: 4096]", type=int,default=4096)
+    parser.add_option("--SNR", help="Lower bound SNR Threshold for omicron triggers, by default there is no upperbound SNR unless supplied throught the --maxSNR flag. [Default: 6]",type=float,default=6)
     parser.add_option("--verbose", action="store_true", default=False,
                       help="Run verbosely. (Default: False)")
 
@@ -52,11 +55,18 @@ def parse_commandline():
 # Define snr_freq_threshold function that removes rows where SNR <6 and removes any triggers whose peak_freqeuency was above 2048 Hz and below 10.
 
 def snr_freq_threshold(row):
-    if (row.snr >= float(opts.SNR)) and (row.peak_frequency <= 2048) and (row.peak_frequency >= 10):
-        passthresh = True
+    if (opts.maxSNR == 0):
+    	if (row.snr >= opts.SNR) and (row.peak_frequency <= opts.freqHigh) and (row.peak_frequency >= opts.freqLow):
+    	    passthresh = True
+    	else:
+    	    passthresh = False
+    	return passthresh
     else:
-        passthresh = False
-    return passthresh
+        if (row.snr >= opts.SNR) and (row.snr <= opts.maxSNR) and (row.peak_frequency <= opts.freqHigh) and (row.peak_frequency >= opts.freqLow):
+            passthresh = True
+        else:
+            passthresh = False
+        return passthresh
 
 #taking place of mkOmega.py
 def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normalizedSNR,boxtime,verbose,imagepath,sampfrequency,colorMap):
