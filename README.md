@@ -23,6 +23,10 @@ Options:
   --gpsStart=GPSSTART   gps Start Time of Query for meta data and omega scans.
                         [No Default must supply]
   --gpsEnd=GPSEND       gps End Time [No Default must supply]
+  --freqHigh=FREQHIGH   upper frequency bound cut off for the glitches.
+                        [Default: 2048]
+  --freqLow=FREQLOW     lower frequency bound cut off for the glitches.
+                        [Default: 10]
   --imagepath=IMAGEPATH
                         path to directory for images NO matter what path you
                         select {detectorname}_{gpsStart}_{gpsEnd} will be
@@ -32,6 +36,8 @@ Options:
                         server to use [Default: nds.ligo.caltech.edu]
   --normalizedSNR=NORMALIZEDSNR
                         SNR Normalization value. [Default: 25.5]
+  --maxSNR=MAXSNR       This flag gives you the option to supply a upper limit
+                        to the SNR of the glitches [Default: 0 (i.e. none)]
   --outpath=OUTPATH     path to output directory [Default: ./png] (This is
                         where the images are created but you will not have to
                         go in this folder as the iamges are transferred to
@@ -40,5 +46,7 @@ Options:
                         up yet)
   --sampfrequency=SAMPFREQUENCY
                         sample frequency for omegascan iamges [Default: 4096]
-  --SNR=SNR             SNR Threshold for omicron triggers. [Default: 6]
+  --SNR=SNR             Lower bound SNR Threshold for omicron triggers, by
+                        default there is no upperbound SNR unless supplied
+                        throught the --maxSNR flag. [Default: 6]
   --verbose             Run verbosely. (Default: False)
