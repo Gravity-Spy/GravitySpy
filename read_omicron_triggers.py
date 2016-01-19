@@ -109,6 +109,7 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
         searchQRange='[4.0 64.0]'\n".format(os.getcwd(),nds2name,detchannelname,centraltime,tempdir,boxtime,sampfrequency,colorMap,normalizedSNR))
     g.close()
 
+
     if verbose == True:
         system_call = 'cat {0}/temprun.sh'.format(tempdir)
         os.system(system_call)
@@ -124,7 +125,7 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
 
     # If image is not created server must be down. Exit fucntion
     if len(pngnames) ==1:
-	print "OH NO!"
+	print "OH NO! Script failed starting at GPS time {0}".format(centraltime)
 	# write file to indicate at what GPStime the image generation failed.
 	sys.exit()
 
@@ -266,3 +267,4 @@ out_csv = csv.writer(open(csv_file, 'wb'))
 out_csv.writerows(in_txt)
 system_call = 'tar -czvf ' + imagepathname + '/' + detGPSstr + '.tar ' + imagepathname  + '/*.png'
 os.system(system_call)
+
