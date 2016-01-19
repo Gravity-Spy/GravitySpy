@@ -1,6 +1,6 @@
 # GravitySpy
 This repo contains code for the GravitySpy Citizen Science project.
-
+Test
 RUN source /home/detchar/opt/gwpysoft/etc/gwpy-user-env.sh
 RUN ligo-proxy-init albert.einstein
 RUN kinit albert.einstein@LIGO.ORG
