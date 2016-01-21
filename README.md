@@ -50,3 +50,50 @@ Options:
                         default there is no upperbound SNR unless supplied
                         throught the --maxSNR flag. [Default: 6]
   --verbose             Run verbosely. (Default: False)
+
+Help output from dmt_wplot which is the function we call that takes raw data and constructs the omega scan
+
+The dmt_wplot command syntax is:
+  wplot <argument-1> [ ... <argument-n>]
+arguments are in the form <keyword>=<value>
+The following keywords are known: 
+  Keyword                    Default value(s)
+  -------                    ----------------
+  channelName:                {}
+  frameType:                  {"NDS2"}
+  timeShifts:                 [0]
+  frameCacheFile:             ""
+  ndsServer:                  "nds.ligo.caltech.edu:31200"
+  outDir:                     ""
+  outputDirectory:            ""
+  plotFile:                   ""
+  eventTime:                  0
+  sampleFrequency:            4096
+  searchTimeRange:            64
+  searchFrequencyRange:       [0, inf]
+  searchQRange:               [4, 64]
+  searchMaximumEnergyLoss:    0.2
+  whiteNoiseFalseRate:        1
+  eventThreshold:             0
+  searchWindowDuration:       0.1
+  plotTimeRanges:             [1]
+  plotFrequencyRange:         [0, inf]
+  plotNormalizedEnergyRange:  [0, 25.5]
+  plotType:                   {"spectrogram_whitened"}
+  transientFactor:            2
+  outlierFactor:              2
+  plotHorizontalResolution:   512
+  plotDurationInflation:      0.5
+  plotBandwidthInflation:     0.5
+  plotThreshold:              0
+  maximumSignificants:        10000
+  maximumMosaics:             10000
+  plotThumbnail:              no
+  nSmooth:                    0
+  smoothOption:               ""
+  plotSize:                   []
+  colorMap:                   ""
+  plotFormat:                 "png"
+  zUnits:                     "NormE"
+  debugLevel:                 0
+Error reading configuration: Help requested
