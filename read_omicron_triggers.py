@@ -17,6 +17,7 @@ from gwpy.table.lsctables import SnglBurstTable
 from gwpy.segments import DataQualityFlag
 import os,sys,time, glob, optparse, subprocess, csv
 import numpy as np
+import time 
 
 def parse_commandline():
     """
@@ -88,33 +89,25 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
     # Open file for writing metadata for images
     metadata =  open(imagepath + '/imagemetadata.txt', "a+")
 
-
-    script = os.path.join(tempdir,'temprun.sh')
-    g =  open(script, "w+") # write mode
-    g.write("#!/bin/bash\n")
-    g.write("java -Xmx16m -jar {0}/packwplot.jar \
+    system_call = "dmt_wplot \
         frameType=NDS2 \
-        ndsServer={1} \
-        channelName={2} \
-        eventTime={3} \
-        outputDirectory={4} \
+        ndsServer={0} \
+        channelName={1} \
+        eventTime={2} \
+        outputDirectory={3} \
         plotType=spectrogram_whitened \
-        plotTimeRanges='{5}' \
-        sampleFrequency={6} \
-        colorMap={7} \
+        plotTimeRanges='{4}' \
+        sampleFrequency={5} \
+        colorMap={6} \
         plotFrequencyRange='[10 inf]' \
-        plotNormalizedEnergyRange='[0.0 {8}]'  \
+        plotNormalizedEnergyRange='[0.0 {7}]'  \
         searchTimeRange=64 \
         searchFrequencyRange='[0 inf]' \
-        searchQRange='[4.0 64.0]'\n".format(os.getcwd(),nds2name,detchannelname,centraltime,tempdir,boxtime,sampfrequency,colorMap,normalizedSNR))
-    g.close()
-
+        searchQRange='[4.0 64.0]'\n".format(nds2name,detchannelname,centraltime,tempdir,boxtime,sampfrequency,colorMap,normalizedSNR)
 
     if verbose == True:
-        system_call = 'cat {0}/temprun.sh'.format(tempdir)
-        os.system(system_call)
+	print(system_call)
 
-    system_call = 'source {0}/temprun.sh'.format(tempdir)
     os.system(system_call)
 
     os.chdir('{0}'.format(tempdir))
@@ -138,21 +131,29 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
     metadata.write('{0} 20151016 {1}_{2}_{3}.png {4}_{5}_{6}.png {7}_{8}_{9}.png {10}_{11}_{12}.png\n'.format(uniqueid,opts.detector,uniqueid,boxtime[0],opts.detector,uniqueid,boxtime[1],opts.detector,uniqueid,boxtime[2],opts.detector,uniqueid,boxtime[3]))
     metadata.close()
 
+    # Back out of temp directory and delete it
+    os.chdir('..')
     system_call = 'rm -rf {0}/'.format(tempdir)
     os.system(system_call)
+
+    # Copy converted image to public_html and back out of png directory and delete duplicate .png inside of folder.
 
     system_call = 'cp {0}/{1}_{2}*.png {3}'.format(outpath,opts.detector,uniqueid,imagepath)
     os.system(system_call)
 
+    os.chdir('..')
     system_call = 'rm -rf {0}/*'.format(outpath)
     os.system(system_call)
 
-    os.chdir('../..')
     return uniqueid
 
 ####################
 ## MAIN CODE ######
 ####################
+# Need to stablish ligo-proxy.
+system_call = 'ligo-proxy-init -k'
+os.system(system_call)
+
 # Parse commandline arguments
 opts = parse_commandline()
 
@@ -245,13 +246,15 @@ else:
 	idfile.close()
 
 for omicrontrigger in omicrontriggers:
+    start=time.time()
     # Run the function make_images which will generate the iamge and create an uniqueID to assign to that image
     uniqueid = make_images('{0}.{1}'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns),opts.nds2name,detchannelname,opts.outpath,imagepathname,opts.normalizedSNR,opts.boxtime,opts.verbose,imagepathname,opts.sampfrequency,opts.colorMap)
-	
     # For this trigger write all the metadata of the trigger plus the unqiueID generated during make_images 
     with open('./glitchmetadata/' + detGPSstr + '.txt','a+') as f:
 	f.write('{0} {1} {2} {3} {4} {5} {6}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth,uniqueid))
 	f.close()
+    end =time.time()
+    print(end-start)
 
 # House Cleaning
 
