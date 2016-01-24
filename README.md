@@ -4,7 +4,7 @@ This repo contains code for the GravitySpy Citizen Science project.
 RUN source /home/detchar/opt/gwpysoft/etc/gwpy-user-env.sh
 RUN kinit albert.einstein@LIGO.ORG
 
-1.) RUN python read_omicron_triggers.py --gpsStart 1127700000 --gpsEnd 1127701500 --detector H1 or L1
+1.) RUN ./read_omicron_triggers --gpsStart 1127700000 --gpsEnd 1127701500 --detector H1 or L1
 (Pick the same detector as the cluster you are on)
 
 Here is the current help information. If you update the function with new flags or change the meaning of a flag please edit this part of the README.
