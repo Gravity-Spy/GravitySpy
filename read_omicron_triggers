@@ -15,9 +15,7 @@
 # ---- Import standard modules to the python path.
 from gwpy.table.lsctables import SnglBurstTable
 from gwpy.segments import DataQualityFlag
-import os,sys,time, glob, optparse, subprocess, csv
-import numpy as np
-import time 
+import os,time, optparse, csv
 
 def parse_commandline():
     """
@@ -89,8 +87,10 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
     # Open file for writing metadata for images
     metadata =  open(imagepath + '/imagemetadata.txt', "a+")
 
+    start1 = time.time()
     system_call = "dmt_wplot \
-        frameType=NDS2 \
+	frameCacheFile='test.cache' \
+        frameType=H1_HOFT_C00 \
         ndsServer={0} \
         channelName={1} \
         eventTime={2} \
@@ -109,6 +109,8 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
 	print(system_call)
 
     os.system(system_call)
+    end1 = time.time()
+    print(end1-start1)
 
     os.chdir('{0}'.format(tempdir))
 
