@@ -89,21 +89,21 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
 
     start1 = time.time()
     system_call = "dmt_wplot \
-	frameCacheFile='test.cache' \
-        frameType=H1_HOFT_C00 \
-        ndsServer={0} \
-        channelName={1} \
-        eventTime={2} \
-        outputDirectory={3} \
+	frameCacheFile='data.cache' \
+        frameType={0}_HOFT_C00 \
+        ndsServer={1} \
+        channelName={2} \
+        eventTime={3} \
+        outputDirectory={4} \
         plotType=spectrogram_whitened \
-        plotTimeRanges='{4}' \
-        sampleFrequency={5} \
-        colorMap={6} \
+        plotTimeRanges='{5}' \
+        sampleFrequency={6} \
+        colorMap={7} \
         plotFrequencyRange='[10 inf]' \
-        plotNormalizedEnergyRange='[0.0 {7}]'  \
+        plotNormalizedEnergyRange='[0.0 {8}]'  \
         searchTimeRange=64 \
         searchFrequencyRange='[0 inf]' \
-        searchQRange='[4.0 64.0]'\n".format(nds2name,detchannelname,centraltime,tempdir,boxtime,sampfrequency,colorMap,normalizedSNR)
+        searchQRange='[4.0 64.0]'\n".format(opts.detector,nds2name,detchannelname,centraltime,tempdir,boxtime,sampfrequency,colorMap,normalizedSNR)
 
     if verbose == True:
 	print(system_call)
@@ -152,6 +152,14 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
 ####################
 ## MAIN CODE ######
 ####################
+# Depending on if you are running locally or not. If not running local, then the code will create a condor .dag file and a .sub file in order to submit to the cluster. (In Beta)
+
+if int(opts.runlocal) == 1:
+    print('Did you remember to run kinit albert.einstein@LIGO.ORG?')
+if int(opts.runlocal) == 0:
+        print >> sys.stderr, "FIXME:Not running locally has not been set up yet"
+        sys.exit(1)
+
 # Need to stablish ligo-proxy.
 system_call = 'ligo-proxy-init -k'
 os.system(system_call)
@@ -217,14 +225,6 @@ if opts.verbose == True:
     print('NDS2 file:'        + opts.nds2name)
     print('Path to Images:'   + imagepathname)
 
-# Depending on if you are running locally or not. If running locally then you must run kinit before submitting mkOmega jobs. If you have a keytab account then you must specificy your username and password.
- 
-if int(opts.runlocal) == 1:
-    print('Did you remember to run kinit albert.einstein@LIGO.ORG?')
-if int(opts.runlocal) == 0:
-        print >> sys.stderr, "FIXME:Not running locally has not been set up yet"
-        sys.exit(1)
-
 # open a txt file where the image metadata for consumption by the Zooniverse servers will be stored.
 metadata =  open(imagepathname + '/imagemetadata.txt', "w+")
 metadata.write('ID Date Filename1 Filename2 Filename3 Filename4\n')
@@ -246,6 +246,16 @@ if os.path.isfile('ID.txt')==False:
 else:
 	idfile =  open('ID.txt', "a+")
 	idfile.close()
+
+# Create Cache file for time period of data you want to make images for. This speeds up the call to dmt_wplot immensely.
+
+# Need to strip the 1 away from detector name
+detstrip = opts.detector.split('1')[0]
+
+system_call = 'gw_data_find --observatory={0} -s {1} -e {2} --type={3}_HOFT_C00  -W > data.cache'.format(detstrip,opts.gpsStart,opts.gpsEnd,opts.detector)
+print(system_call)
+os.system(system_call)
+
 
 for omicrontrigger in omicrontriggers:
     start=time.time()
