@@ -15,7 +15,7 @@
 # ---- Import standard modules to the python path.
 from gwpy.table.lsctables import SnglBurstTable
 from gwpy.segments import DataQualityFlag
-import os,time, optparse, csv
+import os,time, optparse, csv,sys
 
 def parse_commandline():
     """
@@ -152,20 +152,28 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
 ####################
 ## MAIN CODE ######
 ####################
+# Parse commandline arguments
+opts = parse_commandline()
+
 # Depending on if you are running locally or not. If not running local, then the code will create a condor .dag file and a .sub file in order to submit to the cluster. (In Beta)
 
 if int(opts.runlocal) == 1:
-    print('Did you remember to run kinit albert.einstein@LIGO.ORG?')
+	print('Did you remember to run kinit albert.einstein@LIGO.ORG?')
 if int(opts.runlocal) == 0:
-        print >> sys.stderr, "FIXME:Not running locally has not been set up yet"
+	# Take start and end gps times and divide into days and write a file with all those days
+	submitfile =  open('bigsubmit.sh', "w+")
+
+	gpsEnd1 = int(opts.gpsEnd.strip("0"))
+	gpsStart1 = int(opts.gpsStart.strip("0"))
+	for i in xrange(gpsStart1,gpsEnd1+1):
+		submitfile.write('./read_omicron_triggers --gpsStart {0}00000 --gpsEnd {1}00000 --detector H1\n'.format(i,i+1))
+	submitfile.close()
+        print >> sys.stderr, "Uber submit file has been set up"
         sys.exit(1)
 
 # Need to stablish ligo-proxy.
 system_call = 'ligo-proxy-init -k'
 os.system(system_call)
-
-# Parse commandline arguments
-opts = parse_commandline()
 
 detchannelname = opts.detector + ':' +  opts.channelname
 
