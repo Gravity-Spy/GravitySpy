@@ -163,9 +163,7 @@ if int(opts.runlocal) == 0:
 	# Take start and end gps times and divide into days and write a file with all those days
 	submitfile =  open('bigsubmit.sh', "w+")
 
-	gpsEnd1 = int(opts.gpsEnd.strip("0"))
-	gpsStart1 = int(opts.gpsStart.strip("0"))
-	for i in xrange(gpsStart1,gpsEnd1+1):
+	for i in xrange(int(opts.gpsStart),int(opts.gpsEnd)):
 		submitfile.write('./read_omicron_triggers --gpsStart {0}00000 --gpsEnd {1}00000 --detector {2}\n'.format(i,i+1,opts.detector))
 	submitfile.close()
         print >> sys.stderr, "Uber submit file has been set up"
