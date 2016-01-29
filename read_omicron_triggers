@@ -15,7 +15,14 @@
 # ---- Import standard modules to the python path.
 from gwpy.table.lsctables import SnglBurstTable
 from gwpy.segments import DataQualityFlag
-import os,time, optparse, csv,sys
+import os,time, optparse, csv,sys,pickle
+
+###############################################################################
+##########################                             ########################
+##########################   Func: parse_commandline   ########################
+##########################                             ########################
+###############################################################################
+# Definite Command line arguments here
 
 def parse_commandline():
     """
@@ -32,6 +39,7 @@ def parse_commandline():
     parser.add_option("--gpsEnd", help="gps End Time [No Default must supply]")
     parser.add_option("--freqHigh", help="upper frequency bound cut off for the glitches. [Default: 2048]",type=int,default=2048)
     parser.add_option("--freqLow", help="lower frequency bound cut off for the glitches. [Default: 10]",type=int,default=10)
+    parser.add_option("--ID", help="Filename of UniqueIDs you would like to make images for (generally done if desiring to see same image but in a different way.",default='somethingthatcantbefile.txt')
     parser.add_option("--imagepath", help="path to directory for images NO matter what path you select {detectorname}_{gpsStart}_{gpsEnd} will be added as a subdirectory [Default ~/public_html/GravitySpy/]",
                         default='~/public_html/GravitySpy/')
     parser.add_option("--nds2name", help="ip address or URL of the nds2\
@@ -51,7 +59,12 @@ def parse_commandline():
 
     return opts
 
-# Define snr_freq_threshold function that removes rows where SNR <6 and removes any triggers whose peak_freqeuency was above 2048 Hz and below 10.
+###############################################################################
+##########################                              #######################
+##########################   Func: snr_freq_threshold   #######################
+##########################                              #######################
+###############################################################################
+# Define snr_freq_threshold function that will filter omicron triggers based on SNR and frequency threshold the user sets (or the defaults.)
 
 def snr_freq_threshold(row):
     if (opts.maxSNR == 0):
@@ -67,7 +80,68 @@ def snr_freq_threshold(row):
             passthresh = False
         return passthresh
 
-#taking place of mkOmega.py
+###############################################################################
+##########################                          ###########################
+##########################   Func: make_images_ID   ###########################
+##########################                          ###########################
+###############################################################################
+
+# Define a function to make images if someone has already supplied IDs
+def make_images_ID(centraltime,nds2name,detchannelname,outpath,imagepathname,normalizedSNR,boxtime,verbose,imagepath,sampfrequency,colorMap,ID):
+
+    # Make temporary directory to create the images in
+    system_call = 'mktemp -d {0}/AAA.XXXXXXXXXX'.format(outpath)
+    os.system(system_call)
+
+    start1 = time.time()
+    system_call = "dmt_wplot \
+        frameCacheFile='data.cache' \
+        frameType={0}_HOFT_C00 \
+        ndsServer={1} \
+        channelName={2} \
+        eventTime={3} \
+        outputDirectory={4} \
+        plotType=spectrogram_whitened \
+        plotTimeRanges='{5}' \
+        sampleFrequency={6} \
+        colorMap={7} \
+        plotFrequencyRange='[10 inf]' \
+        plotNormalizedEnergyRange='[0.0 {8}]'  \
+        searchTimeRange=64 \
+        searchFrequencyRange='[0 inf]' \
+        searchQRange='[4.0 64.0]'\n".format(opts.detector,nds2name,detchannelname,centraltime,tempdir,boxtime,sampfrequency,colorMap,normalizedSNR)
+
+    if verbose == True:
+        print(system_call)
+
+    os.system(system_call)
+    end1 = time.time()
+    print(end1-start1)
+
+    os.chdir('{0}'.format(tempdir))
+
+    pngnames = os.listdir('./')
+    if verbose == True:
+        print(pngnames)
+
+    # If image is not created server must be down. Exit fucntion
+    if len(pngnames) ==1:
+        print "OH NO! Script failed starting at GPS time {0}".format(centraltime)
+        # write file to indicate at what GPStime the image generation failed.
+        sys.exit()
+
+    for iTime in xrange(0,len(boxtime)):
+
+        system_call = 'convert *{0}_{1}* -chop 0x35 {2}/{3}_{4}_{5}.png'.format(detchannelname,boxtime[iTime],outpath,opts.detector,uniqueid,boxtime[iTime])
+        os.system(system_call)
+
+###############################################################################
+##########################                          ###########################
+##########################   Func: make_images      ###########################
+##########################                          ###########################
+###############################################################################
+
+# This takes in information from omicron triggers and generates images and IDs (this function is for running locally.)
 def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normalizedSNR,boxtime,verbose,imagepath,sampfrequency,colorMap):
 
     # Make temporary directory to create the images in
@@ -149,68 +223,130 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
 
     return uniqueid
 
-####################
-## MAIN CODE ######
-####################
+###############################################################################
+##########################                          ###########################
+##########################   Func: verbosity        ###########################
+##########################                          ###########################
+###############################################################################
+
+# Function to spit out useful verbosity whether generating a submission file or running locally.
+
+def verbosity(detchannelname):
+
+    # Let the user know what detector and channel combo they have selected.
+    print "You have selected detector channel combination {0}".format(detchannelname)
+
+    # Let the user know which SNR cut they have selected.
+    print "You have selected a SNR cut of {0}".format(opts.SNR)
+
+    # Let the user know which SNR normalization max they have selected.
+    print "You have selected a SNR normalization max of {0}".format(opts.normalizedSNR)
+
+    # Let the user know which colormpa color they have  selected.
+    print "You have selected a colormap color of {0}".format(opts.colorMap)
+
+    # Where will the images be generated
+    print('Images will be made:' + opts.outpath)
+
+    # Where will the final images end up
+    print('Path to directory where final images will appear:' + imagepathname)
+
+###############################################################################
+##########################                          ###########################
+##########################   Func: get_triggers     ###########################
+##########################                          ###########################
+###############################################################################
+
+# This function queries omicron to obtain trigger times of the glitches. It then proceeds to filter out these times based on whether the detector was in an analysis ready state or the glitch passes certain frequency and SNR cuts. 
+
+def get_triggers(detchannelname):
+
+    # Obtain segments from L1 that are analysis ready
+    analysis_ready = DataQualityFlag.query('{0}:DMT-ANALYSIS_READY:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+
+    # Display segments for which this flag is true
+    print "Segments for which the ANALYSIS READY Flag is active: {0}".format(analysis_ready.active)
+
+    # Fetch raw omicron triggers and apply filter which is defined in a function above.
+    omicrontriggers = SnglBurstTable.fetch(detchannelname,'Omicron',\
+    opts.gpsStart,opts.gpsEnd,filt=snr_freq_threshold)
+
+    print "List of available metadata information for a given glitch provided by omicron: {0}".format(omicrontriggers.columnnames)
+
+    print "Number of triggers after SNR and Freq cuts but before ANALYSIS READY flag filtering: {0}".format(len(omicrontriggers))
+
+    # Filter the raw omicron triggers against the ANALYSIS READY flag.
+    omicrontriggers = omicrontriggers.vetoed(analysis_ready.active)
+
+    print "Final trigger length: {0}".format(len(omicrontriggers))
+
+    return omicrontriggers
+
+###############################################################################
+##########################                            #########################
+##########################   Func: call_data_find     #########################
+##########################                            #########################
+###############################################################################
+
+# Call gw_data_find in order to create a cache file to be parsed by dmt_wplot. This is significantly faster way to get images generated then going through the NDS2 server.
+
+def call_data_find(detstrip):
+
+    system_call = 'gw_data_find --observatory={0} -s {1} -e {2} --type={3}_HOFT_C00  -W > data.cache'.format(detstrip,opts.gpsStart,opts.gpsEnd,opts.detector)
+    print('Cache file generated by the following: {0}'.format(system_call))
+    os.system(system_call)
+
+###############################################################################
+##########################                            #########################
+##########################   Func: write_sub_file     #########################
+##########################                            #########################
+###############################################################################
+
+# Write submission file for the condor job
+
+def write_subfile():
+    with open('gravityspy.sub', 'w') as subfile:
+    	subfile.write('universe = vanilla\n')
+        subfile.write('executable = /home/scoughlin/detchar/GlitchZoo/GravitySpy/read_omicron_triggers\n')
+	subfile.write('\n')
+        subfile.write('arguments = "--gpsStart {0} --gpsEnd {1} --detector {2} --runlocal 2 --verbose"\n'.format(opts.gpsStart,opts.gpsEnd,opts.detector))
+        subfile.write('getEnv=True\n')
+	subfile.write('\n')
+        subfile.write('accounting_group_user = scott.coughlin\n')
+        subfile.write('accounting_group = ligo.dev.o1.detchar.ch_categorization.glitchzoo\n')
+	subfile.write('\n')
+        subfile.write('priority = 0\n')
+        subfile.write('request_memory = 1000\n')
+	subfile.write('\n')
+        subfile.write('error = logs/gravityspy-$(cluster)-$(process).err\n')
+        subfile.write('output = logs/gravityspy-$(cluster)-$(process).out\n')
+        subfile.write('notification = never\n')
+        subfile.write('queue 1')
+
+###############################################################################
+##########################                     ################################
+##########################      MAIN CODE      ################################
+##########################                     ################################
+###############################################################################
+
 # Parse commandline arguments
+
 opts = parse_commandline()
 
-# Depending on if you are running locally or not. If not running local, then the code will create a condor .dag file and a .sub file in order to submit to the cluster. (In Beta)
+# Create some variable and file directories based on inputs
 
-if int(opts.runlocal) == 1:
-	print('Did you remember to run kinit albert.einstein@LIGO.ORG?')
-if int(opts.runlocal) == 0:
-	# Take start and end gps times and divide into days and write a file with all those days
-	submitfile =  open('bigsubmit.sh', "w+")
-
-	for i in xrange(int(opts.gpsStart),int(opts.gpsEnd)):
-		submitfile.write('./read_omicron_triggers --gpsStart {0}00000 --gpsEnd {1}00000 --detector {2}\n'.format(i,i+1,opts.detector))
-	submitfile.close()
-        print >> sys.stderr, "Uber submit file has been set up"
-        sys.exit(1)
-
-# Need to stablish ligo-proxy.
-system_call = 'ligo-proxy-init -k'
-os.system(system_call)
-
+# Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
 detchannelname = opts.detector + ':' +  opts.channelname
 
-# Let the user know what detector and channel combo they have selected.
-print "You have selected detector channel combination {0}".format(detchannelname)
-
-# Let the user know which SNR cut they have selected.
-print "You have selected a SNR cut of {0}".format(opts.SNR)
-
-# Let the user know which SNR normalization max they have selected.
-print "You have selected a SNR normalization max of {0}".format(opts.normalizedSNR)
-
-# Let the user know which colormpa color they have  selected.
-print "You have selected a colormap color of {0}".format(opts.colorMap)
-
-# Obtain segments from L1 that are analysis ready
-analysis_ready = DataQualityFlag.query('{0}:DMT-ANALYSIS_READY:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
-
-# Display segments for which this flag is true
-print "Segments for which the ANALYSIS READY Flag is active: {0}".format(analysis_ready.active)
-
-# Fetch raw omicron triggers and apply filter
-omicrontriggers = SnglBurstTable.fetch(detchannelname,'Omicron',\
-opts.gpsStart,opts.gpsEnd,filt=snr_freq_threshold)
-
-print "List of available metadata information for a given glitch provided by omicron: {0}".format(omicrontriggers.columnnames)
-
-print "Number of triggers after SNR and Freq cuts but before ANALYSIS READY flag filtering: {0}".format(len(omicrontriggers))
-
-# Filter the raw omicron triggers against the ANALYSIS READY flag.
-omicrontriggers = omicrontriggers.vetoed(analysis_ready.active)
-
-print "Final trigger length: {0}".format(len(omicrontriggers))
+# Need to strip the 1 away from detector name
+detstrip = opts.detector.split('1')[0]
 
 # Create a string of detector name, gpsStart and gpsEnd time that will be used repeatedly throughout code
 
 detGPSstr = opts.detector + '_'  + str(opts.gpsStart) + '_' + str(opts.gpsEnd)
 
 # Take imagepath add a directory indicating the detector and the gpsStart and gpsEnd times
+
 imagepathname = os.path.expanduser(opts.imagepath) + '/' + detGPSstr + '/'
 system_call = 'mkdir -p ' + imagepathname
 os.system(system_call)
@@ -219,17 +355,10 @@ os.system(system_call)
 
 system_call = 'mkdir -p ' + opts.outpath
 os.system(system_call)
+
 # Create the path to the glitch metadata
 system_call = 'mkdir -p glitchmetadata'
 os.system(system_call)
-
-# If verbose spit out input parameters to terminal
-
-if opts.verbose == True:
-    print('output directory:' + opts.outpath)
-    print('channel name:'     + opts.channelname)
-    print('NDS2 file:'        + opts.nds2name)
-    print('Path to Images:'   + imagepathname)
 
 # open a txt file where the image metadata for consumption by the Zooniverse servers will be stored.
 metadata =  open(imagepathname + '/imagemetadata.txt', "w+")
@@ -237,7 +366,7 @@ metadata.write('ID Date Filename1 Filename2 Filename3 Filename4\n')
 metadata.close()
 
 # Open metadata file for GLITCH metadata information
-glitchmetadata = open('./glitchmetadata/' + detGPSstr + '.txt',"w+") 
+glitchmetadata = open('./glitchmetadata/' + detGPSstr + '.txt',"w+")
 # Headers indicating the metadata WE have selected as of right now.
 # SNR, Amplitude, peak_freq, cent_freq, duration, bandwidth, UniqueID
 glitchmetadata.write('# SNR, Amplitude, peak_freq, cent_freq, duration, bandwidth, UniqueID\n')
@@ -246,22 +375,67 @@ glitchmetadata.close()
 # open Id.txt which will store the link between GPS time and Randomly Generated Unqiue ID of an image
 # if there is already an Id.txt file, just append the new IDs to it
 if os.path.isfile('ID.txt')==False:
-	idfile =  open('ID.txt', "w+")
-	idfile.write('# Channel GPSTime UniqueID\n')
-	idfile.close()
+        idfile =  open('ID.txt', "w+")
+        idfile.write('# Channel GPSTime UniqueID\n')
+        idfile.close()
 else:
-	idfile =  open('ID.txt', "a+")
-	idfile.close()
+        idfile =  open('ID.txt', "a+")
+        idfile.close()
 
-# Create Cache file for time period of data you want to make images for. This speeds up the call to dmt_wplot immensely.
+# Depending on if you are running locally or not. If not running local, then the code will create a condor .dag file and a .sub file in order to submit to the cluster. (In Beta)
 
-# Need to strip the 1 away from detector name
-detstrip = opts.detector.split('1')[0]
+if int(opts.runlocal) == 1:
 
-system_call = 'gw_data_find --observatory={0} -s {1} -e {2} --type={3}_HOFT_C00  -W > data.cache'.format(detstrip,opts.gpsStart,opts.gpsEnd,opts.detector)
-print(system_call)
-os.system(system_call)
+	print('Did you remember to run kinit albert.einstein@LIGO.ORG?')
+	# Need to establish ligo-proxy.
+	system_call = 'ligo-proxy-init -k'
+	os.system(system_call)
+	# Provide some information about settings the user provided 
+	# or the default settings
+	verbosity(detchannelname)
+	# Obtain the omicron triggers used to generated the images
+	omicrontriggers = get_triggers(detchannelname)
+	# Create a cache file indicating what data frames these 
+	# images can be found in.
+	call_data_find(detstrip)
 
+elif int(opts.runlocal) == 0:
+
+	# Need to establish ligo-proxy in order to generate triggers 
+	# and data.cache before running the condor job.
+	system_call = 'ligo-proxy-init -k'
+	os.system(system_call)
+        # Provide some information about settings the user provided 
+        # or the default settings
+        verbosity(detchannelname)
+        # Obtain the omicron triggers used to generated the images
+        omicrontriggers = get_triggers(detchannelname)
+        # Create a cache file indicating what data frames these 
+        # images can be found in.
+        call_data_find(detstrip)
+        # need to save omicron triggers variable to be loaded by the condor job later
+	filename = open("triggers.xml",'w')
+	omicrontriggers.write(fileobj=filename)
+
+	# Make a logs file directory and create condor subfile
+	system_call = 'mkdir -p logs'
+	os.system(system_call)
+	write_subfile()
+	sys.exit(1)
+
+else:
+	print("running on condor")
+	omicrontriggers = SnglBurstTable.read('triggers.xml')
+# Check to see if set of UniqueIDs has been supplied. If yes then we will bypass
+# part of the script.
+#if os.path.isfile(opts.ID)==True:
+#        IDfile = open(opts.ID,'r')
+#        IDinput = IDfile.read().splitlines()
+#        for rows in IDorig:
+#                print(rows.split())
+#		make_images('{0}.{1}'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns),opts.nds2name,detchannelname,opts.outpath,imagepathname,opts.normalizedSNR,opts.boxtime,opts.verbose,imagepathname,opts.sampfrequency,opts.colorMap)
+#        print >> sys.stderr, "OK now what"
+#        sys.exit(1)
 
 for omicrontrigger in omicrontriggers:
     start=time.time()
