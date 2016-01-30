@@ -15,7 +15,7 @@
 # ---- Import standard modules to the python path.
 from gwpy.table.lsctables import SnglBurstTable
 from gwpy.segments import DataQualityFlag
-import os,time, optparse, csv,sys,pickle
+import os,time, optparse, csv,sys,pickle,shlex,subprocess
 
 ###############################################################################
 ##########################                             ########################
@@ -89,9 +89,12 @@ def snr_freq_threshold(row):
 # Define a function to make images if someone has already supplied IDs
 def make_images_ID(centraltime,nds2name,detchannelname,outpath,imagepathname,normalizedSNR,boxtime,verbose,imagepath,sampfrequency,colorMap,ID):
 
+    uniqueid = ID
     # Make temporary directory to create the images in
     system_call = 'mktemp -d {0}/AAA.XXXXXXXXXX'.format(outpath)
     os.system(system_call)
+    tempname = os.listdir("{0}/".format(outpath))
+    tempdir = ('{0}/'.format(outpath) + tempname[0])
 
     start1 = time.time()
     system_call = "dmt_wplot \
@@ -134,6 +137,21 @@ def make_images_ID(centraltime,nds2name,detchannelname,outpath,imagepathname,nor
 
         system_call = 'convert *{0}_{1}* -chop 0x35 {2}/{3}_{4}_{5}.png'.format(detchannelname,boxtime[iTime],outpath,opts.detector,uniqueid,boxtime[iTime])
         os.system(system_call)
+
+    # Back out of temp directory and delete it
+    os.chdir('..')
+    system_call = 'rm -rf {0}/'.format(tempdir)
+    os.system(system_call)
+
+    # Copy converted image to public_html and back out of png directory and delete duplicate .png inside of folder.
+
+    system_call = 'cp {0}/{1}_{2}*.png {3}'.format(outpath,opts.detector,uniqueid,imagepath)
+    os.system(system_call)
+
+    os.chdir('..')
+    system_call = 'rm -rf {0}/*'.format(outpath)
+    os.system(system_call)
+
 
 ###############################################################################
 ##########################                          ###########################
@@ -426,16 +444,22 @@ elif int(opts.runlocal) == 0:
 else:
 	print("running on condor")
 	omicrontriggers = SnglBurstTable.read('triggers.xml')
+
 # Check to see if set of UniqueIDs has been supplied. If yes then we will bypass
 # part of the script.
-#if os.path.isfile(opts.ID)==True:
-#        IDfile = open(opts.ID,'r')
-#        IDinput = IDfile.read().splitlines()
-#        for rows in IDorig:
-#                print(rows.split())
-#		make_images('{0}.{1}'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns),opts.nds2name,detchannelname,opts.outpath,imagepathname,opts.normalizedSNR,opts.boxtime,opts.verbose,imagepathname,opts.sampfrequency,opts.colorMap)
-#        print >> sys.stderr, "OK now what"
-#        sys.exit(1)
+if os.path.isfile(opts.ID)==True:
+        IDfile = open(opts.ID,'r')
+        IDinput = IDfile.read().splitlines()
+        for rows in xrange(0,len(IDinput)):
+                commandline = 'grep "{0}" ID.txt'.format(IDinput[rows])
+		proc = subprocess.Popen(shlex.split(commandline), stdout=subprocess.PIPE)
+		output = proc.stdout.read()
+		output = output.split(detchannelname)[1]
+		ctime   = output.split(' ')[1]
+		
+		make_images_ID(ctime,opts.nds2name,detchannelname,opts.outpath,imagepathname,opts.normalizedSNR,opts.boxtime,opts.verbose,imagepathname,opts.sampfrequency,opts.colorMap,IDinput[rows])
+        print >> sys.stderr, "OK now what"
+        sys.exit(1)
 
 for omicrontrigger in omicrontriggers:
     start=time.time()
