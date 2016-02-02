@@ -52,6 +52,7 @@ def parse_commandline():
     parser.add_option("--runlocal", help="run locally (running as a condor job has not been set up yet)",type=int,default=1)
     parser.add_option("--sampfrequency", help="sample frequency for omegascan iamges [Default: 4096]", type=int,default=4096)
     parser.add_option("--SNR", help="Lower bound SNR Threshold for omicron triggers, by default there is no upperbound SNR unless supplied throught the --maxSNR flag. [Default: 6]",type=float,default=6)
+    parser.add_option("--username", help="albert.einstein LIGO username. (only needed when running a condor sub) [Default: scott.coughlin]",default="scott.coughlin")
     parser.add_option("--verbose", action="store_true", default=False,
                       help="Run verbosely. (Default: False)")
 
@@ -160,54 +161,51 @@ def make_images_ID(centraltime,nds2name,detchannelname,outpath,imagepathname,nor
 ###############################################################################
 
 # This takes in information from omicron triggers and generates images and IDs (this function is for running locally.)
-def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normalizedSNR,boxtime,verbose,imagepath,sampfrequency,colorMap):
+def make_images(centraltime):
 
     # Make temporary directory to create the images in
-    system_call = 'mktemp -d {0}/AAA.XXXXXXXXXX'.format(outpath)
+    system_call = 'mktemp -d {0}/{1}/AAA.XXXXXXXXXX'.format(opts.outpath,detGPSstr)
     os.system(system_call)
     
-    tempname = os.listdir("{0}/".format(outpath))
-    tempdir = ('{0}/'.format(outpath) + tempname[0])
+    tempname = os.listdir("{0}/{1}/".format(opts.outpath,detGPSstr))
+    tempdir = ('{0}/{1}/'.format(opts.outpath,detGPSstr) + tempname[0])
     uniqueid = tempname[0].split('.')[1]
     print('unique id is {0}'.format(uniqueid))
 
     # Use random folder name as I.D. Tag but first check if this gps time 
     # already has a I.D. tag and use that if it does.
-    idfile =  open('ID.txt', "a+")
+    idfile =  open('./ID/ID_' + detGPSstr + '.txt', "a+")
     idfile.write('{0} {1} {2}\n'.format(detchannelname,centraltime,uniqueid))
     idfile.close()
     # Open file for writing metadata for images
-    metadata =  open(imagepath + '/imagemetadata.txt', "a+")
+    metadata =  open(imagepathname + '/imagemetadata.txt', "a+")
 
-    start1 = time.time()
     system_call = "dmt_wplot \
-	frameCacheFile='data.cache' \
-        frameType={0}_HOFT_C00 \
-        ndsServer={1} \
-        channelName={2} \
-        eventTime={3} \
-        outputDirectory={4} \
+	frameCacheFile='./cache/{0}.cache' \
+        frameType={1}_HOFT_C00 \
+        ndsServer={2} \
+        channelName={3} \
+        eventTime={4} \
+        outputDirectory={5} \
         plotType=spectrogram_whitened \
-        plotTimeRanges='{5}' \
-        sampleFrequency={6} \
-        colorMap={7} \
+        plotTimeRanges='{6}' \
+        sampleFrequency={7} \
+        colorMap={8} \
         plotFrequencyRange='[10 inf]' \
-        plotNormalizedEnergyRange='[0.0 {8}]'  \
+        plotNormalizedEnergyRange='[0.0 {9}]'  \
         searchTimeRange=64 \
         searchFrequencyRange='[0 inf]' \
-        searchQRange='[4.0 64.0]'\n".format(opts.detector,nds2name,detchannelname,centraltime,tempdir,boxtime,sampfrequency,colorMap,normalizedSNR)
+        searchQRange='[4.0 64.0]'\n".format(detGPSstr,opts.detector,opts.nds2name,detchannelname,centraltime,tempdir,opts.boxtime,opts.sampfrequency,opts.colorMap,opts.normalizedSNR)
 
-    if verbose == True:
+    if opts.verbose == True:
 	print(system_call)
 
     os.system(system_call)
-    end1 = time.time()
-    print(end1-start1)
 
     os.chdir('{0}'.format(tempdir))
 
     pngnames = os.listdir('./')
-    if verbose == True:
+    if opts.verbose == True:
 	print(pngnames)
 
     # If image is not created server must be down. Exit fucntion
@@ -216,13 +214,25 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
 	# write file to indicate at what GPStime the image generation failed.
 	sys.exit()
 
-    for iTime in xrange(0,len(boxtime)):
+    # Start row for image metdata that assists in the uploading of the images to the project builder.
+    metadata.write('{0} 20151016 '.format(uniqueid))
 
-        system_call = 'convert *{0}_{1}* -chop 0x35 {2}/{3}_{4}_{5}.png'.format(detchannelname,boxtime[iTime],outpath,opts.detector,uniqueid,boxtime[iTime])
+    # Start loop over image where we chop off the GPS time of the image.
+
+    for iTime in xrange(0,len(opts.boxtime)):
+
+        system_call = 'convert *{0}_{1}* -chop 0x35 {2}/{3}/{4}_{5}_{6}.png'.format(detchannelname,opts.boxtime[iTime],opts.outpath,detGPSstr,opts.detector,uniqueid,opts.boxtime[iTime])
         os.system(system_call)
 
-    # Create .csv to upload metadata of images to the project builder
-    metadata.write('{0} 20151016 {1}_{2}_{3}.png {4}_{5}_{6}.png {7}_{8}_{9}.png {10}_{11}_{12}.png\n'.format(uniqueid,opts.detector,uniqueid,boxtime[0],opts.detector,uniqueid,boxtime[1],opts.detector,uniqueid,boxtime[2],opts.detector,uniqueid,boxtime[3]))
+	if iTime == (len(opts.boxtime)-1):
+	    # Last entry cannot contain a space otherwise conversion from txt 
+	    # to csv file would not work.
+	    metadata.write('{0}_{1}_{2}.png'.format(opts.detector,uniqueid,opts.boxtime[iTime]))
+	else:
+	    # Add image string to image metadata csv file.
+	    metadata.write('{0}_{1}_{2}.png '.format(opts.detector,uniqueid,opts.boxtime[iTime]))
+
+    metadata.write('\n')
     metadata.close()
 
     # Back out of temp directory and delete it
@@ -232,11 +242,11 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
 
     # Copy converted image to public_html and back out of png directory and delete duplicate .png inside of folder.
 
-    system_call = 'cp {0}/{1}_{2}*.png {3}'.format(outpath,opts.detector,uniqueid,imagepath)
+    system_call = 'cp {0}/{1}/{2}_{3}*.png {4}'.format(opts.outpath,detGPSstr,opts.detector,uniqueid,imagepathname)
     os.system(system_call)
 
-    os.chdir('..')
-    system_call = 'rm -rf {0}/*'.format(outpath)
+    os.chdir('../..')
+    system_call = 'rm -rf {0}/{1}/*'.format(opts.outpath,detGPSstr)
     os.system(system_call)
 
     return uniqueid
@@ -249,7 +259,7 @@ def make_images(centraltime,nds2name,detchannelname,outpath,imagepathname,normal
 
 # Function to spit out useful verbosity whether generating a submission file or running locally.
 
-def verbosity(detchannelname):
+def verbosity():
 
     # Let the user know what detector and channel combo they have selected.
     print "You have selected detector channel combination {0}".format(detchannelname)
@@ -277,7 +287,7 @@ def verbosity(detchannelname):
 
 # This function queries omicron to obtain trigger times of the glitches. It then proceeds to filter out these times based on whether the detector was in an analysis ready state or the glitch passes certain frequency and SNR cuts. 
 
-def get_triggers(detchannelname):
+def get_triggers():
 
     # Obtain segments from L1 that are analysis ready
     analysis_ready = DataQualityFlag.query('{0}:DMT-ANALYSIS_READY:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
@@ -302,44 +312,160 @@ def get_triggers(detchannelname):
 
 ###############################################################################
 ##########################                            #########################
+##########################   Func: write_dagfile     #########################
+##########################                            #########################
+###############################################################################
+
+# Create some variable and file directories based on inputs
+
+def setup():
+
+    # Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
+    detchannelname = opts.detector + ':' +  opts.channelname
+
+    # Need to strip the 1 away from detector name
+    detstrip = opts.detector.split('1')[0]
+
+    # Create a string of detector name, gpsStart and gpsEnd time that will be used repeatedly throughout code
+
+    detGPSstr = opts.detector + '_'  + str(opts.gpsStart) + '_' + str(opts.gpsEnd)
+
+    # Take imagepath add a directory indicating the detector and the gpsStart and gpsEnd times
+
+    imagepathname = os.path.expanduser(opts.imagepath) + '/' + detGPSstr + '/'
+    system_call = 'mkdir -p ' + imagepathname
+    os.system(system_call)
+
+    # create a path where the images will get generated
+
+    system_call = 'mkdir -p ' + opts.outpath + '/' + detGPSstr
+    os.system(system_call)
+
+    # Create the path to the glitch metadata
+    system_call = 'mkdir -p glitchmetadata'
+    os.system(system_call)
+
+    # Create cache file directory.
+    system_call = 'mkdir -p cache'
+    os.system(system_call)
+
+    # Create ID file directory
+    system_call = 'mkdir -p ID'
+    os.system(system_call)
+
+    # Create condor directory where all files will go if running a condor job.
+    system_call = 'mkdir -p condor'
+    os.system(system_call)
+    
+    # Create logs file for the logfiles of the condor jobs should you be not
+    # Running locally.
+    system_call = 'mkdir -p logs'
+    os.system(system_call)
+
+    # open a txt file where the image metadata for consumption by the Zooniverse servers will be stored.
+    metadata =  open(imagepathname + '/imagemetadata.txt', "w+")
+    metadata.write('ID Date Filename1 Filename2 Filename3 Filename4\n')
+    metadata.close()
+
+    # Open metadata file for GLITCH metadata information
+    glitchmetadata = open('./glitchmetadata/data_' + detGPSstr + '.txt',"w+")
+    # Headers indicating the metadata WE have selected as of right now.
+    # SNR, Amplitude, peak_freq, cent_freq, duration, bandwidth, UniqueID
+    glitchmetadata.write('# SNR, Amplitude, peak_freq, cent_freq, duration, bandwidth, UniqueID\n')
+    glitchmetadata.close()
+
+    # open Id.txt which will store the link between GPS time and Randomly Generated Unqiue ID of an image
+    idfile =  open('./ID/ID_' + detGPSstr + '.txt', "w+")
+    idfile.write('# Channel GPSTime UniqueID\n')
+    idfile.close()
+
+    return detchannelname, detstrip, detGPSstr, imagepathname
+
+###############################################################################
+##########################                            #########################
 ##########################   Func: call_data_find     #########################
 ##########################                            #########################
 ###############################################################################
 
 # Call gw_data_find in order to create a cache file to be parsed by dmt_wplot. This is significantly faster way to get images generated then going through the NDS2 server.
 
-def call_data_find(detstrip):
+def call_data_find():
 
-    system_call = 'gw_data_find --observatory={0} -s {1} -e {2} --type={3}_HOFT_C00  -W > data.cache'.format(detstrip,opts.gpsStart,opts.gpsEnd,opts.detector)
+    
+    system_call = 'gw_data_find --observatory={0} -s {1} -e {2} --type={3}_HOFT_C00  -W > ./cache/{4}.cache'.format(detstrip,opts.gpsStart,opts.gpsEnd,opts.detector,detGPSstr)
     print('Cache file generated by the following: {0}'.format(system_call))
     os.system(system_call)
 
 ###############################################################################
 ##########################                            #########################
-##########################   Func: write_sub_file     #########################
+##########################   Func: write_subfile     #########################
 ##########################                            #########################
 ###############################################################################
 
 # Write submission file for the condor job
 
 def write_subfile():
-    with open('gravityspy.sub', 'w') as subfile:
+    with open('./condor/gravityspy.sub', 'w') as subfile:
     	subfile.write('universe = vanilla\n')
-        subfile.write('executable = /home/scoughlin/detchar/GlitchZoo/GravitySpy/read_omicron_triggers\n')
+        subfile.write('executable = {0}/read_omicron_triggers\n'.format(os.getcwd()))
 	subfile.write('\n')
-        subfile.write('arguments = "--gpsStart {0} --gpsEnd {1} --detector {2} --runlocal 2 --verbose"\n'.format(opts.gpsStart,opts.gpsEnd,opts.detector))
+        subfile.write('arguments = "--gpsStart $(gpsStart) --gpsEnd $(gpsEnd) --detector {0} --runlocal 2"\n'.format(opts.detector))
         subfile.write('getEnv=True\n')
 	subfile.write('\n')
-        subfile.write('accounting_group_user = scott.coughlin\n')
+        subfile.write('accounting_group_user = {0}\n'.format(opts.username))
         subfile.write('accounting_group = ligo.dev.o1.detchar.ch_categorization.glitchzoo\n')
 	subfile.write('\n')
         subfile.write('priority = 0\n')
         subfile.write('request_memory = 1000\n')
 	subfile.write('\n')
-        subfile.write('error = logs/gravityspy-$(cluster)-$(process).err\n')
-        subfile.write('output = logs/gravityspy-$(cluster)-$(process).out\n')
+        subfile.write('error = logs/gravityspy-$(jobNumber).err\n')
+        subfile.write('output = logs/gravityspy-$(jobNumber).out\n')
         subfile.write('notification = never\n')
         subfile.write('queue 1')
+
+###############################################################################
+##########################                            #########################
+##########################   Func: write_dagfile     #########################
+##########################                            #########################
+###############################################################################
+
+# Write dag_file file for the condor job
+
+def write_dagfile():
+    with open('gravityspy.dag','a+') as dagfile:
+	dagfile.write('JOB {0} ./condor/gravityspy.sub\n'.format(opts.gpsStart))
+	dagfile.write('RETRY {0} 3\n'.format(opts.gpsStart))
+	dagfile.write('VARS {0} jobNumber="{0}" gpsStart="{0}" gpsEnd="{1}"'.format(opts.gpsStart,opts.gpsEnd))
+	dagfile.write('\n\n')
+
+
+###############################################################################
+##########################                            #########################
+##########################   Func: write_dagfile     #########################
+##########################                            #########################
+###############################################################################
+
+# This function loops over omicron triggers calling the make_images and writing the glitch metadata.
+
+def main_call():
+    # Initialize variable to keep track of how many images you have made 
+    # so far from entire trigger set.
+    iT =0
+    for omicrontrigger in omicrontriggers:
+    	start=time.time()
+	
+    	# Run the function make_images which will generate the image and create an uniqueID to assign to that image
+    	uniqueid = make_images('{0}.{1}'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns))
+
+    	# For this trigger write all the metadata of the trigger plus the unqiueID generated during make_images 
+
+    	with open('./glitchmetadata/data_' + detGPSstr + '.txt','a+') as f:
+            f.write('{0} {1} {2} {3} {4} {5} {6}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth,uniqueid))
+            f.close()
+
+	iT=iT+1
+    	end =time.time()
+    	print('Image took {0} seconds to generate and you are {1} percentage of the way through todays images'.format(end-start,100*float(iT)/float(len(omicrontriggers))))
 
 ###############################################################################
 ##########################                     ################################
@@ -351,99 +477,74 @@ def write_subfile():
 
 opts = parse_commandline()
 
-# Create some variable and file directories based on inputs
-
-# Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
-detchannelname = opts.detector + ':' +  opts.channelname
-
-# Need to strip the 1 away from detector name
-detstrip = opts.detector.split('1')[0]
-
-# Create a string of detector name, gpsStart and gpsEnd time that will be used repeatedly throughout code
-
-detGPSstr = opts.detector + '_'  + str(opts.gpsStart) + '_' + str(opts.gpsEnd)
-
-# Take imagepath add a directory indicating the detector and the gpsStart and gpsEnd times
-
-imagepathname = os.path.expanduser(opts.imagepath) + '/' + detGPSstr + '/'
-system_call = 'mkdir -p ' + imagepathname
-os.system(system_call)
-
-# create a path where the images will get generated
-
-system_call = 'mkdir -p ' + opts.outpath
-os.system(system_call)
-
-# Create the path to the glitch metadata
-system_call = 'mkdir -p glitchmetadata'
-os.system(system_call)
-
-# open a txt file where the image metadata for consumption by the Zooniverse servers will be stored.
-metadata =  open(imagepathname + '/imagemetadata.txt', "w+")
-metadata.write('ID Date Filename1 Filename2 Filename3 Filename4\n')
-metadata.close()
-
-# Open metadata file for GLITCH metadata information
-glitchmetadata = open('./glitchmetadata/' + detGPSstr + '.txt',"w+")
-# Headers indicating the metadata WE have selected as of right now.
-# SNR, Amplitude, peak_freq, cent_freq, duration, bandwidth, UniqueID
-glitchmetadata.write('# SNR, Amplitude, peak_freq, cent_freq, duration, bandwidth, UniqueID\n')
-glitchmetadata.close()
-
-# open Id.txt which will store the link between GPS time and Randomly Generated Unqiue ID of an image
-# if there is already an Id.txt file, just append the new IDs to it
-if os.path.isfile('ID.txt')==False:
-        idfile =  open('ID.txt', "w+")
-        idfile.write('# Channel GPSTime UniqueID\n')
-        idfile.close()
-else:
-        idfile =  open('ID.txt', "a+")
-        idfile.close()
-
 # Depending on if you are running locally or not. If not running local, then the code will create a condor .dag file and a .sub file in order to submit to the cluster. (In Beta)
 
 if int(opts.runlocal) == 1:
 
-	print('Did you remember to run kinit albert.einstein@LIGO.ORG?')
-	# Need to establish ligo-proxy.
-	system_call = 'ligo-proxy-init -k'
-	os.system(system_call)
+    	print('Did you remember to run kinit albert.einstein@LIGO.ORG?')
+    	# Need to establish ligo-proxy in order to generate triggers 
+    	# and data.cache before running the condor job or local run.
+    	system_call = 'ligo-proxy-init -k'
+    	os.system(system_call)
+
+	# Set up proxy, paths and some variable names
+	detchannelname, detstrip, detGPSstr, imagepathname = setup()
+
 	# Provide some information about settings the user provided 
 	# or the default settings
-	verbosity(detchannelname)
+	verbosity()
+
 	# Obtain the omicron triggers used to generated the images
-	omicrontriggers = get_triggers(detchannelname)
+	omicrontriggers = get_triggers()
+
 	# Create a cache file indicating what data frames these 
 	# images can be found in.
-	call_data_find(detstrip)
+	call_data_find()
+
+	# Now make some images!
+	main_call()
+	print("congrats all images were created no problem!")
 
 elif int(opts.runlocal) == 0:
 
-	# Need to establish ligo-proxy in order to generate triggers 
-	# and data.cache before running the condor job.
-	system_call = 'ligo-proxy-init -k'
-	os.system(system_call)
+    	print('Did you remember to run kinit albert.einstein@LIGO.ORG?')
+    	# Need to establish ligo-proxy in order to generate triggers 
+    	# and data.cache before running the condor job or local run.
+    	system_call = 'ligo-proxy-init -k'
+    	os.system(system_call)
+
+        # Set up proxy, paths and some variable names
+        detchannelname, detstrip, detGPSstr, imagepathname = setup()
+
         # Provide some information about settings the user provided 
         # or the default settings
-        verbosity(detchannelname)
+        verbosity()
+
         # Obtain the omicron triggers used to generated the images
-        omicrontriggers = get_triggers(detchannelname)
+        omicrontriggers = get_triggers()
+
         # Create a cache file indicating what data frames these 
         # images can be found in.
-        call_data_find(detstrip)
-        # need to save omicron triggers variable to be loaded by the condor job later
-	filename = open("triggers.xml",'w')
+        call_data_find()
+
+        # need to save omicron triggers variable to be loaded 
+	# by the condor job later
+	filename = open("./condor/triggers_{0}".format(detGPSstr) + ".xml",'w')
 	omicrontriggers.write(fileobj=filename)
 
-	# Make a logs file directory and create condor subfile
-	system_call = 'mkdir -p logs'
-	os.system(system_call)
+	# Create condor subfile and dagfile
 	write_subfile()
+	write_dagfile()
 	sys.exit(1)
 
 else:
 	print("running on condor")
-	omicrontriggers = SnglBurstTable.read('triggers.xml')
+	detchannelname, detstrip, detGPSstr, imagepathname = setup()
+	print("opening triggers")
+	omicrontriggers = SnglBurstTable.read("./condor/triggers_{0}".format(detGPSstr) + ".xml")
+	print("opened {0} triggers now generating images".format(len(omicrontriggers)))
+	main_call()
+	print("congrats all images were created no problem!")
 
 # Check to see if set of UniqueIDs has been supplied. If yes then we will bypass
 # part of the script.
@@ -460,17 +561,6 @@ if os.path.isfile(opts.ID)==True:
 		make_images_ID(ctime,opts.nds2name,detchannelname,opts.outpath,imagepathname,opts.normalizedSNR,opts.boxtime,opts.verbose,imagepathname,opts.sampfrequency,opts.colorMap,IDinput[rows])
         print >> sys.stderr, "OK now what"
         sys.exit(1)
-
-for omicrontrigger in omicrontriggers:
-    start=time.time()
-    # Run the function make_images which will generate the iamge and create an uniqueID to assign to that image
-    uniqueid = make_images('{0}.{1}'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns),opts.nds2name,detchannelname,opts.outpath,imagepathname,opts.normalizedSNR,opts.boxtime,opts.verbose,imagepathname,opts.sampfrequency,opts.colorMap)
-    # For this trigger write all the metadata of the trigger plus the unqiueID generated during make_images 
-    with open('./glitchmetadata/' + detGPSstr + '.txt','a+') as f:
-	f.write('{0} {1} {2} {3} {4} {5} {6}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth,uniqueid))
-	f.close()
-    end =time.time()
-    print(end-start)
 
 # House Cleaning
 
