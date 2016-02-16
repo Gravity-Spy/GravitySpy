@@ -35,6 +35,8 @@ def parse_commandline():
                         default="GDS-CALIB_STRAIN")
     parser.add_option("--colorMap", help="What color would you like the omegascans to be? [Default: jet] [Options: bone, copper,hot]", default="jet")
     parser.add_option("--detector", help="detector name [L1 or H1]. [No Default must supply]")
+    parser.add_option("--durHigh", help="The max duration of a glitch you want to make images for [Optional Input]",type=int)
+    parser.add_option("--durLow", help="lower duration of a glitch you want to make images for[Optional Input]",type=int)
     parser.add_option("--gpsStart", help="gps Start Time of Query for meta data and omega scans. [No Default must supply]")
     parser.add_option("--gpsEnd", help="gps End Time [No Default must supply]")
     parser.add_option("--freqHigh", help="upper frequency bound cut off for the glitches. [Default: 2048]",type=int,default=2048)
@@ -46,7 +48,8 @@ def parse_commandline():
                         server to use [Default: nds.ligo.caltech.edu]",
                         default="nds.ligo.caltech.edu")
     parser.add_option("--normalizedSNR", help="SNR Normalization value. [Default: 25.5]",type=float,default=25.5)
-    parser.add_option("--maxSNR", help="This flag gives you the option to supply a upper limit to the SNR of the glitches [Default: 0 (i.e. none)]",type=float,default=0)
+    parser.add_option("--masterID", help="path to master ID file that contains all the original IDs and GPStimes [Default: None but must supply if supplying a ID file from which to make images.]")
+    parser.add_option("--maxSNR", help="This flag gives you the option to supply a upper limit to the SNR of the glitches [Optional Input]",type=float)
     parser.add_option("--outpath", help="path to output directory [Default: ./png] (This is where the images are created but you will not have to go in this folder as the iamges are transferred to your public_html imagepath folder)",
                         default=os.getcwd() + '/png')
     parser.add_option("--runlocal", help="run locally (running as a condor job has not been set up yet)",type=int,default=1)
@@ -62,97 +65,27 @@ def parse_commandline():
 
 ###############################################################################
 ##########################                              #######################
-##########################   Func: snr_freq_threshold   #######################
+##########################   Func: threshold            #######################
 ##########################                              #######################
 ###############################################################################
-# Define snr_freq_threshold function that will filter omicron triggers based on SNR and frequency threshold the user sets (or the defaults.)
+# Define threshold function that will filter omicron triggers based on SNR and frequency threshold the user sets (or the defaults.)
 
-def snr_freq_threshold(row):
-    if (opts.maxSNR == 0):
-    	if (row.snr >= opts.SNR) and (row.peak_frequency <= opts.freqHigh) and (row.peak_frequency >= opts.freqLow):
-    	    passthresh = True
-    	else:
-    	    passthresh = False
-    	return passthresh
-    else:
-        if (row.snr >= opts.SNR) and (row.snr <= opts.maxSNR) and (row.peak_frequency <= opts.freqHigh) and (row.peak_frequency >= opts.freqLow):
-            passthresh = True
-        else:
-            passthresh = False
-        return passthresh
-
-###############################################################################
-##########################                          ###########################
-##########################   Func: make_images_ID   ###########################
-##########################                          ###########################
-###############################################################################
-
-# Define a function to make images if someone has already supplied IDs
-def make_images_ID(centraltime,nds2name,detchannelname,outpath,imagepathname,normalizedSNR,boxtime,verbose,imagepath,sampfrequency,colorMap,ID):
-
-    uniqueid = ID
-    # Make temporary directory to create the images in
-    system_call = 'mktemp -d {0}/AAA.XXXXXXXXXX'.format(outpath)
-    os.system(system_call)
-    tempname = os.listdir("{0}/".format(outpath))
-    tempdir = ('{0}/'.format(outpath) + tempname[0])
-
-    start1 = time.time()
-    system_call = "dmt_wplot \
-        frameCacheFile='data.cache' \
-        frameType={0}_HOFT_C00 \
-        ndsServer={1} \
-        channelName={2} \
-        eventTime={3} \
-        outputDirectory={4} \
-        plotType=spectrogram_whitened \
-        plotTimeRanges='{5}' \
-        sampleFrequency={6} \
-        colorMap={7} \
-        plotFrequencyRange='[10 inf]' \
-        plotNormalizedEnergyRange='[0.0 {8}]'  \
-        searchTimeRange=64 \
-        searchFrequencyRange='[0 inf]' \
-        searchQRange='[4.0 64.0]'\n".format(opts.detector,nds2name,detchannelname,centraltime,tempdir,boxtime,sampfrequency,colorMap,normalizedSNR)
-
-    if verbose == True:
-        print(system_call)
-
-    os.system(system_call)
-    end1 = time.time()
-    print(end1-start1)
-
-    os.chdir('{0}'.format(tempdir))
-
-    pngnames = os.listdir('./')
-    if verbose == True:
-        print(pngnames)
-
-    # If image is not created server must be down. Exit fucntion
-    if len(pngnames) ==1:
-        print "OH NO! Script failed starting at GPS time {0}".format(centraltime)
-        # write file to indicate at what GPStime the image generation failed.
-        sys.exit()
-
-    for iTime in xrange(0,len(boxtime)):
-
-        system_call = 'convert *{0}_{1}* -chop 0x35 {2}/{3}_{4}_{5}.png'.format(detchannelname,boxtime[iTime],outpath,opts.detector,uniqueid,boxtime[iTime])
-        os.system(system_call)
-
-    # Back out of temp directory and delete it
-    os.chdir('..')
-    system_call = 'rm -rf {0}/'.format(tempdir)
-    os.system(system_call)
-
-    # Copy converted image to public_html and back out of png directory and delete duplicate .png inside of folder.
-
-    system_call = 'cp {0}/{1}_{2}*.png {3}'.format(outpath,opts.detector,uniqueid,imagepath)
-    os.system(system_call)
-
-    os.chdir('..')
-    system_call = 'rm -rf {0}/*'.format(outpath)
-    os.system(system_call)
-
+def threshold(row):
+    passthresh = True
+    if hasattr(opts,'durHigh'):
+	passthresh = ((row.duration <= opts.durHigh) and passthresh)
+    if hasattr(opts,'durLow'):
+        passthresh = ((row.duration >= opts.durLow) and passthresh)
+    if hasattr(opts,'freqHigh'):
+        passthresh = ((row.peak_frequency <= opts.freqHigh) and passthresh)
+    if hasattr(opts,'freqLow'):
+        passthresh = ((row.peak_frequency >= opts.freqLow) and passthresh)
+    if hasattr(opts,'maxSNR'):
+        passthresh = ((row.snr <= opts.maxSNR) and passthresh)
+    if hasattr(opts,'SNR'):
+        passthresh = ((row.snr >= opts.SNR) and passthresh)
+    print(passthresh)
+    return passthresh
 
 ###############################################################################
 ##########################                          ###########################
@@ -161,7 +94,7 @@ def make_images_ID(centraltime,nds2name,detchannelname,outpath,imagepathname,nor
 ###############################################################################
 
 # This takes in information from omicron triggers and generates images and IDs (this function is for running locally.)
-def make_images(centraltime):
+def make_images(centraltime,iT=0):
 
     # Make temporary directory to create the images in
     system_call = 'mktemp -d {0}/{1}/AAA.XXXXXXXXXX'.format(opts.outpath,detGPSstr)
@@ -169,8 +102,12 @@ def make_images(centraltime):
     
     tempname = os.listdir("{0}/{1}/".format(opts.outpath,detGPSstr))
     tempdir = ('{0}/{1}/'.format(opts.outpath,detGPSstr) + tempname[0])
-    uniqueid = tempname[0].split('.')[1]
-    print('unique id is {0}'.format(uniqueid))
+    # Check if IDs already provided if not they will be generated by the random folder name
+    if 'IDinput' in globals():
+	uniqueid = IDinput[iT]
+    else:
+    	uniqueid = tempname[0].split('.')[1]
+    	print('unique id is {0}'.format(uniqueid))
 
     # Use random folder name as I.D. Tag but first check if this gps time 
     # already has a I.D. tag and use that if it does.
@@ -297,7 +234,7 @@ def get_triggers():
 
     # Fetch raw omicron triggers and apply filter which is defined in a function above.
     omicrontriggers = SnglBurstTable.fetch(detchannelname,'Omicron',\
-    opts.gpsStart,opts.gpsEnd,filt=snr_freq_threshold)
+    opts.gpsStart,opts.gpsEnd,filt=threshold)
 
     print "List of available metadata information for a given glitch provided by omicron: {0}".format(omicrontriggers.columnnames)
 
@@ -390,7 +327,6 @@ def setup():
 # Call gw_data_find in order to create a cache file to be parsed by dmt_wplot. This is significantly faster way to get images generated then going through the NDS2 server.
 
 def call_data_find():
-
     
     system_call = 'gw_data_find --observatory={0} -s {1} -e {2} --type={3}_HOFT_C00  -W > ./cache/{4}.cache'.format(detstrip,opts.gpsStart,opts.gpsEnd,opts.detector,detGPSstr)
     print('Cache file generated by the following: {0}'.format(system_call))
@@ -441,31 +377,86 @@ def write_dagfile():
 
 ###############################################################################
 ##########################                            #########################
-##########################   Func: write_dagfile     #########################
+##########################   Func: main_call          #########################
 ##########################                            #########################
 ###############################################################################
 
 # This function loops over omicron triggers calling the make_images and writing the glitch metadata.
 
 def main_call():
-    # Initialize variable to keep track of how many images you have made 
-    # so far from entire trigger set.
-    iT =0
-    for omicrontrigger in omicrontriggers:
-    	start=time.time()
-	
-    	# Run the function make_images which will generate the image and create an uniqueID to assign to that image
-    	uniqueid = make_images('{0}.{1}'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns))
+    # Check if IDs already supplied
+    if 'IDinput' in globals():
+        for iT in xrange(0,len(IDinput)):
+                start=time.time()
+                # Run the function make_images which will generate the image and
+ 		# utilize the IDs already supplied
+                uniqueid = make_images(centraltimelist[iT],iT)
 
-    	# For this trigger write all the metadata of the trigger plus the unqiueID generated during make_images 
+                # For this trigger we don not need metadata since
+		# That metadata has already been written. 
 
-    	with open('./glitchmetadata/data_' + detGPSstr + '.txt','a+') as f:
-            f.write('{0} {1} {2} {3} {4} {5} {6}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth,uniqueid))
-            f.close()
+                end =time.time()
+                print('Image took {0} seconds to generate and you are {1} percentage of the way through todays images'.format(end-start,100*float(iT)/float(len(IDinput))))
+    # Else just continue with standard image generation.
+    else:
+    	# Initialize variable to keep track of how many images you have made 
+    	# so far from entire trigger set.
+    	iT =0
+    	for omicrontrigger in omicrontriggers:
+    		start=time.time()
+    		# Run the function make_images which will generate the image and create an uniqueID to assign to that image
+    		uniqueid = make_images('{0}.{1}'.format(omicrontrigger.peak_time,omicrontrigger.peak_time_ns))
 
-	iT=iT+1
-    	end =time.time()
-    	print('Image took {0} seconds to generate and you are {1} percentage of the way through todays images'.format(end-start,100*float(iT)/float(len(omicrontriggers))))
+    		# For this trigger write all the metadata of the trigger plus the unqiueID generated during make_images 
+
+    		with open('./glitchmetadata/data_' + detGPSstr + '.txt','a+') as f:
+        	    f.write('{0} {1} {2} {3} {4} {5} {6}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth,uniqueid))
+        	    f.close()
+
+		iT=iT+1
+    		end =time.time()
+    		print('Image took {0} seconds to generate and you are {1} percentage of the way through todays images'.format(end-start,100*float(iT)/float(len(omicrontriggers))))
+
+###############################################################################
+##########################                            #########################
+##########################   Func: obtain_IDs         #########################
+##########################                            #########################
+###############################################################################
+
+# Make images from supplied unique IDs
+
+def obtain_IDs():
+    centraltimelist = []
+    IDfile = open(opts.ID,'r')
+    IDinput = IDfile.read().splitlines()
+    for rows in xrange(0,len(IDinput)):
+        commandline = 'grep "{0}" {1}'.format(IDinput[rows],opts.masterID)
+        proc = subprocess.Popen(shlex.split(commandline), stdout=subprocess.PIPE)
+        output = proc.stdout.read()
+        output = output.split(detchannelname)[1]
+        ctime   = output.split(' ')[1]
+	centraltimelist.append(ctime)
+
+    return centraltimelist,IDinput
+
+###############################################################################
+##########################                            #########################
+##########################   Func: image_pp           #########################
+##########################                            #########################
+###############################################################################
+
+# Convert image metadata to API readable csv file and tar up the png to ease in transfer
+
+def image_pp():
+    # We must now convert image metadata to CSV to prep for upload.
+
+    txt_file = imagepathname  + '/imagemetadata.txt'
+    csv_file = imagepathname  + '/imagemetadata.csv'
+    in_txt = csv.reader(open(txt_file, "rb"), delimiter = ' ')
+    out_csv = csv.writer(open(csv_file, 'wb'))
+    out_csv.writerows(in_txt)
+    system_call = 'tar -czvf ' + imagepathname + '/' + detGPSstr + '.tar ' + imagepathname  + '/*.png'
+    os.system(system_call)
 
 ###############################################################################
 ##########################                     ################################
@@ -494,8 +485,16 @@ if int(opts.runlocal) == 1:
 	# or the default settings
 	verbosity()
 
-	# Obtain the omicron triggers used to generated the images
-	omicrontriggers = get_triggers()
+	# Check to see if set of UniqueIDs has been supplied. If yes then we 
+	# we will bypass getting triggers.
+
+	if os.path.isfile(opts.ID)==True:
+		# Obtain the IDs and GPStimes
+		centraltimelist,IDinput = obtain_IDs()
+		print(centraltimelist,IDinput)
+	else:
+		# Obtain the omicron triggers used to generated the images
+		omicrontriggers = get_triggers()
 
 	# Create a cache file indicating what data frames these 
 	# images can be found in.
@@ -503,6 +502,7 @@ if int(opts.runlocal) == 1:
 
 	# Now make some images!
 	main_call()
+	image_pp()
 	print("congrats all images were created no problem!")
 
 elif int(opts.runlocal) == 0:
@@ -535,6 +535,7 @@ elif int(opts.runlocal) == 0:
 	# Create condor subfile and dagfile
 	write_subfile()
 	write_dagfile()
+	print('Alright all set up please run: condor_submit_dag ./condor/gravityspy.dag')
 	sys.exit(1)
 
 else:
@@ -544,36 +545,10 @@ else:
 	omicrontriggers = SnglBurstTable.read("./condor/triggers_{0}".format(detGPSstr) + ".xml")
 	print("opened {0} triggers now generating images".format(len(omicrontriggers)))
 	main_call()
+	image_pp()
 	print("congrats all images were created no problem!")
-
-# Check to see if set of UniqueIDs has been supplied. If yes then we will bypass
-# part of the script.
-if os.path.isfile(opts.ID)==True:
-        IDfile = open(opts.ID,'r')
-        IDinput = IDfile.read().splitlines()
-        for rows in xrange(0,len(IDinput)):
-                commandline = 'grep "{0}" ID.txt'.format(IDinput[rows])
-		proc = subprocess.Popen(shlex.split(commandline), stdout=subprocess.PIPE)
-		output = proc.stdout.read()
-		output = output.split(detchannelname)[1]
-		ctime   = output.split(' ')[1]
-		
-		make_images_ID(ctime,opts.nds2name,detchannelname,opts.outpath,imagepathname,opts.normalizedSNR,opts.boxtime,opts.verbose,imagepathname,opts.sampfrequency,opts.colorMap,IDinput[rows])
-        print >> sys.stderr, "OK now what"
-        sys.exit(1)
 
 # House Cleaning
 
 system_call = 'rm -rf {0}'.format(opts.outpath)
 os.system(system_call)
-
-# We must now convert image metadata to CSV to prep for upload.
-
-txt_file = imagepathname  + '/imagemetadata.txt'
-csv_file = imagepathname  + '/imagemetadata.csv'
-in_txt = csv.reader(open(txt_file, "rb"), delimiter = ' ')
-out_csv = csv.writer(open(csv_file, 'wb'))
-out_csv.writerows(in_txt)
-system_call = 'tar -czvf ' + imagepathname + '/' + detGPSstr + '.tar ' + imagepathname  + '/*.png'
-os.system(system_call)
-
