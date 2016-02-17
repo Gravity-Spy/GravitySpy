@@ -35,8 +35,8 @@ def parse_commandline():
                         default="GDS-CALIB_STRAIN")
     parser.add_option("--colorMap", help="What color would you like the omegascans to be? [Default: jet] [Options: bone, copper,hot]", default="jet")
     parser.add_option("--detector", help="detector name [L1 or H1]. [No Default must supply]")
-    parser.add_option("--durHigh", help="The max duration of a glitch you want to make images for [Optional Input]",type=int)
-    parser.add_option("--durLow", help="lower duration of a glitch you want to make images for[Optional Input]",type=int)
+    parser.add_option("--durHigh", help="The max duration of a glitch you want to make images for [Optional Input]",type=float)
+    parser.add_option("--durLow", help="lower duration of a glitch you want to make images for[Optional Input]",type=float)
     parser.add_option("--gpsStart", help="gps Start Time of Query for meta data and omega scans. [No Default must supply]")
     parser.add_option("--gpsEnd", help="gps End Time [No Default must supply]")
     parser.add_option("--freqHigh", help="upper frequency bound cut off for the glitches. [Default: 2048]",type=int,default=2048)
@@ -76,7 +76,6 @@ def threshold(row):
 	passthresh = ((row.duration <= opts.durHigh) and passthresh)
     if not opts.durLow is None:
         passthresh = ((row.duration >= opts.durLow) and passthresh)
-	print('has durLow')
     if not opts.freqHigh is None:
         passthresh = ((row.peak_frequency <= opts.freqHigh) and passthresh)
     if not opts.freqLow is None:
