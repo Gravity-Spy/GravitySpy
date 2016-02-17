@@ -72,19 +72,19 @@ def parse_commandline():
 
 def threshold(row):
     passthresh = True
-    if hasattr(opts,'durHigh'):
+    if not opts.durHigh is None:
 	passthresh = ((row.duration <= opts.durHigh) and passthresh)
-    if hasattr(opts,'durLow'):
+    if not opts.durLow is None:
         passthresh = ((row.duration >= opts.durLow) and passthresh)
-    if hasattr(opts,'freqHigh'):
+	print('has durLow')
+    if not opts.freqHigh is None:
         passthresh = ((row.peak_frequency <= opts.freqHigh) and passthresh)
-    if hasattr(opts,'freqLow'):
+    if not opts.freqLow is None:
         passthresh = ((row.peak_frequency >= opts.freqLow) and passthresh)
-    if hasattr(opts,'maxSNR'):
+    if not opts.maxSNR is None:
         passthresh = ((row.snr <= opts.maxSNR) and passthresh)
-    if hasattr(opts,'SNR'):
+    if not opts.SNR is None:
         passthresh = ((row.snr >= opts.SNR) and passthresh)
-    print(passthresh)
     return passthresh
 
 ###############################################################################
