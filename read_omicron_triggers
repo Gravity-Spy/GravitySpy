@@ -53,7 +53,7 @@ def parse_commandline():
     parser.add_option("--outpath", help="path to output directory [Default: ./png] (This is where the images are created but you will not have to go in this folder as the iamges are transferred to your public_html imagepath folder)",
                         default=os.getcwd() + '/png')
     parser.add_option("--runlocal", help="run locally (running as a condor job has not been set up yet)",type=int,default=1)
-    parser.add_option("--sampfrequency", help="sample frequency for omegascan iamges [Default: 4096]", type=int,default=4096)
+    parser.add_option("--sampfrequency", help="sample frequency for omegascan iamges [Default: 16384]", type=int,default=16384)
     parser.add_option("--SNR", help="Lower bound SNR Threshold for omicron triggers, by default there is no upperbound SNR unless supplied throught the --maxSNR flag. [Default: 6]",type=float,default=6)
     parser.add_option("--username", help="albert.einstein LIGO username. (only needed when running a condor sub) [Default: scott.coughlin]",default="scott.coughlin")
     parser.add_option("--verbose", action="store_true", default=False,
@@ -127,11 +127,11 @@ def make_images(centraltime,iT=0):
         plotTimeRanges='{6}' \
         sampleFrequency={7} \
         colorMap={8} \
-        plotFrequencyRange='[10 inf]' \
-        plotNormalizedEnergyRange='[0.0 {9}]'  \
+        plotFrequencyRange='[10 {9}]' \
+        plotNormalizedEnergyRange='[0.0 {10}]'  \
         searchTimeRange=64 \
-        searchFrequencyRange='[0 inf]' \
-        searchQRange='[4.0 64.0]'\n".format(detGPSstr,opts.detector,opts.nds2name,detchannelname,centraltime,tempdir,opts.boxtime,opts.sampfrequency,opts.colorMap,opts.normalizedSNR)
+        searchFrequencyRange='[0 {11}]' \
+        searchQRange='[4.0 64.0]'\n".format(detGPSstr,opts.detector,opts.nds2name,detchannelname,centraltime,tempdir,opts.boxtime,opts.sampfrequency,opts.colorMap,opts.freqHigh,opts.normalizedSNR,opts.freqHigh)
 
     if opts.verbose == True:
 	print(system_call)
