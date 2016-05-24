@@ -29,6 +29,7 @@ def parse_commandline():
     Parse the options given on the command-line.
     """
     parser = optparse.OptionParser()
+    parser.add_option("--applyallDQ", action="store_true", default=False,help="Generate a list of omicron triggers that exclude all of the DQ cuts already created by detchar. (Default:False)")
     parser.add_option("--boxtime", help="Different time ranges (1 would represent +-0.5 around central time) for displaying the glitch) For Example: '[0.5 1 4 16]' would give you four differnt images with those different times boxes [Default:[0.5,1,2,4]",
                         default=[0.5,1,2,4])
     parser.add_option("--channelname", help="channel name [Default:GDS-CALIB_STRAIN]",
@@ -225,11 +226,44 @@ def verbosity():
 
 def get_triggers():
 
-    # Obtain segments from L1 that are analysis ready
+    # Obtain segments that are analysis ready
     analysis_ready = DataQualityFlag.query('{0}:DMT-ANALYSIS_READY:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
 
     # Display segments for which this flag is true
     print "Segments for which the ANALYSIS READY Flag is active: {0}".format(analysis_ready.active)
+
+    if opts.applyallDQ:
+        print("We are finding all previously created DQ cuts")
+        # Obtain segments of all DQ cuts if requested DQ list can be found
+        # https://code.pycbc.phy.syr.edu/detchar/veto-definitions/blob/master/burst/O1/H1L1-HOFT_C02_O1_BURST.xml
+        # First obtain those flags that are for both H1 and L1
+        O1_MISSING_HOFT_C02 = DataQualityFlag.query('{0}:DCS-MISSING_{0}_HOFT_C02:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+        O1_ETMY_ESD_DAC_OVERFLOW = DataQualityFlag.query('{0}:DMT-ETMY_ESD_DAC_OVERFLOW:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+        O1_OMC_DCPD_A_SATURATION = DataQualityFlag.query('{0}:DCH-OMC_DCPD_A_SATURATION:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+        O1_OMC_DCPD_ADC_OVERFLOW = DataQualityFlag.query('{0}:DMT-OMC_DCPD_ADC_OVERFLOW:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+        O1_ETMY_SATURATION_SNR200 = DataQualityFlag.query('{0}:DCH-ETMY_SATURATION_SNR200:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+        O1_CW_INJECTION_TRANSITION = DataQualityFlag.query('{0}:DCH-CW_INJECTION_TRANSITION:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+        O1_BAD_KAPPA_BASIC_CUT_HOFT_C02 = DataQualityFlag.query('{0}:DCS-BAD_KAPPA_BASIC_CUT_{0}_HOFT_C02:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+        O1_PARTIAL_FRAME_LOSS_HOFT_C02 = DataQualityFlag.query('{0}:DCS-PARTIAL_FRAME_LOSS_{0}_HOFT_C02:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+
+        # Obtain detector specific flags
+        if opts.detector == "H1":
+            O1_RF45_AM_STABILIZATION = DataQualityFlag.query('{0}:DCH-RF45_AM_STABILIZATION:4'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+            O1_ETMY_SATURATION = DataQualityFlag.query('{0}:DCH-ETMY_SATURATION:2'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+            O1_BAD_DATA_BEFORE_LOCKLOSS = DataQualityFlag.query('{0}:DCH-BAD_DATA_BEFORE_LOCKLOSS:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+            O1_ETMY_VIOLIN_MODE_2NDHARMONIC_RINGING = DataQualityFlag.query('{0}:DCH-ETMY_VIOLIN_MODE_2NDHARMONIC_RINGING:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+            O1_RF45_SEVERE_GLITCHING = DataQualityFlag.query('{0}:DCH-RF45_SEVERE_GLITCHING:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+            O1_EY_BECKHOFF_CHASSIS_PROBLEM = DataQualityFlag.query('{0}:DCH-EY_BECKHOFF_CHASSIS_PROBLEM:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+            O1_ASC_AS_B_RF36_GLITCHING = DataQualityFlag.query('{0}:DCH-ASC_AS_B_RF36_GLITCHING:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+            O1_BAD_STRAIN_HOFT_C02 = DataQualityFlag.query('{0}:DCS-BAD_STRAIN_{0}_HOFT_C02:2'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+            O1_TOGGLING_BAD_KAPPA_HOFT_C02= DataQualityFlag.query('{0}:DCS-TOGGLING_BAD_KAPPA_{0}_HOFT_C02:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+        else:
+            O1_ETMY_SATURATION = DataQualityFlag.query('{0}:DCH-ETMY_SATURATION:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+            O1_BAD_DATA_BEFORE_LOCKLOSS = DataQualityFlag.query('{0}:DCH-BAD_DATA_BEFORE_LOCKLOSS:2'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+            O1_PCAL_GLITCHES_GT_20P = DataQualityFlag.query('{0}:DCH-PCAL_GLITCHES_GT_20P:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+            O1_SUDDEN_PSD_CHANGE = DataQualityFlag.query('{0}:DCH-SUDDEN_PSD_CHANGE:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+            O1_BAD_VCO_OFFSET = DataQualityFlag.query('{0}:DCH-BAD_VCO_OFFSET:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
+            O1_SEVERE_60_200_HZ_NOISE = DataQualityFlag.query('{0}:DCH-SEVERE_60_200_HZ_NOISE:1'.format(opts.detector),opts.gpsStart,opts.gpsEnd)
 
     # Fetch raw omicron triggers and apply filter which is defined in a function above.
     omicrontriggers = SnglBurstTable.fetch(detchannelname,'Omicron',\
@@ -241,6 +275,41 @@ def get_triggers():
 
     # Filter the raw omicron triggers against the ANALYSIS READY flag.
     omicrontriggers = omicrontriggers.vetoed(analysis_ready.active)
+    # If requested filter out DQ flags
+    if opts.applyallDQ:
+        print("We are applying all previously created DQ cuts")
+        # Obtain segments of all DQ cuts if requested DQ list can be found
+        # https://code.pycbc.phy.syr.edu/detchar/veto-definitions/blob/master/burst/O1/H1L1-HOFT_C02_O1_BURST.xml
+        # First obtain those flags that are for both H1 and L1
+        omicrontriggers = omicrontriggers.veto(O1_MISSING_HOFT_C02.active)
+        omicrontriggers = omicrontriggers.veto(O1_ETMY_ESD_DAC_OVERFLOW.active)
+        omicrontriggers = omicrontriggers.veto(O1_OMC_DCPD_A_SATURATION.active)
+        omicrontriggers = omicrontriggers.veto(O1_OMC_DCPD_ADC_OVERFLOW.active)
+        omicrontriggers = omicrontriggers.veto(O1_ETMY_SATURATION_SNR200.active)
+        omicrontriggers = omicrontriggers.veto(O1_CW_INJECTION_TRANSITION.active)
+        omicrontriggers = omicrontriggers.veto(O1_BAD_KAPPA_BASIC_CUT_HOFT_C02.active)
+        omicrontriggers = omicrontriggers.veto(O1_PARTIAL_FRAME_LOSS_HOFT_C02.active)
+
+        # Obtain detector specific flags
+        if opts.detector == "H1":
+            omicrontriggers = omicrontriggers.veto(O1_RF45_AM_STABILIZATION.active)
+            omicrontriggers = omicrontriggers.veto(O1_ETMY_SATURATION.active)
+            omicrontriggers = omicrontriggers.veto(O1_BAD_DATA_BEFORE_LOCKLOSS.active)
+            omicrontriggers = omicrontriggers.veto(O1_ETMY_VIOLIN_MODE_2NDHARMONIC_RINGING.active)
+            omicrontriggers = omicrontriggers.veto(O1_RF45_SEVERE_GLITCHING.active)
+            omicrontriggers = omicrontriggers.veto(O1_EY_BECKHOFF_CHASSIS_PROBLEM.active)
+            omicrontriggers = omicrontriggers.veto(O1_ASC_AS_B_RF36_GLITCHING.active)
+            omicrontriggers = omicrontriggers.veto(O1_BAD_STRAIN_HOFT_C02.active)
+            omicrontriggers = omicrontriggers.veto(O1_TOGGLING_BAD_KAPPA_HOFT_C02.active)
+        else:
+            omicrontriggers = omicrontriggers.veto(O1_ETMY_SATURATION.active)
+            omicrontriggers = omicrontriggers.veto(O1_BAD_DATA_BEFORE_LOCKLOSS.active)
+            omicrontriggers = omicrontriggers.veto(O1_PCAL_GLITCHES_GT_20P.active)
+            omicrontriggers = omicrontriggers.veto(O1_SUDDEN_PSD_CHANGE.active)
+            omicrontriggers = omicrontriggers.veto(O1_BAD_VCO_OFFSET.active)
+            omicrontriggers = omicrontriggers.veto(O1_SEVERE_60_200_HZ_NOISE.active)
+        
+
 
     print "Final trigger length: {0}".format(len(omicrontriggers))
 
