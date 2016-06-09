@@ -29,10 +29,10 @@
 %       is the userID associated with the answer given in The Labels
 %       column.
 %
-%       ML Posterior - An array (double) of a  1XN row vector where N is
+%       ML Posterior - An array (double) of a  1XC row vector where C is
 %       the number of pre-determined morphologies that the classifier has
 %       been trained on. Each column is the ML confidence that the image
-%       belongs in one of the N classes.
+%       belongs in one of the C classes.
 %
 %       True Label - (int) For images labelled 'T' this values is set to -1
 %       but for images labelled 'G' This value indicates the "true" class
@@ -43,27 +43,48 @@
 % format we will run the following script to update the retirability of an
 % image as well as the skill level of the citizens.
 
-%enter t, the threshold vector
+% In addition to the above information, we will also store information on
+% the "confusion matrix" of a user. This information (stored in a .dat
+% file) will be a NX1 array where N is the number of users. in each row we
+% have a cell array that contains the CXC "confusion matrix" for that user.
+% A perfectly skilled user would only have values on the diagonal of this
+% matrix and all off diagonal values indicate wrong answers were given to
+% one category or another when presented with a 'G' true labelled image.
+
+% Initialize varaible t. t is a CX1 column vector where C is
+% the number of pre-determined morphologies and where each row is the
+% predetermined certainty threshold that an image most surpass to be
+% considered part of class C. Here all classes have the same threshold but
+% in realty different categories will have more difficult or more relax
+% thresholds for determination of class and therefore retirability.
+
 t = 0.4*ones(C,1);
 
-%enter T_alpha, the alpha threshold
+% Initialize T_alpha, T_alpha is a CX1 column vector where C is
+% the number of pre-determined morphologies and where each row is the
+% predetermined "skill" level threshold for each class of glitch that a user
+% must surprass in order to move on to the next user level (Levels are
+% B1-B4, Apprentice, and Master).  Here all classes have the same threshold but
+% in realty different categories will have more difficult or more relax
+% thresholds based on how challenging a given class is.
 
-%enter R, the citizen limit: The citizen limits refers to
-% the amount of citizens who
+% Initialize R, the citizen limit: The citizen limit refers to
+% the max amount of citizens who can look at an image in a given level
+% before it is based on to the higher levels for more analysis. The idea is
+% that if an image's retirability cannot be determined from 30 labels then
+% this image needs to be looked at by more skilled users or LIGO experts.
+
 R_lim = 30;
-
 
 %Calculate the Priors
 priors = calc_priors(true_labels)'; %The prior probability of each image is calculated.
 
-N = size(images, 1);       %N is the no of images in the batch
-
-
+N = size(images, 1);       %N is the # of images in the batch
 %% The main loop that goes through the batch of images one by one
 
 for i = 1:N  %for each image
   
-    if images(i).type == 'G'       %if it is a training image
+    if images(i).type == 'G'       %if it is a golden set image (has true label)
         
         labels = images(i).labels;     %the citizen labels of that image are taken
         
@@ -80,12 +101,12 @@ for i = 1:N  %for each image
             conf_matrices{IDs(ii)} = conf_matrix;  %Conf matrix put back into the stack
         end
         
-        decision(i) = 0;  %Since it is a training image, there is no decision
+        decision(i) = 0;  %Since it is a training image, there is no decision that needs to be made what class the image belongs to.
         class(i) = tlabel;   %The class the image belongs to is its true label. This won't be used anywhere.
         
         disp('image is from the training set')
         
-    else
+    else  %if the image does not have a true label but only a ML label
         
         labels = images(i).labels;     %the labels of that image are taken
         
@@ -116,14 +137,14 @@ for i = 1:N  %for each image
 end    
        
 %At this point, the decisions for each image in the batch are given. For
-%training images in the set, the decision is 0. For the test images, the
-%test images are 1,2,3.
+%golden images in the set, the decision is 0. For the ML labelled images, the
+%decisions are one of 1,2, or 3.
 
-%The posterior probability matrices are kept for all the test images. If
-%the decision is 2 or 3, the probabilities in this matrix will be used.
-%(needs more work)
+%The posterior probability matrices are kept for all the ML labelled images. If
+%the decision is 2 or 3, the probabilities in this matrix will be used in a
+%further step. Not currently implemented.
 
-%Also, the confusion matrices are updated for the training images. 
+%Also, the confusion matrices are updated based on the golden images.
 
 %Next step is updating the confusion matrices for the test images and
 %citizen evaluation/promotion.

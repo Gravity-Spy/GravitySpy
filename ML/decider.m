@@ -4,9 +4,9 @@ pp_matrix2 = [pp_matrix ML_decision'];
 
 v = sum(pp_matrix2, 2)/sum(sum(pp_matrix2));
 
-[maximum loc] = max(v);
+[maximum, maxIdx] = max(v);
 
-if maximum >= t(loc);
+if maximum >= t(maxIdx);
     
     decision = 1;
     disp('image is retired')
