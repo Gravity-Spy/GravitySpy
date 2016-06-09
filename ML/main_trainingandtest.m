@@ -1,14 +1,55 @@
 %% Initializations and Training Data
 
-%one batch of data is read
-%Confusion matrices are loaded
+% The Zooniverse server (specifically Nero https://github.com/zooniverse/nero)
+% will continuously send data containing the following classification
+% information:
+%
+%   The ID of the user, the ID of the image they classified, and 
+%   the classification made by that user for that image. Potentially,
+%   information concerning whether this image was a golden set image, that
+%   is an image where the label was known a head of time, versus a ML
+%   classified images, that is an image where the label is only the
+%   confidence level of the ML classifier, will also be sent in the message
+%   from Nero.
+%
+% This information will then be parsed and saved in the following format.
+% A structure array with rows relating to a given image and columns 
+% containing the following information about that image:
+%
+%       The Type - A label (string) either 'T' or 'G' to determine if it is a ML
+%       classified label or a pre-labelled "golden" image.
+%
+%       The Labels - An array (double) of a 1XN row vector where N is the number
+%       of labels this image has been given at a certain time. Each column
+%       is a different answer that is associated with a different user.
+%       This takes us to the next column...
+%
+%       The User IDs - An array (double) of a  1XN row vector where N is the number
+%       of labels this image has been given. Each column
+%       is the userID associated with the answer given in The Labels
+%       column.
+%
+%       ML Posterior - An array (double) of a  1XN row vector where N is
+%       the number of pre-determined morphologies that the classifier has
+%       been trained on. Each column is the ML confidence that the image
+%       belongs in one of the N classes.
+%
+%       True Label - (int) For images labelled 'T' this values is set to -1
+%       but for images labelled 'G' This value indicates the "true" class
+%       that this image belongs in for the purposes of comparing a citizens
+%       classification with this true label.
+
+% Once data for X amount of images has been parsed and stored in the above
+% format we will run the following script to update the retirability of an
+% image as well as the skill level of the citizens.
 
 %enter t, the threshold vector
 t = 0.4*ones(C,1);
 
 %enter T_alpha, the alpha threshold
 
-%enter R, the citizen limit
+%enter R, the citizen limit: The citizen limits refers to
+% the amount of citizens who
 R_lim = 30;
 
 
