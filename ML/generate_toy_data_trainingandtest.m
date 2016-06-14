@@ -1,6 +1,3 @@
-clear
-clc
-
 % This Program simulates one batch of data
 
 %% Initialization
@@ -61,12 +58,13 @@ conf_matrices = conf_matrices';
 
 for i = 1:N
     labels = [];
+    total = round(20 + 10*rand(1));
     correct = round(6 + 14*rand(1));
-    rest = round(1 + 14*rand(1,R-correct));
+    rest = round(1 + 14*rand(1,total-correct));
     labels(1:correct) = true_labels(i);
     labels = [labels rest];
     citizen_labels{i} = labels;
-    IDs = randperm(30);
+    IDs = randperm(30,total);
     userIDs{i} = IDs; 
 end
 
@@ -107,3 +105,10 @@ end
 images = images(randperm(length(images)));  %shuffling test and training images
 
 images = images';
+
+dummy = randperm(250, N + N/5);       %generating image IDs
+
+for i = 1:N+N/5
+    images(i).imageID = dummy(i);     %putting the IDs to the images
+end
+
