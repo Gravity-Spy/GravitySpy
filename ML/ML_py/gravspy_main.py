@@ -87,7 +87,7 @@ this image needs to be looked at by more skilled users or LIGO experts."""
 
 #calculate prior probability of each image
 no_labels = np.histogram((data['true_labels'][0]),np.unique((data['true_labels'][0])))
-priors = no_labels[0]/len(data['true_labels'][0])
+priors = no_labels[1]/len(data['true_labels'][0])
 
 #define N, number of images in batch
 N = len(data['images'])
@@ -121,11 +121,11 @@ for i in range(N): #iterate over images
     no_annotators = len(labels) #define number of citizens who annotate image
     ML_dec = data['images'][i]['ML_posterior'][0][0] #take ML posteriors of image
     
-    for j in range(data['C'][0][0]+1): #iterate over classes
-      for k in range(no_annotators+1): #iterate over citizens that labeled image
+    for j in range(1,data['C'][0][0]+1): #iterate over classes
+      for k in range(1,no_annotators+1): #iterate over citizens that labeled image
         conf = data['conf_matrices'][IDs[k-1]-1][0] #take confusion matrix of citizen
         conf_divided = np.diag(sum(conf,2))/conf #calculate p(l|j) value
         pp_matrix = np.zeros([data['C'][0][0],no_annotators]) #create posterior matrix
         #import pdb
         #pdb.set_trace()
-        pp_matrix[j,k] = (conf_divided[j-1,labels[k-1]]*priors[j])/sum(conf_divided[:,labels[k-1]]*priors) #calculate posteriors
+        pp_matrix[j,k] = (conf_divided[j-1,labels[k-1]]*priors[j-1])/sum(conf_divided[:,labels[k-1]]*priors) #calculate posteriors
