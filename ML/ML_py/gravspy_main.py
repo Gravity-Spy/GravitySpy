@@ -99,6 +99,7 @@ dec_matrix = np.zeros([1,N])
 class_matrix = np.zeros([1,N])
 
 #main loop to process images
+pp_matrices_rack = np.zeros((15,30,N)) #create 3D matrix of all posterior matrices
 for i in range(N): #iterate over images
   
   if data['images'][i]['type'][0][0] == 'G': #check if training image
@@ -123,9 +124,42 @@ for i in range(N): #iterate over images
     
     for j in range(1,data['C'][0][0]+1): #iterate over classes
       for k in range(1,no_annotators+1): #iterate over citizens that labeled image
-        conf = data['conf_matrices'][IDs[k-1]-1][0] #take confusion matrix of citizen
+        conf = data['conf_matrices'][IDs[k-1]-1][0] #take confusion matrix of each citizen
         conf_divided = np.diag(sum(conf,2))/conf #calculate p(l|j) value
         pp_matrix = np.zeros([data['C'][0][0],no_annotators]) #create posterior matrix
         #import pdb
         #pdb.set_trace()
-        pp_matrix[j,k] = (conf_divided[j-1,labels[k-1]]*priors[j-1])/sum(conf_divided[:,labels[k-1]]*priors) #calculate posteriors
+        pp_matrix[j-1,k-1] = ((conf_divided[j-1,(labels[k-1]-1)])*priors[j-1])/sum(conf_divided[:,(labels[k-1]-1)]*priors) #calculate posteriors
+    
+    pp_matrices_rack[:,:,i] = pp_matrix #assign values to pp_matrices_rack
+    
+"""At this point, the decisions for each image in the batch are given. For
+golden images in the set, the decision is 0. For the ML labelled images, the
+decisions are one of 1,2, or 3.
+
+The posterior probability matrices are kept for all the ML labelled images. If
+the decision is 2 or 3, the probabilities in this matrix will be used in a
+further step. Not currently implemented.
+
+Also, the confusion matrices are updated based on the golden images.
+
+Next step is updating the confusion matrices for the test images and
+citizen evaluation/promotion."""
+
+#Update the confusion matrices for test data and promotion
+#alpha = 
+for i in range(N): #iterate over images
+  
+  if dec_matrix[i] == 1: #if image is retired
+    labels = data['images'][i]['labels'][0][0] #take citizen labels of image
+    IDs = data['images'][i]['IDs'][0][0] #take IDs of citizens who label image
+    
+    for ii in range(len(IDs)): #iterate over IDs of image
+      conf_matrix = data['conf_matrices'][IDs[ii]-1][0] #take confusion matrix of citizen
+      conf_matrix[tlabel-1,labels[ii]-1] = conf_matrix[tlabel-1,labels[ii]-1]+1 #update confusion matrix
+      data['conf_matrices'][IDs[ii]-1][0] = conf_matrix #confusion matrix put back in stack
+      
+for jj in range(len(data['conf_matrices'])): #iterate over citizens
+  conf_update = data['conf_matrices'][jj] #take confusion matrix of each citizen
+  conf_update_divided = np.diag(sum(conf,2))/conf_divided #calculate p(l|j) value
+  #alpha
