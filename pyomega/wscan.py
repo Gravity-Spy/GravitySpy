@@ -2656,43 +2656,11 @@ if __name__ == '__main__':
 
     if opts.uniqueID:
         IDstring = id_generator()
-        # Need to create a manifest in order to upload subject set to website.
-        manifestfile = outDir + 'manifest.csv'
-        Durs = np.arange(0,len(plotTimeRanges)).astype('int')
-        iNN = 0
-        if not os.path.isfile(manifestfile):
-            # Got to open new one and write appropriate header
-            # and first image manifest format
-            manifest = open(manifestfile,'a+')
-            manifest.write('subject_id,date,')
-            for iN in Durs:
-                iNN = iNN +1
-                if iNN == Durs.size:
-                    manifest.write('Filename' +str(iN) + '\n')
-                else:
-                    manifest.write('Filename' +str(iN) + ',')
-
-            # Date will be reference to build of the code and have nothing to do with the actual GPS time
-            iNN = 0
-            manifest.write(IDstring + ',03312016,')
-            for iN in Durs:
-                iNN = iNN +1
-                if iNN == Durs.size:
-                    manifest.write(detectorName + '_' + IDstring + '_spectrogram_' + str(plotTimeRanges[iN]) +'.png\n')
-                else:
-                    manifest.write(detectorName + '_' + IDstring + '_spectrogram_' + str(plotTimeRanges[iN]) +'.png,')
-        else:
-            manifest = open(manifestfile,'a+')
-            manifest.write(IDstring + ',03312016,')
-            for iN in Durs:
-                iNN = iNN +1
-                if iNN == Durs.size:
-                    manifest.write(detectorName + '_' + IDstring + '_spectrogram_' + str(plotTimeRanges[iN]) +'.png\n')
-                else:
-                    manifest.write(detectorName + '_' + IDstring + '_spectrogram_' +
-     str(plotTimeRanges[iN]) +'.png,')
+        system_call = 'echo "{0} {1:.6f} {2}" >> manifestH1DQ.txt'.format(channelName,opts.eventTime,IDstring)
+        os.system(system_call)
     else:
-        IDstring = str(opts.eventTime)
+        print(opts.eventTime)
+        IDstring = "{1:.6f}".format(opts.eventTime)
 
     ###########################################################################
     #               Process Channel Data                                      #
