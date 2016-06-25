@@ -2656,11 +2656,10 @@ if __name__ == '__main__':
 
     if opts.uniqueID:
         IDstring = id_generator()
-        system_call = 'echo "{0} {1:.6f} {2}" >> manifestH1DQ.txt'.format(channelName,opts.eventTime,IDstring)
+        system_call = 'echo "{0} {1:.9f} {2}" >> manifestH1DQ.txt'.format(channelName,opts.eventTime,IDstring)
         os.system(system_call)
     else:
-        print(opts.eventTime)
-        IDstring = "{1:.6f}".format(opts.eventTime)
+        IDstring = "{1:.9f}".format(opts.eventTime)
 
     ###########################################################################
     #               Process Channel Data                                      #
