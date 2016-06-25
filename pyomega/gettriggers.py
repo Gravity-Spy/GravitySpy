@@ -218,9 +218,15 @@ detchannelname = opts.detector + ':' + opts.channelname
 write_subfile()
 omicrontriggers = get_triggers()
 
+d = 'metadata'
+if not os.path.isdir(d):
+    os.makedirs(d)
+
 for omicrontrigger in omicrontriggers:
     write_dagfile(omicrontrigger.get_peak())
-
+    with open('./metadata/data_H1DQ.txt','a+') as f:
+        f.write('{0} {1} {2} {3} {4} {5} {6}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth,omicrontrigger.get_peak()))
+        f.close()
 
 # need to save omicron triggers variable to be loaded 
 # by the condor job later
