@@ -1546,6 +1546,10 @@ def wselect(significants, durationInflation, \
 
             # otherwise, add to averages over tiles in the event
             else:
+                overlap = np.concatenate((overlap,np.zeros(\
+                    significants[channelstr]['av_frequency'].size \
+                        - overlap.size,dtype=bool)))
+
                 tmp_av_frequency = \
                   significants[channelstr]['av_frequency'][overlap]*\
                   significants[channelstr]['tot_normalizedEnergy'][overlap] +\
@@ -1615,7 +1619,7 @@ def wselect(significants, durationInflation, \
             events[channelstr]['overflowFlag'] = 1
 
             # indices of most significant tiles
-            maximumIndices = np.arange(0,maximumEvents)
+            maximumIndices = np.arange(0,maximumEvents).astype('int')
 
             # truncate lists of significant event properties
             events[channelstr]['time'] = significants[channelstr]['time'][maximumIndices]
@@ -2596,6 +2600,7 @@ if __name__ == '__main__':
     cp.read(opts.inifile)
 
     # ---- Read needed variables from [parameters] and [channels] sections.
+    alwaysPlotFlag           = cp.getint('parameters','alwaysPlotFlag')
     sampleFrequency          = cp.getint('parameters','sampleFrequency')
     blockTime                = cp.getint('parameters','blockTime')
     searchFrequencyRange     = json.loads(cp.get('parameters','searchFrequencyRange'))
@@ -2773,8 +2778,9 @@ if __name__ == '__main__':
                                      tiling['generalparams']['duration'] / \
                                      (1.5 * tiling["generalparams"]["numberOfIndependents"]))
     
-    if loudestEnergy < normalizedEnergyThreshold:
-        raise ValueError('This channel does not have a significant tiling at\
+    if not alwaysPlotFlag:
+        if loudestEnergy < normalizedEnergyThreshold:
+            raise ValueError('This channel does not have a significant tiling at\
                         white noise false alarm rate provided') 
 
     ############################################################################
