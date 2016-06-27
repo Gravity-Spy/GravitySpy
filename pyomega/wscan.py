@@ -47,6 +47,7 @@ def parse_commandline():
     parser.add_option("--inifile", help="Name of ini file of params")
     parser.add_option("--eventTime", type=float,help="Trigger time of the glitch")
     parser.add_option("--uniqueID", action="store_true", default=False,help="Is this image being generated for the GravitySpy project, is so we will create a uniqueID strong to use for labeling images instead of GPS time")
+    parser.add_option("--ID", default='',help="Already supplying an ID? If not then ignore this flag. Only to be used in conjunction with --uniqueID")
     parser.add_option("--outDir", help="Outdir of omega scan and omega scan webpage (i.e. your html directory)")
     parser.add_option("--NSDF", action="store_true", default=False,help="No framecache file available want to use NSDF server")
     parser.add_option("--condor", action="store_true", default=False,help="Want to run as condor job?")
@@ -1591,16 +1592,26 @@ def wselect(significants, durationInflation, \
             # end loop over significant tiles
 
         # extract events from significant tiles
-        events[channelstr]['time'] = significants[channelstr]['time']
-        events[channelstr]['frequency'] = significants[channelstr]['frequency']
-        events[channelstr]['q'] = significants[channelstr]['q']
-        events[channelstr]['duration'] = significants[channelstr]['duration']
-        events[channelstr]['bandwidth'] = significants[channelstr]['bandwidth']
-        events[channelstr]['normalizedEnergy'] = significants[channelstr]['normalizedEnergy']
-        events[channelstr]['av_frequency'] = significants[channelstr]['av_frequency']
-        events[channelstr]['av_bandwidth'] = significants[channelstr]['av_bandwidth']
-        events[channelstr]['err_frequency'] = significants[channelstr]['err_frequency']
-        events[channelstr]['tot_normalizedEnergy'] = significants[channelstr]['tot_normalizedEnergy']
+        events[channelstr]['time'] = significants[channelstr]\
+            ['time'][eventIndices[channelstr]]
+        events[channelstr]['frequency'] = significants[channelstr]\
+            ['frequency'][eventIndices[channelstr]]
+        events[channelstr]['q'] = significants[channelstr]\
+            ['q'][eventIndices[channelstr]]
+        events[channelstr]['duration'] = significants[channelstr]\
+            ['duration'][eventIndices[channelstr]]
+        events[channelstr]['bandwidth'] = significants[channelstr]\
+            ['bandwidth'][eventIndices[channelstr]]
+        events[channelstr]['normalizedEnergy'] = significants[channelstr]\
+            ['normalizedEnergy'][eventIndices[channelstr]]
+        events[channelstr]['av_frequency'] = significants[channelstr]\
+            ['av_frequency'][eventIndices[channelstr]]
+        events[channelstr]['av_bandwidth'] = significants[channelstr]\
+            ['av_bandwidth'][eventIndices[channelstr]]
+        events[channelstr]['err_frequency'] = significants[channelstr]\
+            ['err_frequency'][eventIndices[channelstr]]
+        events[channelstr]['tot_normalizedEnergy'] = significants[channelstr]\
+            ['tot_normalizedEnergy'][eventIndices[channelstr]]
 
         ######################################################################
         #            check for excessive number of events                    #
@@ -2661,10 +2672,10 @@ if __name__ == '__main__':
 
     if opts.uniqueID:
         IDstring = id_generator()
-        system_call = 'echo "{0} {1:.9f} {2}" >> manifestH1DQ.txt'.format(channelName,opts.eventTime,IDstring)
+        system_call = 'echo "{0} {1}" >> manifestL1DQ.txt'.format(channelName,opts.ID)
         os.system(system_call)
     else:
-        IDstring = "{1:.9f}".format(opts.eventTime)
+        IDstring = "{0:.2f}".format(opts.eventTime)
 
     ###########################################################################
     #               Process Channel Data                                      #
