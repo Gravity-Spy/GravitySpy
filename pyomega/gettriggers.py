@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import optparse,os
+import optparse,os,string,random
 from gwpy.table.lsctables import SnglBurstTable
 from gwpy.segments import DataQualityFlag
 
@@ -26,15 +26,23 @@ def parse_commandline():
     parser.add_option("--gpsEnd", help="gps End Time [No Default must supply]")
     parser.add_option("--freqHigh", help="upper frequency bound cut off for the glitches. [Default: 2048]",type=int,default=2048)
     parser.add_option("--freqLow", help="lower frequency bound cut off for the glitches. [Default: 10]",type=int,default=10)
-    parser.add_option("--ID", help="Filename of UniqueIDs you would like to make images for (generally done if desiring to see same image but in a different way.",default='somethingthatcantbefile.txt')
-    parser.add_option("--masterID", help="path to master ID file that contains all the original IDs and GPStimes [Default: None but must supply if supplying a ID file from which to make images.]")
     parser.add_option("--maxSNR", help="This flag gives you the option to supply a upper limit to the SNR of the glitches [Optional Input]",type=float)
     parser.add_option("--outDir", help="Outdir of omega scan and omega scan webpage (i.e. your html directory)")
     parser.add_option("--SNR", help="Lower bound SNR Threshold for omicron triggers, by default there is no upperbound SNR unless supplied throught the --maxSNR flag. [Default: 6]",type=float,default=6)
+    parser.add_option("--uniqueID", action="store_true", default=False,help="Is this image being generated for the GravitySpy project, is so we will create a uniqueID strong to use for labeling images instead of GPS time")
 
     opts, args = parser.parse_args()
 
     return opts
+
+###############################################################################
+##########################                             ########################
+##########################   Func: id_generator        ########################
+##########################                             ########################
+###############################################################################
+
+def id_generator(size=10, chars=string.ascii_uppercase + string.digits +string.ascii_lowercase):
+    return ''.join(random.SystemRandom().choice(chars) for _ in range(size))
 
 ###############################################################################
 ##########################                              #######################
@@ -167,11 +175,11 @@ def get_triggers():
 
 # Write dag_file file for the condor job
 
-def write_dagfile(eventTime):
+def write_dagfile(eventTime,ID):
     with open('gravityspy.dag','a+') as dagfile:
         dagfile.write('JOB {0} ./condor/gravityspy.sub\n'.format(eventTime))
         dagfile.write('RETRY {0} 3\n'.format(eventTime))
-        dagfile.write('VARS {0} jobNumber="{0}" eventTime="{0}"'.format(eventTime))
+        dagfile.write('VARS {0} jobNumber="{0}" eventTime="{0}" ID="{1}"'.format(eventTime,ID))
         dagfile.write('\n\n')
 
 
@@ -191,7 +199,7 @@ def write_subfile():
         subfile.write('universe = vanilla\n')
         subfile.write('executable = {0}/wscan.py\n'.format(os.getcwd()))
         subfile.write('\n')
-        subfile.write('arguments = "--inifile wini.ini --eventTime $(eventTime) --outDir {0} --uniqueID --plot-eventgram"\n'.format(opts.outDir))
+        subfile.write('arguments = "--inifile wini.ini --eventTime $(eventTime) --outDir {0} --uniqueID --ID $(ID) --plot-eventgram"\n'.format(opts.outDir))
         subfile.write('getEnv=True\n')
         subfile.write('\n')
         subfile.write('accounting_group_user = scott.coughlin\n')#.format(opts.username))
@@ -222,11 +230,16 @@ d = 'metadata'
 if not os.path.isdir(d):
     os.makedirs(d)
 
+with open('./metadata/metadata_L1PostDQ.txt','a+') as f:
+    f.write('# snr,amplitude,peak_frequency,central_freq,duration,bandwidth,chisq,chisq_dof,GPStime,ID\n')
+
 for omicrontrigger in omicrontriggers:
-    write_dagfile(omicrontrigger.get_peak())
-    with open('./metadata/data_H1DQ.txt','a+') as f:
-        f.write('{0} {1} {2} {3} {4} {5} {6}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth,omicrontrigger.get_peak()))
-        f.close()
+    if opts.uniqueID:
+        ID = id_generator()
+        write_dagfile(omicrontrigger.get_peak(),ID)
+        with open('./metadata/metadata_L1PostDQ.txt','a+') as f:
+            f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8} {9}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth,omicrontrigger.chisq,omicrontrigger.chisq_dof,omicrontrigger.get_peak(),ID))
+            f.close()
 
 # need to save omicron triggers variable to be loaded 
 # by the condor job later
