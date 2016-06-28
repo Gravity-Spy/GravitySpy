@@ -24,6 +24,6 @@ else
     
 end
 
-class = loc;
+class = maxIdx;
 
     
