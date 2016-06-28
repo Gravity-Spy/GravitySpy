@@ -2672,8 +2672,6 @@ if __name__ == '__main__':
 
     if opts.uniqueID:
         IDstring = opts.ID
-        system_call = 'echo "{0} {1}" >> manifestL1DQ.txt'.format(channelName,opts.ID)
-        os.system(system_call)
     else:
         IDstring = "{0:.2f}".format(opts.eventTime)
 

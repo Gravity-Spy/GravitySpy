@@ -238,7 +238,7 @@ for omicrontrigger in omicrontriggers:
         ID = id_generator()
         write_dagfile(omicrontrigger.get_peak(),ID)
         with open('./metadata/metadata_L1PostDQ.txt','a+') as f:
-            f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8} {9}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth,omicrontrigger.chisq,omicrontrigger.chisq_dof,omicrontrigger.get_peak(),ID))
+            f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10}:{11}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth,omicrontrigger.chisq,omicrontrigger.chisq_dof,omicrontrigger.get_peak(),ID,omicrontrigger.ifo,omicrontrigger.channel))
             f.close()
 
 # need to save omicron triggers variable to be loaded 
