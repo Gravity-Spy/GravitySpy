@@ -2671,7 +2671,7 @@ if __name__ == '__main__':
     ########################################################################
 
     if opts.uniqueID:
-        IDstring = id_generator()
+        IDstring = opts.ID
         system_call = 'echo "{0} {1}" >> manifestL1DQ.txt'.format(channelName,opts.ID)
         os.system(system_call)
     else:
