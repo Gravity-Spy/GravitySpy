@@ -4,6 +4,8 @@
 % will continuously send data containing the following classification
 % information:
 %
+
+
 %   The ID of the user, the ID of the image they classified, and 
 %   the classification made by that user for that image. Potentially,
 %   information concerning whether this image was a golden set image, that
@@ -58,7 +60,7 @@
 % in realty different categories will have more difficult or more relax
 % thresholds for determination of class and therefore retirability.
 
-t = 0.4*ones(C,1);
+
 
 % Initialize T_alpha, T_alpha is a CX1 column vector where C is
 % the number of pre-determined morphologies and where each row is the
@@ -74,12 +76,37 @@ t = 0.4*ones(C,1);
 % that if an image's retirability cannot be determined from 30 labels then
 % this image needs to be looked at by more skilled users or LIGO experts.
 
-R_lim = 30;
+R_lim = 23;
+
+%one batch of data is read
+load(batch_name);
+
+N = size(images, 1);       %N is the # of images in the batch
+
+for i = 1:N
+    if images(i).type == 'T'
+        C = length(images(i).ML_posterior);      %C is the no of classes
+        break
+    end
+end
+
+t = 0.4*ones(C,1);
+
+load('true_labels.mat')
+
+load('retired_images.mat')
+
+%Read confusion matrices: Each confusion matrix belongs to a userID
+load('conf_matrices.mat')
+
+%Read PP matrices: Each PP matrix belongs to an imageID that is not retired
+%yet.
+load('PP_matrices.mat')
 
 %Calculate the Priors
 priors = calc_priors(true_labels)'; %The prior probability of each image is calculated.
 
-N = size(images, 1);       %N is the # of images in the batch
+
 %% The main loop that goes through the batch of images one by one
 
 for i = 1:N  %for each image
@@ -116,6 +143,19 @@ for i = 1:N  %for each image
         
         ML_dec = images(i).ML_posterior;     %The ML posteriors for that image are taken.
         
+        imageID = images(i).imageID;          %The imageID is taken
+        
+        image_prior = priors;                  %Priors for that image are set to the original priors, in case the test image is a new test image. (Intra-batch algorithm)
+        
+        for y = 1:length(PP_matrices)
+            
+            if imageID == PP_matrices(y).imageID
+                
+                image_prior = sum(PP_matrices(y).matrix,2)/sum(sum(PP_matrices(y).matrix));   %If the image has labeled before but not retired, the PP_matrix information is used in the place of priors (Inter-batch algorithm)
+                break
+            end
+        end
+        
         for j = 1:C       %for each class
             for k = 1:no_annotators   
             
@@ -123,12 +163,12 @@ for i = 1:N  %for each image
             
                 conf_divided = diag(sum(conf,2))\conf;     %The p(l|j) value is calculated
             
-                pp_matrix(j,k) = (conf_divided(j,labels(k))*priors(j))/sum(conf_divided(:,labels(k)).*priors);   %Posterior is calculated
+                pp_matrix(j,k) = (conf_divided(j,labels(k))*image_prior(j))/sum(conf_divided(:,labels(k)).*image_prior);   %Posterior is calculated
             
             end
         end
     
-        pp_matrices_rack(:,:,i) = pp_matrix;
+        pp_matrices_rack{i} = pp_matrix;
     
         [decision(i), class(i)] = decider(pp_matrix, ML_dec, t, R_lim, no_annotators);     %A decision for the image is given. 1 is retire, 2 is upper class, 3 is next batch
         
@@ -186,6 +226,61 @@ end
 %Thresholding alpha vectors and citizen evaluation (needs work)
 
     
+%% Ordering the images and sending/saving them
+
+counter1 = length(retired_images) + 1;
+counter2 = length(PP_matrices) + 1;
+
+for i = 1:N %for each image
     
+    if decision(i) == 1     %if it is decided to be retired
+        
+        retired_images(counter1).imageID = images(i).imageID;         %it is put into the retired images array with the ID and the class it is classified into.
+        retired_images(counter1).class = class(i);
+        
+        for y = 1:length(PP_matrices)  %in case the retired image was waiting for more labels beforehand
+            
+            if images(i).imageID == PP_matrices(y).imageID        
+                
+                PP_matrices(y) = [];       %the PP matrix is taken out of the saved matrices.
+                break
+            end
+        end
+        
+        counter1 = counter1 + 1;
+    
+    elseif decision(i) == 2 || decision(i) == 3      %if the decision is forwarding to the upper class or wait for more labels
+        
+        dummy_decider = 1;
+        
+        for y = 1:length(PP_matrices)        %in case the image was waiting for more labels beforehand
+            
+            if images(i).imageID == PP_matrices(y).imageID
+                PP_matrices(y).imageID = images(i).imageID;      %the PP matrix is overwritten.
+                dummy_decider = 0;
+                break
+            end
+        end
+        
+        if dummy_decider
+        
+            PP_matrices(counter2).imageID = images(i).imageID;           %The PP matrix of the image is saved with the corresponding ID to be used in the place of the prior in the next batch
+            PP_matrices(counter2).matrix = pp_matrices_rack{i};
+            counter2 = counter2 + 1;
+        end
+        
+        
+    end
+end
+
+%% Saving the Confusion Matrices and the PP Matrices
+
+save('conf_matrices', 'conf_matrices')
+
+save('PP_matrices', 'PP_matrices')
+        
+save('true_labels', 'true_labels')
+
+save('retired_images', 'retired_images')    
 
 

@@ -47,6 +47,7 @@ def parse_commandline():
     parser.add_option("--inifile", help="Name of ini file of params")
     parser.add_option("--eventTime", type=float,help="Trigger time of the glitch")
     parser.add_option("--uniqueID", action="store_true", default=False,help="Is this image being generated for the GravitySpy project, is so we will create a uniqueID strong to use for labeling images instead of GPS time")
+    parser.add_option("--ID", default='',help="Already supplying an ID? If not then ignore this flag. Only to be used in conjunction with --uniqueID")
     parser.add_option("--outDir", help="Outdir of omega scan and omega scan webpage (i.e. your html directory)")
     parser.add_option("--NSDF", action="store_true", default=False,help="No framecache file available want to use NSDF server")
     parser.add_option("--condor", action="store_true", default=False,help="Want to run as condor job?")
@@ -1546,6 +1547,10 @@ def wselect(significants, durationInflation, \
 
             # otherwise, add to averages over tiles in the event
             else:
+                overlap = np.concatenate((overlap,np.zeros(\
+                    significants[channelstr]['av_frequency'].size \
+                        - overlap.size,dtype=bool)))
+
                 tmp_av_frequency = \
                   significants[channelstr]['av_frequency'][overlap]*\
                   significants[channelstr]['tot_normalizedEnergy'][overlap] +\
@@ -1587,16 +1592,26 @@ def wselect(significants, durationInflation, \
             # end loop over significant tiles
 
         # extract events from significant tiles
-        events[channelstr]['time'] = significants[channelstr]['time']
-        events[channelstr]['frequency'] = significants[channelstr]['frequency']
-        events[channelstr]['q'] = significants[channelstr]['q']
-        events[channelstr]['duration'] = significants[channelstr]['duration']
-        events[channelstr]['bandwidth'] = significants[channelstr]['bandwidth']
-        events[channelstr]['normalizedEnergy'] = significants[channelstr]['normalizedEnergy']
-        events[channelstr]['av_frequency'] = significants[channelstr]['av_frequency']
-        events[channelstr]['av_bandwidth'] = significants[channelstr]['av_bandwidth']
-        events[channelstr]['err_frequency'] = significants[channelstr]['err_frequency']
-        events[channelstr]['tot_normalizedEnergy'] = significants[channelstr]['tot_normalizedEnergy']
+        events[channelstr]['time'] = significants[channelstr]\
+            ['time'][eventIndices[channelstr]]
+        events[channelstr]['frequency'] = significants[channelstr]\
+            ['frequency'][eventIndices[channelstr]]
+        events[channelstr]['q'] = significants[channelstr]\
+            ['q'][eventIndices[channelstr]]
+        events[channelstr]['duration'] = significants[channelstr]\
+            ['duration'][eventIndices[channelstr]]
+        events[channelstr]['bandwidth'] = significants[channelstr]\
+            ['bandwidth'][eventIndices[channelstr]]
+        events[channelstr]['normalizedEnergy'] = significants[channelstr]\
+            ['normalizedEnergy'][eventIndices[channelstr]]
+        events[channelstr]['av_frequency'] = significants[channelstr]\
+            ['av_frequency'][eventIndices[channelstr]]
+        events[channelstr]['av_bandwidth'] = significants[channelstr]\
+            ['av_bandwidth'][eventIndices[channelstr]]
+        events[channelstr]['err_frequency'] = significants[channelstr]\
+            ['err_frequency'][eventIndices[channelstr]]
+        events[channelstr]['tot_normalizedEnergy'] = significants[channelstr]\
+            ['tot_normalizedEnergy'][eventIndices[channelstr]]
 
         ######################################################################
         #            check for excessive number of events                    #
@@ -1615,7 +1630,7 @@ def wselect(significants, durationInflation, \
             events[channelstr]['overflowFlag'] = 1
 
             # indices of most significant tiles
-            maximumIndices = np.arange(0,maximumEvents)
+            maximumIndices = np.arange(0,maximumEvents).astype('int')
 
             # truncate lists of significant event properties
             events[channelstr]['time'] = significants[channelstr]['time'][maximumIndices]
@@ -2596,6 +2611,7 @@ if __name__ == '__main__':
     cp.read(opts.inifile)
 
     # ---- Read needed variables from [parameters] and [channels] sections.
+    alwaysPlotFlag           = cp.getint('parameters','alwaysPlotFlag')
     sampleFrequency          = cp.getint('parameters','sampleFrequency')
     blockTime                = cp.getint('parameters','blockTime')
     searchFrequencyRange     = json.loads(cp.get('parameters','searchFrequencyRange'))
@@ -2655,44 +2671,9 @@ if __name__ == '__main__':
     ########################################################################
 
     if opts.uniqueID:
-        IDstring = id_generator()
-        # Need to create a manifest in order to upload subject set to website.
-        manifestfile = outDir + 'manifest.csv'
-        Durs = np.arange(0,len(plotTimeRanges)).astype('int')
-        iNN = 0
-        if not os.path.isfile(manifestfile):
-            # Got to open new one and write appropriate header
-            # and first image manifest format
-            manifest = open(manifestfile,'a+')
-            manifest.write('subject_id,date,')
-            for iN in Durs:
-                iNN = iNN +1
-                if iNN == Durs.size:
-                    manifest.write('Filename' +str(iN) + '\n')
-                else:
-                    manifest.write('Filename' +str(iN) + ',')
-
-            # Date will be reference to build of the code and have nothing to do with the actual GPS time
-            iNN = 0
-            manifest.write(IDstring + ',03312016,')
-            for iN in Durs:
-                iNN = iNN +1
-                if iNN == Durs.size:
-                    manifest.write(detectorName + '_' + IDstring + '_spectrogram_' + str(plotTimeRanges[iN]) +'.png\n')
-                else:
-                    manifest.write(detectorName + '_' + IDstring + '_spectrogram_' + str(plotTimeRanges[iN]) +'.png,')
-        else:
-            manifest = open(manifestfile,'a+')
-            manifest.write(IDstring + ',03312016,')
-            for iN in Durs:
-                iNN = iNN +1
-                if iNN == Durs.size:
-                    manifest.write(detectorName + '_' + IDstring + '_spectrogram_' + str(plotTimeRanges[iN]) +'.png\n')
-                else:
-                    manifest.write(detectorName + '_' + IDstring + '_spectrogram_' +
-     str(plotTimeRanges[iN]) +'.png,')
+        IDstring = opts.ID
     else:
-        IDstring = str(opts.eventTime)
+        IDstring = "{0:.2f}".format(opts.eventTime)
 
     ###########################################################################
     #               Process Channel Data                                      #
@@ -2806,8 +2787,9 @@ if __name__ == '__main__':
                                      tiling['generalparams']['duration'] / \
                                      (1.5 * tiling["generalparams"]["numberOfIndependents"]))
     
-    if loudestEnergy < normalizedEnergyThreshold:
-        raise ValueError('This channel does not have a significant tiling at\
+    if not alwaysPlotFlag:
+        if loudestEnergy < normalizedEnergyThreshold:
+            raise ValueError('This channel does not have a significant tiling at\
                         white noise false alarm rate provided') 
 
     ############################################################################
