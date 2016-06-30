@@ -1,4 +1,5 @@
 #gravspy_main2 script by Luke Calian, 6/29/16
+
 #before running, run generate_toy_data_trainingandtest in matlab, select all the variables and save as data.mat
 #then run run_main in matlab and save each batch as a .mat file
 
@@ -55,7 +56,7 @@ def main_trainingandtest(batch_name):
       image_prior = priors #set priors for image to original priors
       
       for y in range(1,len(data['images'][i]['PP_matrices'][0][0])):
-        x = 5
+        if imageID == data
       
       for j in range(1,data['C'][0][0]+1): #iterate over classes
         for k in range(1,no_annotators+1): #iterate over citizens that labeled image
@@ -66,10 +67,50 @@ def main_trainingandtest(batch_name):
           #pdb.set_trace()
           pp_matrix[j-1,k-1] = ((conf_divided[j-1,(labels[k-1]-1)])*priors[j-1])/sum(conf_divided[:,(labels[k-1]-1)]*priors) #calculate posteriors
       
-      #pp_matrices_rack[:,:,i] = pp_matrix #assign values to pp_matrices_rack
-  
+      pp_matrices_rack[:,:,i] = pp_matrix #assign values to pp_matrices_rack
+      decision = []
+      class_ = []
+      decision[i], class_[i] = decider(pp_matrix, ML_dec, t, R_lim, no_annotators)
+
+#update the confusion matrices for test data and promotion
+for i in range(0,N):
+	if decision[i] == 1 #if image is retired
+		labels = data['images'][i]['labels'][0][0] #the citizen label of the image is taken 
+		IDs = data['images'][i]['IDs'][0][0] #the IDs of the citizens that labeld that image are taken
+		for ii in (0, len(IDs)) #for each citizen
+			conf_matrix = data['conf_matrices'][IDs[ii-1]-1][0] #take confusion matrix of each citizen
+			conf_matrix[class_[i]-1,labels[ii]-1] = conf_matrix[class_[i]-1,labels[ii]-1]+1 #update confusion matrix
+			data['conf_matrices'][IDs[ii]-1][0] = conf_matrix
+
+for jj in range(0, len(data['conf_matrices']): #for all citizens
+	conf_update = data['conf_matrices'][IDs[jj-1]-1][0] #confusion matrices taken one by one
+	#### FINISH ####
+
+
 #for loop to iterate over each batch
 for i in range(1,2): #change 2 to 11
   batch_name = 'batch' + str(i) + '.mat' #batch1.mat, batch2.mat, etc
   main_trainingandtest(batch_name) #call main_trainingandtest function to evaluate batch
   print('batch done')
+
+#decider function to determine where an image is placed
+def decider(pp_matrix, ML_decision, t, R, no_annotators):
+	pp_matrix2 = np.append(pp_matrix, ML_decision)
+	v = np.sum(pp_matrix2, axis=0)/np.sum(pp_matrix)
+	maximum, maxIdx = np.amax(v)
+	if maximum >= t[maxIdx]:
+		decision = 1
+		print "Image is retired"
+	elif no_annotators >= R:
+		decision = 2
+		print "Image is given to the upper class"
+	else:
+		decision = 3
+		print "more labels are needed for the image"
+	
+	class_ = maxIdx
+	return (decision, class_)
+	
+
+
+
