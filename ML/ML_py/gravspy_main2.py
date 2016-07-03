@@ -84,11 +84,17 @@ for i in range(0,N):
 
 for jj in range(0, len(data['conf_matrices']): #for all citizens
 	conf_update = data['conf_matrices'][IDs[jj-1]-1][0] #confusion matrices taken one by one
-	#### FINISH ####
+	conf_update_divided = np.linalg.sovle(np.diag(np.sum(conf_update, axis=0))), conf_update)
+	alpha[:,jj] = np.diag(conf_update_divided)
+	###TEST CODE###
 
+counter1 = len(data['images'][i]['PP_matrices'][0][0] + 1
+counter2 = len() + 1
+for i in range(0,N):
+	if de
 
 #for loop to iterate over each batch
-for i in range(1,2): #change 2 to 11
+for i in range(1,11): 
   batch_name = 'batch' + str(i) + '.mat' #batch1.mat, batch2.mat, etc
   main_trainingandtest(batch_name) #call main_trainingandtest function to evaluate batch
   print('batch done')
@@ -110,7 +116,8 @@ def decider(pp_matrix, ML_decision, t, R, no_annotators):
 	
 	class_ = maxIdx
 	return (decision, class_)
-	
+### Test function###
+
 
 
 
