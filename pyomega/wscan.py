@@ -2488,14 +2488,11 @@ def weventgram(events, tiling, startTime, referenceTime,
                     frequencyRange[1] = tiling['plane' + str(lastPlane)]['maximumFrequency']
 
             # find events overlapping specified time-frequency ranges
-            displayIndices = np.logical_and(\
-                     np.logical_and(
-                        (startTimes < np.max(times)),
-                        (stopTimes > np.min(times))),\
-                     np.logical_and(
-                        (lowFrequencies < np.max(frequencyRange)),
-                        (highFrequencies > np.min(frequencyRange)))\
-                    )
+            displayIndices = \
+                        (startTimes < np.max(times)) &\
+                        (stopTimes > np.min(times)) &\
+                        (lowFrequencies < np.max(frequencyRange)) &\
+                        (highFrequencies > np.min(frequencyRange))
 
             # number of events
             numberOfEvents = len(displayIndices)
@@ -2507,15 +2504,12 @@ def weventgram(events, tiling, startTime, referenceTime,
             # sort in order of increasing normalized energy
             sortedIndices = np.argsort(normalizedEnergies[displayIndices])
 
-            # sorted indices of events to display
-            sortedDisplayIndices = displayIndices[sortedIndices]
-
             # sorted properties of events to display
-            startTimes = startTimes[sortedDisplayIndices]
-            stopTimes = stopTimes[sortedDisplayIndices]
-            lowFrequencies = lowFrequencies[sortedDisplayIndices]
-            highFrequencies = highFrequencies[sortedDisplayIndices]
-            normalizedEnergies = normalizedEnergies[sortedDisplayIndices]
+            startTimes = startTimes[displayIndices][sortedIndices]
+            stopTimes = stopTimes[displayIndices][sortedIndices]
+            lowFrequencies = lowFrequencies[displayIndices][sortedIndices]
+            highFrequencies = highFrequencies[displayIndices][sortedIndices]
+            normalizedEnergies = normalizedEnergies[displayIndices][sortedIndices]
 
             ##################################################################
             #             define event boundaries                            #
