@@ -48,10 +48,17 @@ for k = 1:R
             end
         end
     end
-   conf_matrices{k} = matrix;
+   conf_matrices_cell{k} = matrix;
 end
 
-conf_matrices = conf_matrices';
+
+for k = 1:R
+    
+    conf_matrices_dummy(k).conf_matrix = conf_matrices_cell{k};
+    conf_matrices_dummy(k).userID = k;
+end
+
+conf_matrices = conf_matrices_dummy';
 
 %Simulating Citizen Labels and Corresponding IDs (we assume all images have
 %the same amount of labels
