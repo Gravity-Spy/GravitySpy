@@ -186,9 +186,14 @@ for i = 1:N  %for each image
             end
         
             for j = 1:C       %for each class
-                for k = 1:no_annotators   
+                for k = 1:no_annotators   % loop over number of annotators for this image
+                    for iN = 1:length(conf_matrices) % loop over confusion matrix structure array to find the specific users matrix
+                        if IDs(k) == conf_matrices(iN).userID
+                            break
+                        end
+                    end
             
-                    conf = conf_matrices{IDs(k)};      %the conference matrix of the citizen is taken
+                    conf = conf_matrices(iN).conf_matrix;      %the conference matrix of the citizen is taken
             
                     conf_divided = diag(sum(conf,2))\conf;     %The p(l|j) value is calculated
             
