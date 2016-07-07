@@ -119,13 +119,29 @@ for i = 1:N  %for each image
         
         tlabel = images(i).truelabel;   %the true label is taken
         
-        for ii = 1:length(IDs)  %for each citizen
+        for ii = 1:length(IDs)  %for each citizen who labeled the image
         
-            conf_matrix = conf_matrices{IDs(ii)}; %their conf matrix is taken
+            indicator = 0;
             
-            conf_matrix(tlabel, labels(ii)) = conf_matrix(tlabel, labels(ii)) + 1;  %Conf matrix updated
-            
-            conf_matrices{IDs(ii)} = conf_matrix;  %Conf matrix put back into the stack
+            for cc = 1:length(conf_matrices)
+                
+                if IDs(ii) == conf_matrices(cc).userID   %if they have registered before
+                    
+                    conf_matrix = conf_matrices(cc).conf_matrix; %their conf matrix is taken
+                    conf_matrix(tlabel, labels(ii)) = conf_matrix(tlabel, labels(ii)) + 1;  %Conf matrix updated
+                    conf_matrices(cc).conf_matrix = conf_matrix;  %Conf matrix put back into the stack
+                    
+                    indicator = 1;
+                end
+            end
+  
+            if indicator == 0   %if they haven't registered before
+                
+                dummy_matrix = zeros(C,C);            
+                dummy_matrix(tlabel, labels(ii)) = dummy_matrix(tlabel, labels(ii)) + 1;
+                conf_matrices(end + 1).conf_matrix = dummy_matrix;
+                conf_matrices(end + 1).userID = IDs(ii);        %A new confusion matrix is created at the end of the array
+            end
         end
         
         decision(i) = 0;  %Since it is a training image, there is no decision that needs to be made what class the image belongs to.
@@ -135,43 +151,56 @@ for i = 1:N  %for each image
         
     else  %if the image does not have a true label but only a ML label
         
-        labels = images(i).labels;     %the labels of that image are taken
+        indicator1 = 0;
         
-        no_annotators = length(labels);   %number of citizens that labeled that image is calculated
-        
-        IDs = images(i).IDs;               %The IDs of the citizens that labeled that image are taken
-        
-        ML_dec = images(i).ML_posterior;     %The ML posteriors for that image are taken.
-        
-        imageID = images(i).imageID;          %The imageID is taken
-        
-        image_prior = priors;                  %Priors for that image are set to the original priors, in case the test image is a new test image. (Intra-batch algorithm)
-        
-        for y = 1:length(PP_matrices)
+        for kk = 1:length(retired_images)         %In case the image is already retired before
             
-            if imageID == PP_matrices(y).imageID
-                
-                image_prior = sum(PP_matrices(y).matrix,2)/sum(sum(PP_matrices(y).matrix));   %If the image has labeled before but not retired, the PP_matrix information is used in the place of priors (Inter-batch algorithm)
+            if images(i).imageID == retired_images(kk).imageID
+                indicator1 = 1;
+                decision(i) = -1;                 %Do nothing and give an invalid decision
                 break
             end
         end
         
-        for j = 1:C       %for each class
-            for k = 1:no_annotators   
-            
-                conf = conf_matrices{IDs(k)};      %the conference matrix of the citizen is taken
-            
-                conf_divided = diag(sum(conf,2))\conf;     %The p(l|j) value is calculated
-            
-                pp_matrix(j,k) = (conf_divided(j,labels(k))*image_prior(j))/sum(conf_divided(:,labels(k)).*image_prior);   %Posterior is calculated
-            
-            end
-        end
-    
-        pp_matrices_rack{i} = pp_matrix;
-    
-        [decision(i), class(i)] = decider(pp_matrix, ML_dec, t, R_lim, no_annotators);     %A decision for the image is given. 1 is retire, 2 is upper class, 3 is next batch
+        if indicator1 == 0    %If the image has not been retired before
         
+            labels = images(i).labels;     %the labels of that image are taken
+        
+            no_annotators = length(labels);   %number of citizens that labeled that image is calculated
+        
+            IDs = images(i).IDs;               %The IDs of the citizens that labeled that image are taken
+        
+            ML_dec = images(i).ML_posterior;     %The ML posteriors for that image are taken.
+        
+            imageID = images(i).imageID;          %The imageID is taken
+        
+            image_prior = priors;                  %Priors for that image are set to the original priors, in case the test image is a new test image. (Intra-batch algorithm)
+        
+            for y = 1:length(PP_matrices)
+            
+                if imageID == PP_matrices(y).imageID
+                
+                    image_prior = sum(PP_matrices(y).matrix,2)/sum(sum(PP_matrices(y).matrix));   %If the image has labeled before but not retired, the PP_matrix information is used in the place of priors (Inter-batch algorithm)
+                    break
+                end
+            end
+        
+            for j = 1:C       %for each class
+                for k = 1:no_annotators   
+            
+                    conf = conf_matrices{IDs(k)};      %the conference matrix of the citizen is taken
+            
+                    conf_divided = diag(sum(conf,2))\conf;     %The p(l|j) value is calculated
+            
+                    pp_matrix(j,k) = (conf_divided(j,labels(k))*image_prior(j))/sum(conf_divided(:,labels(k)).*image_prior);   %Posterior is calculated
+            
+                end
+            end
+    
+            pp_matrices_rack{i} = pp_matrix;
+    
+            [decision(i), class(i)] = decider(pp_matrix, ML_dec, t, R_lim, no_annotators);     %A decision for the image is given. 1 is retire, 2 is upper class, 3 is next batch
+        end
     end
      
 end    
@@ -202,11 +231,27 @@ for i = 1:N %for each image
         
         for ii = 1:length(IDs)  %for each citizen
         
-            conf_matrix = conf_matrices{IDs(ii)}; %their conf matrix is taken
+            indicator2 = 0;
             
-            conf_matrix(class(i), labels(ii)) = conf_matrix(class(i), labels(ii)) + 1;  %Conf matrix updated
-            
-            conf_matrices{IDs(ii)} = conf_matrix;  %Conf matrix put back into the stack
+            for cc = 1:length(conf_matrices)
+                
+                if IDs(ii) == conf_matrices(cc).userID      %if they have registered before
+                    
+                    conf_matrix = conf_matrices(cc).conf_matrix; %their conf matrix is taken
+                    conf_matrix(tlabel, labels(ii)) = conf_matrix(class(i), labels(ii)) + 1;  %Conf matrix updated
+                    conf_matrices(cc).conf_matrix = conf_matrix;  %Conf matrix put back into the stack
+                    
+                    indicator2 = 1;
+                end
+            end
+  
+            if indicator2 == 0        %if they haven't registered before
+                
+                dummy_matrix = zeros(C,C);
+                dummy_matrix(tlabel, labels(ii)) = dummy_matrix(class(i), labels(ii)) + 1;
+                conf_matrices(end + 1).conf_matrix = dummy_matrix;
+                conf_matrices(end + 1).userID = IDs(ii); %A new confusion matrix is created at the end of the array
+            end
         end
     end
 end
@@ -214,7 +259,7 @@ end
 
 for jj = 1:length(conf_matrices)  %for all the citizens
     
-    conf_update = conf_matrices{jj};   %their conf. matrices are taken one by one
+    conf_update = conf_matrices(jj).conf_matrix;   %their conf. matrices are taken one by one
     
     conf_update_divided = diag(sum(conf_update,2))\conf_update;  
     
