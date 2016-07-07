@@ -17,7 +17,6 @@ PP_matrices = loadmat('PP_matrices.mat')
 def decider(pp_matrix, ML_dec, t, R_lim, no_annotators):
 
   pp_matrix2 = np.append(pp_matrix, ML_dec.reshape((15,1)) #concatenate transpose of ML_decision to pp_matrix
-  pdb.set_trace()
   v = np.sum(pp_matrix2, axis=1)/np.sum(pp_matrix) #create vector of normalized sums of pp_matrix2
   maximum = np.amax(v) #initialize maximum, max value of v
   maxIdx = np.argmax(v) #initialize maxIdx, index of max value of v
@@ -77,21 +76,21 @@ def main_trainingandtest(batch_name):
         
         indicator = 0
         
-        """for cc in range(len(conf_matrices['conf_matrices'][0])): #iterate over confusion matrices
+        for cc in range(len(conf_matrices['conf_matrices'][0])): #iterate over confusion matrices
           
-          if userIDs[ii] == conf_matrices['conf_matrices'][0][cc]: #if user is registered #add[userID]
+          if userIDs[ii] == conf_matrices['conf_matrices'][cc]['userID'][0][0][0]: #if user is registered
         
-            conf_matrix = conf_matrices['conf_matrices'][0][cc] #take confusion matrix of citizen
+            conf_matrix = conf_matrices['conf_matrices'][cc]['conf_matrix'][0] #take confusion matrix of citizen
             conf_matrix[tlabel-1,labels[ii]-1] += 1 #update confusion matrix
-            conf_matrices['conf_matrices'][0][cc] = conf_matrix #confusion matrix put back in stack
+            conf_matrices['conf_matrices'][cc]['conf_matrix'][0] = conf_matrix #confusion matrix put back in stack
             indicator = 1
             
         if indicator == 0: #if user not registered
         
           dummy_matrix = np.zeros((C,C)) #create dummy matrix
           dummy_matrix[tlabel-1,labels[ii]-1] += 1 #update dummy matrix
-          conf_matrices['conf_matrices'][0] = np.append(conf_matrices['conf_matrices'][0], dummy_matrix) #append to confusion matrices
-          #conf_matrices(end + 1).userID = IDs(ii);"""
+          #conf_matrices['conf_matrices'] = np.append(conf_matrices['conf_matrices'][0], dummy_matrix) #append to confusion matrices
+          #conf_matrices(end + 1).userID = IDs(ii)
       
       dec_matrix[0,i] = 0 #since it is a training image, no decision is made
       class_matrix[0,i] = tlabel #class of image is its true label
@@ -111,30 +110,35 @@ def main_trainingandtest(batch_name):
       if indicator1 == 0: #if image is not retired
           
         labels = batch['images'][i]['labels'][0][0] #take citizen labels of image
-        IDs = batch['images'][i]['IDs'][0][0] #take IDs of citizens who label image
+        userIDs = batch['images'][i]['IDs'][0][0] #take IDs of citizens who label image
         no_annotators = len(labels) #define number of citizens who annotate image
         ML_dec = batch['images'][i]['ML_posterior'][0][0] #take ML posteriors of image
         imageID = batch['images'][i]['imageID'][0][0][0] #take ID of image
         image_prior = priors #set priors for image to original priors
       
-      for y in range(1,len(PP_matrices['PP_matrices'][0])): #iterate over posterior matrices
+        for y in range(len(PP_matrices['PP_matrices'][0])): #iterate over posterior matrices
         
-        if imageID == PP_matrices['PP_matrices'][0][y]['imageID'][0][0]: #find posterior matrix for the image
+          if imageID == PP_matrices['PP_matrices'][0][y]['imageID'][0][0]: #find posterior matrix for the image
           
-          image_prior = np.sum(PP_matrices['PP_matrices'][0][y]['matrix'],axis=1)/np.sum(PP_matrices['PP_matrices'][0][y]['matrix']) #if image labeled but not retired, PP_matrix information is used in the place of priors
+            image_prior = np.sum(PP_matrices['PP_matrices'][0][y]['matrix'],axis=1)/np.sum(PP_matrices['PP_matrices'][0][y]['matrix']) #if image labeled but not retired, PP_matrix information is used in the place of priors
       
-      for j in range(1,C+1): #iterate over classes
+        for j in range(C): #iterate over classes
         
-        for k in range(1,no_annotators+1): #iterate over citizens that labeled image
+          for k in range(no_annotators): #iterate over citizens that labeled image
           
-          conf = conf_matrices['conf_matrices'][0][IDs[k-1]-1] #take confusion matrix of each citizen
-          conf_divided = np.diag(sum(conf,2))/conf #calculate p(l|j) value
-          pp_matrix = np.zeros((C,no_annotators)) #create posterior matrix
-          pp_matrix[j-1,k-1] = ((conf_divided[j-1,(labels[k-1]-1)])*priors[j-1])/sum(conf_divided[:,(labels[k-1]-1)]*priors) #calculate posteriors
-      
-      pp_matrices_rack.append(pp_matrix) #assign values to pp_matrices_rack
+            for iN in range(len(conf_matrices['conf_matrices'][0])): #iterate over confusion matrices
+            
+              if userIDs[k] == conf_matrices['conf_matrices'][iN]['userID'][0][0][0]: #find confusion matrix corresponding to citizen
+                
+                conf = conf_matrices['conf_matrices'][iN]['conf_matrix'][0] #take confusion matrix of citizen
+                conf_divided = np.diag(sum(conf,2))/conf #calculate p(l|j) value
+                pp_matrix = np.zeros((C,no_annotators)) #create posterior matrix
+                pp_matrix[j,k] = ((conf_divided[j,(labels[k])])*priors[j])/sum(conf_divided[:,(labels[k])]*priors) #calculate posteriors
+                pp_matrices_rack.append(pp_matrix) #assign values to pp_matrices_rack
+                
+                break
 
-      dec_matrix[0,i], class_matrix[0,i] = decider(pp_matrix, ML_dec, t, R_lim, no_annotators) #make decisions for each image in batch
+        dec_matrix[0,i], class_matrix[0,i] = decider(pp_matrix, ML_dec, t, R_lim, no_annotators) #make decisions for each image in batch
 
 """for jj in range(0, len(data['conf_matrices']): #for all citizens
 	conf_update = data['conf_matrices'][IDs[jj-1]-1][0] #confusion matrices taken one by one
