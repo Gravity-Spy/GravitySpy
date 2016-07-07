@@ -1120,13 +1120,13 @@ def wthreshold(transforms, tiling, startTime, falseEventRate,
         ########################################################################
 
         # initialize result vectors
-        significants[channelstr]['time'] = []
-        significants[channelstr]['frequency'] = []
-        significants[channelstr]['q'] = []
-        significants[channelstr]['duration'] = []
-        significants[channelstr]['bandwidth'] = []
-        significants[channelstr]['normalizedEnergy'] = []
-        significants[channelstr]['amplitude']= []
+        significants[channelstr]['time'] = np.array([])
+        significants[channelstr]['frequency'] = np.array([])
+        significants[channelstr]['q'] = np.array([])
+        significants[channelstr]['duration'] = np.array([])
+        significants[channelstr]['bandwidth'] = np.array([])
+        significants[channelstr]['normalizedEnergy'] = np.array([])
+        significants[channelstr]['amplitude']= np.array([])
 
         # initialize overflow flag
         significants[channelstr]['overflowFlag'] = 0
@@ -1496,7 +1496,17 @@ def wselect(significants, durationInflation, \
         if numberOfTiles == 0:
 
             # set empty event list
-            events[channelstr] = wcopyevents(significants[channelstr], [])
+            eventIndices[channelstr] = []
+            events[channelstr]['time'] = np.array([])
+            events[channelstr]['frequency'] = np.array([])
+            events[channelstr]['q'] = np.array([])
+            events[channelstr]['duration'] = np.array([])
+            events[channelstr]['bandwidth'] = np.array([])
+            events[channelstr]['normalizedEnergy'] = np.array([])
+            events[channelstr]['av_frequency'] = np.array([])
+            events[channelstr]['av_bandwidth'] = np.array([])
+            events[channelstr]['err_frequency'] =np.array([])
+            events[channelstr]['tot_normalizedEnergy'] = np.array([])
 
             # skip to next channel
             break
