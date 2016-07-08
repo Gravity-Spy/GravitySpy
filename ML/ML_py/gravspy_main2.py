@@ -16,7 +16,7 @@ PP_matrices = loadmat('PP_matrices.mat')
 #decider function to determine where an image is placed
 def decider(pp_matrix, ML_dec, t, R_lim, no_annotators):
 
-  pp_matrix2 = np.append(pp_matrix, ML_dec.reshape((15,1)) #concatenate transpose of ML_decision to pp_matrix
+  pp_matrix2 = np.append(pp_matrix, ML_dec.reshape((15,1))) #concatenate transpose of ML_decision to pp_matrix
   v = np.sum(pp_matrix2, axis=1)/np.sum(pp_matrix) #create vector of normalized sums of pp_matrix2
   maximum = np.amax(v) #initialize maximum, max value of v
   maxIdx = np.argmax(v) #initialize maxIdx, index of max value of v
