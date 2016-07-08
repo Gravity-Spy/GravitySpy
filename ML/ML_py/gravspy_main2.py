@@ -16,33 +16,26 @@ PP_matrices = loadmat('PP_matrices.mat')
 #decider function to determine where an image is placed
 def decider(pp_matrix, ML_dec, t, R_lim, no_annotators):
 
-<<<<<<< HEAD
-  pp_matrix2 = np.append(pp_matrix, ML_dec.reshape((15,1))) #concatenate transpose of ML_decision to pp_matrix
-  v = np.sum(pp_matrix2, axis=1)/np.sum(pp_matrix) #create vector of normalized sums of pp_matrix2
-  maximum = np.amax(v) #initialize maximum, max value of v
-  maxIdx = np.argmax(v) #initialize maxIdx, index of max value of v
-=======
     pp_matrix2 = np.append(pp_matrix, ML_dec.reshape((15,1))) #concatenate transpose of ML_decision to pp_matrix
     set_trace()
     v = np.sum(pp_matrix2, axis=1)/np.sum(pp_matrix) #create vector of normalized sums of pp_matrix2
     maximum = np.amax(v) #initialize maximum, max value of v
     maxIdx = np.argmax(v) #initialize maxIdx, index of max value of v
->>>>>>> 0c0907958eb46cc2614a66cc16ce3d64bda62679
 
     if maximum >= t[maxIdx]: #if maximum is above threshold for given class, retire image
 
-      decision = 1
-      print('Image is retired')
+        decision = 1
+        print('Image is retired')
 
     elif no_annotators >= R_lim: #if more than R_lim annotators have looked at image and no decision reached, pass to more experience users
 
-      decision = 2
-      print('Image is given to the upper class')
+        decision = 2
+        print('Image is given to the upper class')
 
     else: #if fewer than R_lim annotators have looked at image, keep image
 
-      decision = 3
-      print('More labels are needed for the image')
+        decision = 3
+        print('More labels are needed for the image')
 
     image_class = maxIdx
 
