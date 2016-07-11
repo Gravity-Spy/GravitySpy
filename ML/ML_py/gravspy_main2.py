@@ -9,15 +9,13 @@ from pdb import set_trace
 import pandas as pd
 
 #import data that does not change between batches
-retired_images = loadmat('retired_images.mat')
 conf_matrices = loadmat('conf_matrices.mat')
-PP_matrices = loadmat('PP_matrices.mat')
 
-tmpPP  = []
-tmpPP1 = []
-for iN in range(PP_matrices['PP_matrices'][0].size):
-    tmpPP.append(PP_matrices['PP_matrices'][0][iN]['imageID'][0][0])
-    tmpPP1.append( PP_matrices['PP_matrices'][0][iN]['matrix'])
+#tmpPP  = []
+#tmpPP1 = []
+#for iN in range(PP_matrices['PP_matrices'][0].size):
+#    tmpPP.append(PP_matrices['PP_matrices'][0][iN]['imageID'][0][0])
+#    tmpPP1.append(PP_matrices['PP_matrices'][0][iN]['matrix'])
 
 
 tmpCM  = []
@@ -27,14 +25,16 @@ for iN in range(conf_matrices['conf_matrices'].size):
     tmpCM1.append(conf_matrices['conf_matrices'][iN]['conf_matrix'][0])
 
 
-tmpRI  = []
-for iN in range(retired_images['retired_images'].size):
-    tmpRI.append(retired_images['retired_images'][0][iN]['imageID'][0][0])
+#tmpRI  = []
+#tmpRI1 = []
+#for iN in range(retired_images['retired_images'].size):
+#    tmpRI.append(retired_images['retired_images'][0][iN]['imageID'][0][0])
+#    tmpRI1.append(retired_images['retired_images'][0][iN]['class'][0][0])
 
 
 conf_matrices  = pd.DataFrame({ 'userID' : tmpCM,'conf_matrix' : tmpCM1})
-retired_images = pd.DataFrame({ 'imageID' : tmpRI})
-PP_matrices    = pd.DataFrame({ 'imageID' : tmpPP,'pp_matrix' : tmpPP1}) 
+retired_images = pd.DataFrame({ 'imageID' : [], 'class' : []})
+PP_matrices    = pd.DataFrame({ 'imageID' : [],'pp_matrix' : []}) 
 
 #decider function to determine where an image is placed
 def decider(pp_matrix, ML_dec, t, R_lim, num_annotators):
@@ -64,7 +64,7 @@ def decider(pp_matrix, ML_dec, t, R_lim, num_annotators):
     return decision, image_class
 
 #main function to evaluate batch of images
-def main_trainingandtest(images,conf_matrices,PP_matrices):
+def main_trainingandtest(images,conf_matrices,PP_matrices,retired_images):
 
     R_lim = 23 #initialize R, max # of citizens who can look at an image before it is passed to a higher level if consensus is not reached
     N = images['type'].size #initialize N, # of images in batch
@@ -75,7 +75,7 @@ def main_trainingandtest(images,conf_matrices,PP_matrices):
             C = images['ML_posterior'][i].size
             break
 
-    priors = np.ones((1,C))
+    priors = np.ones((1,C))/C
     t = .4*np.ones((C,1)) #initialize t, threshold vector of .4 for each class
 
     dec_matrix = np.zeros((1,N)) #define dec_matrix, matrix of each image's decision
@@ -99,9 +99,8 @@ def main_trainingandtest(images,conf_matrices,PP_matrices):
 
                     if userIDs[ii] == conf_matrices['userID'][cc]: #if user is registered
 
-                        conf_matrix = conf_matrices['conf_matrix'][cc] #take confusion matrix of citizen
-                        conf_matrix[tlabel,labels[ii]] += 1 #update confusion matrix
-                        conf_matrices['conf_matrix'][cc] = conf_matrix #confusion matrix put back in stack
+                        #take confusion matrix of citizen and index by true label, label given by user and update the confusion matrix at that entry.
+                        conf_matrices['conf_matrix'][cc][tlabel,labels[ii]] += 1
                         indicator = 1
 
                 if indicator == 0: #if user not registered
@@ -113,17 +112,19 @@ def main_trainingandtest(images,conf_matrices,PP_matrices):
 
             dec_matrix[0,i] = 0 #since it is a training image, no decision is made
             class_matrix[0,i] = tlabel #class of image is its true label
+            pp_matrices_rack.append([0])
             print('The image is from the training set')
 
         else: #if image not in golden set, i.e. has ML label but no true label
 
             indicator1 = 0
 
-            for kk in range(retired_images.size): #loop over retired images
+            for kk in range(len(retired_images)): #loop over retired images
 
                 if images['imageID'][i] == retired_images['imageID'][kk]: #if image is retired
                     indicator1 = 1
                     dec_matrix[0,i] = -1 #give invalid decision
+                    pp_matrices_rack.append([0])
                     break
 
             if indicator1 == 0: #if image is not retired
@@ -141,6 +142,7 @@ def main_trainingandtest(images,conf_matrices,PP_matrices):
                         image_prior = np.sum(PP_matrices['pp_matrix'][y],axis=1)/np.sum(PP_matrices['pp_matrix'][y]) #if image labeled but not retired, PP_matrix information is used in the place of priors
                         break
 
+                pp_matrix = np.zeros((C,num_annotators)) #create posterior matrix
                 for k in range(num_annotators): #iterate over citizens that labeled image
                     for iN in range(len(conf_matrices)): #iterate over confusion matrices
 
@@ -153,7 +155,6 @@ def main_trainingandtest(images,conf_matrices,PP_matrices):
 
                     for j in range(C): #iterate over classes
 
-                        pp_matrix = np.zeros((C,num_annotators)) #create posterior matrix
                         pp_matrix[j,k] = (conf_divided[j,labels[k]]*priors[0][j])/sum(conf_divided[:,labels[k]]*priors[0]) #calculate posteriors
                 pp_matrices_rack.append(pp_matrix) #assign values to pp_matrices_rack
 
@@ -188,9 +189,8 @@ Updating the Confusion Matrices for Test Data and Promotion
 
                     if userIDs[ii] == conf_matrices['userID'][cc]: #if user is registered
 
-                        conf_matrix = conf_matrices['conf_matrix'][cc] #take confusion matrix of citizen
-                        conf_matrix[tlabel,labels[ii]] += 1 #update confusion matrix
-                        conf_matrices['conf_matrix'][cc] = conf_matrix #confusion matrix put back in stack
+                        #take confusion matrix of citizen and index by true label, label given by user and update the confusion matrix at that entry.
+                        conf_matrices['conf_matrix'][cc][tlabel,labels[ii]] += 1
                         indicator2 = 1
 
                 if indicator2 == 0: #if user not registered
@@ -208,59 +208,41 @@ Updating the Confusion Matrices for Test Data and Promotion
     
         alpha[:,jj] = np.diag(conf_update_divided);    # alpha parameters are recalculated
     """
-#Thresholding alpha vectors and citizen evaluation (needs work)
+    #Thresholding alpha vectors and citizen evaluation (needs work)
 
     
-# Ordering the images and sending/saving them
+    # Ordering the images and sending/saving them
+    counter1 = len(retired_images)
+    counter2 = len(PP_matrices)
 
-"""
-counter1 = length(retired_images) + 1;
-counter2 = length(PP_matrices) + 1;
+    for i in range(N):
 
-for i = 1:N %for each image
+        if dec_matrix[0,i] == 1: # if it is decided to be retired
+            tmp = pd.DataFrame({ 'imageID' : [images['imageID'][i]],'class' : [class_matrix[0,i]]},index = [counter1])
+            retired_images = retired_images.append(tmp)
+        
+            counter1 = counter1 + 1
     
-    if decision(i) == 1     %if it is decided to be retired
+        elif dec_matrix[0,i] == 2 or dec_matrix[0,i] == 3:  #if the decision is forwarding to the upper class or wait for more labels
         
-        retired_images(counter1).imageID = images(i).imageID;         %it is put into the retired images array with the ID and the class it is classified into.
-        retired_images(counter1).class = class(i);
+            dummy_decider = 1
         
-        for y = 1:length(PP_matrices)  %in case the retired image was waiting for more labels beforehand
+            for y in range(len(PP_matrices)):        #in case the image was waiting for more labels beforehand
             
-            if images(i).imageID == PP_matrices(y).imageID        
-                
-                PP_matrices(y) = [];       %the PP matrix is taken out of the saved matrices.
-                break
-            end
-        end
+                if images['imageID'][i] == PP_matrices['imageID'][y]:
+                    PP_matrices['pp_matrix'][y] = pp_matrices_rack[i]      #the PP matrix is overwritten.
+                    dummy_decider = 0
+                    break
         
-        counter1 = counter1 + 1;
-    
-    elseif decision(i) == 2 || decision(i) == 3      %if the decision is forwarding to the upper class or wait for more labels
+            if dummy_decider:
+                tmp = pd.DataFrame({ 'imageID' : [images['imageID'][i]],'pp_matrix' : [pp_matrices_rack[i]]},index = [counter2])
+                PP_matrices = PP_matrices.append(tmp)
         
-        dummy_decider = 1;
-        
-        for y = 1:length(PP_matrices)        %in case the image was waiting for more labels beforehand
-            
-            if images(i).imageID == PP_matrices(y).imageID
-                PP_matrices(y).imageID = images(i).imageID;      %the PP matrix is overwritten.
-                dummy_decider = 0;
-                break
-            end
-        end
-        
-        if dummy_decider
-        
-            PP_matrices(counter2).imageID = images(i).imageID;           %The PP matrix of the image is saved with the corresponding ID to be used in the place of the prior in the next batch
-            PP_matrices(counter2).matrix = pp_matrices_rack{i};
-            counter2 = counter2 + 1;
-        end
-        
-        
-    end
-end"""
+                counter2 = counter2 + 1
+    return conf_matrices, PP_matrices, retired_images
 
 #for loop to iterate over each batch
-for i in range(1,2):
+for i in range(1,11):
     batch_name = 'batch' + str(i) + '.mat' #batch1.mat, batch2.mat, etc
     batch = loadmat(batch_name) #read batch file
     tmpType         = []
@@ -280,5 +262,5 @@ for i in range(1,2):
 
     images = pd.DataFrame({'type' : tmpType,'labels' : tmpLabels,'userIDs' : tmpuserIDs, 'ML_posterior' : tmpML_posterior, 'truelabel' : tmpTruelabel, 'imageID' : tmpImageID})
 
-    main_trainingandtest(images,conf_matrices,PP_matrices) #call main_trainingandtest function to evaluate batch
+    conf_matrices, PP_matrices, retired_images = main_trainingandtest(images,conf_matrices,PP_matrices,retired_images) #call main_trainingandtest function to evaluate batch
     print('Batch done')
