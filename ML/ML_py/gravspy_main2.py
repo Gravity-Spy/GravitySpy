@@ -160,8 +160,7 @@ def main_trainingandtest(images,conf_matrices,PP_matrices):
 
                 dec_matrix[0,i], class_matrix[0,i] = decider(pp_matrix, ML_dec, t, R_lim, num_annotators) #make decisions for each image in batch
 
-"""
-At this point, the decisions for each image in the batch are given. For
+    """At this point, the decisions for each image in the batch are given. For
 golden images in the set, the decision is 0. For the ML labelled images, the
 decisions are one of 1,2, or 3.
 
@@ -176,7 +175,7 @@ citizen evaluation/promotion.
 
 
 Updating the Confusion Matrices for Test Data and Promotion
-"""
+    """
     for i in range(N):
         if dec_matrix[0,i] == 1: #if image is retired
             labels = images['labels'][i] #the citizen label of the image is taken
@@ -201,19 +200,20 @@ Updating the Confusion Matrices for Test Data and Promotion
                     tmp = pd.DataFrame({ 'userID' : [userIDs[ii]],'conf_matrix' : [dummy_matrix]},index = [len(conf_matrices)])
                     conf_matrices = conf_matrices.append(tmp)
 
-    for jj = 1:len(conf_matrices)  # for all the citizens
+    """    for jj = 1:len(conf_matrices)  # for all the citizens
     
         conf_update = conf_matrices['conf_matrix'][jj]; # their conf. matrices are taken one by one
     
         conf_update_divided,x,z,s = np.linalg.lstsq(np.diag(sum(conf_update,2)),conf_update) #calculate p(l|j) value 
     
         alpha[:,jj] = np.diag(conf_update_divided);    # alpha parameters are recalculated
-
+    """
 #Thresholding alpha vectors and citizen evaluation (needs work)
 
     
 # Ordering the images and sending/saving them
 
+"""
 counter1 = length(retired_images) + 1;
 counter2 = length(PP_matrices) + 1;
 
