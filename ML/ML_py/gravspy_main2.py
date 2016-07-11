@@ -6,12 +6,35 @@
 import numpy as np
 from scipy.io import loadmat
 from pdb import set_trace
+import pandas as pd
 
 #import data that does not change between batches
-true_labels = loadmat('true_labels.mat')
 retired_images = loadmat('retired_images.mat')
 conf_matrices = loadmat('conf_matrices.mat')
 PP_matrices = loadmat('PP_matrices.mat')
+
+tmpPP  = []
+tmpPP1 = []
+for iN in range(PP_matrices['PP_matrices'][0].size):
+    tmpPP.append(PP_matrices['PP_matrices'][0][iN]['imageID'][0][0])
+    tmpPP1.append( PP_matrices['PP_matrices'][0][iN]['matrix'])
+
+
+tmpCM  = []
+tmpCM1 = []
+for iN in range(conf_matrices['conf_matrices'].size):
+    tmpCM.append(conf_matrices['conf_matrices'][iN]['userID'][0][0][0])
+    tmpCM1.append(conf_matrices['conf_matrices'][iN]['conf_matrix'][0])
+
+
+tmpRI  = []
+for iN in range(retired_images['retired_images'].size):
+    tmpRI.append(retired_images['retired_images'][0][iN]['imageID'][0][0])
+
+
+conf_matrices  = pd.DataFrame({ 'userID' : tmpCM,'conf_matrix' : tmpCM1})
+retired_images = pd.DataFrame({ 'imageID' : tmpRI})
+PP_matrices    = pd.DataFrame({ 'imageID' : tmpPP,'pp_matrix' : tmpPP1}) 
 
 #decider function to determine where an image is placed
 def decider(pp_matrix, ML_dec, t, R_lim, no_annotators):
@@ -42,20 +65,16 @@ def decider(pp_matrix, ML_dec, t, R_lim, no_annotators):
     return decision, image_class
 
 #main function to evaluate batch of images
-def main_trainingandtest(batch_name):
-
-    batch = loadmat(batch_name) #read batch file
-
-    #calculate prior probability of each image
-    no_labels = np.histogram((true_labels['true_labels'][0]),np.unique(true_labels['true_labels'][0]))
+def main_trainingandtest(images):
 
     R_lim = 23 #initialize R, max # of citizens who can look at an image before it is passed to a higher level if consensus is not reached
-    N = len(batch['images']) #initialize N, # of images in batch
+    N = images['type'].size #initialize N, # of images in batch
 
     #initialize C, # of classes
     for i in range(N):
-        if batch['images'][i]['type'][0][0] == 'T':
-            C = len(batch['images'][i]['ML_posterior'][0][0])
+        if images['type'][i] == 'T':
+            C = images['ML_posterior'][i].size
+            break
 
     priors = np.ones((1,C))
     t = .4*np.ones((C,1)) #initialize t, threshold vector of .4 for each class
@@ -68,30 +87,30 @@ def main_trainingandtest(batch_name):
     #main for loop to iterate over images
     for i in range(N):
 
-        if batch['images'][i]['type'][0][0] == 'G': #check if golden set image
-            labels = batch['images'][i]['labels'][0][0] #take citizen labels of image
-            userIDs = batch['images'][i]['IDs'][0][0] #take IDs of citizens who label image
-            tlabel = batch['images'][i]['truelabel'][0][0][0] #take true label of image
+        if images['type'][i] == 'G': #check if golden set image
+            labels  = images['labels'][i] #take citizen labels of image
+            userIDs = images['userIDs'][i] #take IDs of citizens who label image
+            tlabel  = images['truelabel'][i] #take true label of image
 
-            for ii in range(len(userIDs)): #iterate over user IDs of image
+            for ii in range(userIDs.size): #iterate over user IDs of image
 
                 indicator = 0
 
-                for cc in range(len(conf_matrices['conf_matrices'][0])): #iterate over confusion matrices
+                for cc in range(len(conf_matrices)): #iterate over confusion matrices
 
-                    if userIDs[ii] == conf_matrices['conf_matrices'][cc]['userID'][0][0][0]: #if user is registered
+                    if userIDs[ii] == conf_matrices['userID'][cc]: #if user is registered
 
-                        conf_matrix = conf_matrices['conf_matrices'][cc]['conf_matrix'][0] #take confusion matrix of citizen
-                        conf_matrix[tlabel-1,labels[ii]-1] += 1 #update confusion matrix
-                        conf_matrices['conf_matrices'][cc]['conf_matrix'][0] = conf_matrix #confusion matrix put back in stack
+                        conf_matrix = conf_matrices['conf_matrix'][cc] #take confusion matrix of citizen
+                        conf_matrix[tlabel,labels[ii]] += 1 #update confusion matrix
+                        conf_matrices['conf_matrix'][cc] = conf_matrix #confusion matrix put back in stack
                         indicator = 1
 
                 if indicator == 0: #if user not registered
 
                     dummy_matrix = np.zeros((C,C)) #create dummy matrix
-                    dummy_matrix[tlabel-1,labels[ii]-1] += 1 #update dummy matrix
-                    #conf_matrices['conf_matrices'] = np.append(conf_matrices['conf_matrices'][0], dummy_matrix) #append to confusion matrices
-                    #conf_matrices(end + 1).userID = IDs(ii)
+                    dummy_matrix[tlabel,labels[ii]] += 1 #update dummy matrix
+                    tmp = pd.DataFrame({ 'userID' : [userIDs[ii]],'conf_matrix' : [dummy_matrix]},index = [len(conf_matrices)])
+                    conf_matrices = conf_matrices.append(tmp)
 
             dec_matrix[0,i] = 0 #since it is a training image, no decision is made
             class_matrix[0,i] = tlabel #class of image is its true label
@@ -101,7 +120,7 @@ def main_trainingandtest(batch_name):
 
             indicator1 = 0
 
-            for kk in range(len(retired_images['retired_images'][0])): #loop over retired images
+            for kk in range(retired_images.size): #loop over retired images
 
                 if batch['images'][i]['imageID'][0][0][0] == retired_images['retired_images'][0][kk]['imageID'][0][0]: #if image is retired
 
@@ -169,8 +188,26 @@ for i in range(0,N):
 
 #for loop to iterate over each batch
 for i in range(1,2):
-  batch_name = 'batch' + str(i) + '.mat' #batch1.mat, batch2.mat, etc
-  main_trainingandtest(batch_name) #call main_trainingandtest function to evaluate batch
+    batch_name = 'batch' + str(i) + '.mat' #batch1.mat, batch2.mat, etc
+    batch = loadmat(batch_name) #read batch file
+    tmpType         = []
+    tmpLabels       = []
+    tmpuserIDs      = []
+    tmpTruelabel    = []
+    tmpImageID      = []
+    tmpML_posterior = []
+    # Subtracting 1 off the index from the mat file for the "labels" so that the indexing works in python. 
+    for iN in range(batch['images'].size):
+        tmpType.append(batch['images'][iN]['type'][0][0])
+        tmpLabels.append(batch['images'][iN]['labels'][0][0]-1)
+        tmpuserIDs.append(batch['images'][iN]['IDs'][0][0])
+        tmpTruelabel.append(batch['images'][iN]['truelabel'][0][0][0]-1)
+        tmpML_posterior.append(batch['images'][iN]['ML_posterior'][0][0])
+        tmpImageID.append(batch['images'][iN]['imageID'][0][0][0])
+
+    images = pd.DataFrame({'type' : tmpType,'labels' : tmpLabels,'userIDs' : tmpuserIDs, 'ML_posterior' : tmpML_posterior, 'truelabel' : tmpTruelabel, 'imageID' : tmpImageID})
+
+    main_trainingandtest(images) #call main_trainingandtest function to evaluate batch
   print('Batch done')
 
 	#import pdb
