@@ -2,11 +2,21 @@
 
 #import modules
 import numpy as np
-import itertools as it
+import pandas as pd
+import random
 from scipy.io import loadmat
 from pdb import set_trace
 
+#function for creating random permutations
+def random_permutation(iterable, r=None):
+    "Random selection from itertools.permutations(iterable, r)"
+    pool = tuple(iterable)
+    r = len(pool) if r is None else r
+    return tuple(random.sample(pool, r))
+
 #function to generate one batch of test data for use with gravspy_main2.py
+
+images = pd.DataFrame(np.zeros((120,6)), columns=['type','labels','userIDs','ML_posterior','true_label','imageID']) #images is final dataframe
 
 #initialization
 N = 100 #100 images
@@ -15,7 +25,7 @@ C = 15 #15 classes
 
 #simulate training labels and true labels for test data
 true_labels = (np.random.randint(1,high=C+1,size=(1,N)))[0] #generate 1xN array of numbers 1 to C, corresponding to true labels of images
-training_labels = (np.random.randint(1,high=C+1,size=(1,int(N/5))))[0] #generate 1x(N/5) array of numbers 1 to C, corresponding to citizen labels of images
+citizen_training_labels = (np.random.randint(1,high=C+1,size=(1,int(N/5))))[0] #generate 1x(N/5) array of numbers 1 to C, corresponding to citizen labels of images
 
 #simulate ML decisions
 ML_dec = np.zeros((C,N)) #create empty matrix for machine decisions
@@ -58,7 +68,62 @@ for k in range(R): #iterate over citizens
         
   conf_matrices[k] = conf_matrix #map userID to corresponding conf_matrix
   
-#simulate citizen labels and associated userID's
+#simulate citizen labels and associated userIDs
+all_labels = [] #create empty list of citizen labels
+all_userIDs = [] #create empty list of userIDs
+
 for i in range(N): #iterate over images
   
   labels = [] #create empty list
+  total = int(20+10*np.random.rand()) #total amount of labels applied to image, 20 to 30
+  correct = int(6+14*np.random.rand()) #amount of correct labels, 6 to 20
+  rest = (np.random.randint(1,high=C+1,size=(1,total-correct)))[0] #generate 1x(total-correct) array of numbers 1 to C, corresponding to random citizen labels
+  
+  for j in range(correct): #iterate over range of correct
+    
+    labels.append(true_labels[i]) #append correct labels to list of labels
+  
+  labels.extend(list(rest)) #append random labels
+  
+  all_labels.append(np.array(labels)) #append array of labels to main list of labels
+  userIDs = np.array(random_permutation(range(30),total)) #sample (total) random non-repeating IDs
+  all_userIDs.append(userIDs) #append array of IDs to main list of IDs
+  
+#simulate citizen training labels and associated userIDs
+all_training_labels = [] #create empty list of citizen training labels
+all_training_userIDs = [] #create empty list of training userIDs
+
+for i in range(int(N/5)): #iterate over training images
+
+  training_labels = [] #create empty list
+  training_correct = int(6+14*np.random.rand()) #amount of correct labels, 6 to 20
+  training_rest = (np.random.randint(1,high=C+1,size=(1,R-training_correct)))[0] #generate 1x(R-correct) array of numbers 1 to C, corresponding to random citizen labels
+  
+  for j in range(training_correct): #iterate over range of training_correct
+  
+    training_labels.append(citizen_training_labels[i]) #append training label to list of citizen training labels
+    
+  training_labels.extend(list(training_rest)) #append random labels
+  
+  all_training_labels.append(np.array(training_labels)) #append array of training labels to main list of training labels
+  training_userIDs = np.array(random_permutation(range(30),30)) #sample 30 random non-repeating training IDs
+  all_training_userIDs.append(training_userIDs) #append array of training IDs to main list of training IDs
+  
+#put data in image dataframe
+for i in range(N): #for citizen labels
+  images['type'][i] = 'T'
+  images.loc[[i],'labels'] = pd.Series([all_labels[i]],index=[i])
+  images.loc[[i],'userIDs'] = pd.Series([all_userIDs[i]],index=[i])
+  images.loc[[i],'ML_posterior'] = pd.Series([ML_dec[i,:]],index=[i])
+  images['true_label'][i] = -1
+  
+for i in range(N,int(N+N/5)):
+  images['type'][i] = 'G'
+  images.loc[[i],'labels'] = pd.Series([all_training_labels[i-N]],index=[i])
+  images.loc[[i],'userIDs'] = pd.Series([all_training_userIDs[i-N]],index=[i])
+  images['true_label'][i] = citizen_training_labels[i-N]
+  
+dummy = random_permutation(range(250),int(N+N/5))
+
+for i in range(int(N+N/5)):
+  images['imageID'][i] = dummy[i]
