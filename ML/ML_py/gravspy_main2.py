@@ -65,7 +65,7 @@ def decider(pp_matrix, ML_dec, t, R_lim, no_annotators):
     return decision, image_class
 
 #main function to evaluate batch of images
-def main_trainingandtest(images):
+def main_trainingandtest(images,conf_matrices,PP_matrices):
 
     R_lim = 23 #initialize R, max # of citizens who can look at an image before it is passed to a higher level if consensus is not reached
     N = images['type'].size #initialize N, # of images in batch
@@ -122,40 +122,41 @@ def main_trainingandtest(images):
 
             for kk in range(retired_images.size): #loop over retired images
 
-                if batch['images'][i]['imageID'][0][0][0] == retired_images['retired_images'][0][kk]['imageID'][0][0]: #if image is retired
-
+                if images['imageID'][i] == retired_images['imageID'][kk]: #if image is retired
                     indicator1 = 1
                     dec_matrix[0,i] = -1 #give invalid decision
                     break
 
             if indicator1 == 0: #if image is not retired
 
-                labels = batch['images'][i]['labels'][0][0] #take citizen labels of image
-                userIDs = batch['images'][i]['IDs'][0][0] #take IDs of citizens who label image
-                no_annotators = len(labels) #define number of citizens who annotate image
-                ML_dec = batch['images'][i]['ML_posterior'][0][0] #take ML posteriors of image
-                imageID = batch['images'][i]['imageID'][0][0][0] #take ID of image
-                image_prior = priors #set priors for image to original priors
+                labels           = images['labels'][i] #take citizen labels of image
+                userIDs          = images['userIDs'][i] #take IDs of citizens who label image
+                num_annotators   = labels.size #define number of citizens who annotate image
+                ML_dec           = images['ML_posterior'][i] #take ML posteriors of image
+                imageID          = images['imageID'][i] #take ID of image
+                image_prior      = priors #set priors for image to original priors
 
-                for y in range(len(PP_matrices['PP_matrices'][0])): #iterate over posterior matrices
+                for y in range(len(PP_matrices)): #iterate over posterior matrices
 
-                    if imageID == PP_matrices['PP_matrices'][0][y]['imageID'][0][0]: #find posterior matrix for the image
+                    if imageID == PP_matrices['imageID'][y]: #find posterior matrix for the image
 
-                        image_prior = np.sum(PP_matrices['PP_matrices'][0][y]['matrix'],axis=1)/np.sum(PP_matrices['PP_matrices'][0][y]['matrix']) #if image labeled but not retired, PP_matrix information is used in the place of priors
+                        image_prior = np.sum(PP_matrices['matrix'][y],axis=1)/np.sum(PP_matrices['matrix'][y]) #if image labeled but not retired, PP_matrix information is used in the place of priors
                         break
 
-                for j in range(C): #iterate over classes
+                for k in range(num_annotators): #iterate over citizens that labeled image
+                    for iN in range(len(conf_matrices)): #iterate over confusion matrices
 
-                    for k in range(no_annotators): #iterate over citizens that labeled image
-                        for iN in range(len(conf_matrices['conf_matrices'])): #iterate over confusion matrices
+                        if userIDs[k] == conf_matrices['userID'][iN]: #find confusion matrix corresponding to citizen
 
-                            if userIDs[k] == conf_matrices['conf_matrices'][iN]['userID'][0][0][0]: #find confusion matrix corresponding to citizen
+                            conf = conf_matrices['matrix'][iN] #take confusion matrix of citizen
+                            break
 
-                                conf = conf_matrices['conf_matrices'][iN]['conf_matrix'][0] #take confusion matrix of citizen
-                                break
-                        conf_divided,x,z,s = np.linalg.lstsq(np.diag(sum(conf,2)),conf) #calculate p(l|j) value
+                    conf_divided,x,z,s = np.linalg.lstsq(np.diag(sum(conf,2)),conf) #calculate p(l|j) value
+
+                    for j in range(C): #iterate over classes
+
                         pp_matrix = np.zeros((C,no_annotators)) #create posterior matrix
-                        pp_matrix[j,k] = (conf_divided[j,labels[k]-1]*priors[0][j])/sum(conf_divided[:,labels[k]-1]*priors[0]) #calculate posteriors
+                        pp_matrix[j,k] = (conf_divided[j,labels[k]]*priors[0][j])/sum(conf_divided[:,labels[k]]*priors[0]) #calculate posteriors
                 pp_matrices_rack.append(pp_matrix) #assign values to pp_matrices_rack
 
 
@@ -207,8 +208,5 @@ for i in range(1,2):
 
     images = pd.DataFrame({'type' : tmpType,'labels' : tmpLabels,'userIDs' : tmpuserIDs, 'ML_posterior' : tmpML_posterior, 'truelabel' : tmpTruelabel, 'imageID' : tmpImageID})
 
-    main_trainingandtest(images) #call main_trainingandtest function to evaluate batch
-  print('Batch done')
-
-	#import pdb
-  #pdb.set_trace()
+    main_trainingandtest(images,conf_matrices,PP_matrices) #call main_trainingandtest function to evaluate batch
+    print('Batch done')
