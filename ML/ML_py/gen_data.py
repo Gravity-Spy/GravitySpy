@@ -113,22 +113,24 @@ def gen_data():
 
 #put data in image dataframe
     for i in range(N): #for citizen labels
-        images['type'][i] = 'T'
-        images.loc[[i],'labels'] = pd.Series([all_labels[i]],index=[i])
-        images.loc[[i],'userIDs'] = pd.Series([all_userIDs[i]],index=[i])
+
+        images.loc[[i],'type']         = 'T'
+        images.loc[[i],'labels']       = pd.Series([all_labels[i]],index=[i])
+        images.loc[[i],'userIDs']      = pd.Series([all_userIDs[i]],index=[i])
         images.loc[[i],'ML_posterior'] = pd.Series([ML_dec[i,:]],index=[i])
-        images['truelabel'][i] = -1
+        images.loc[[i],'truelabel']    = -1
 
     for i in range(N,int(N+N/5)):
-        images['type'][i] = 'G'
-        images.loc[[i],'labels'] = pd.Series([all_training_labels[i-N]],index=[i])
-        images.loc[[i],'userIDs'] = pd.Series([all_training_userIDs[i-N]],index=[i])
-        images['truelabel'][i] = citizen_training_labels[i-N]
+
+        images.loc[[i],'type']         = 'G'
+        images.loc[[i],'labels']       = pd.Series([all_training_labels[i-N]],index=[i])
+        images.loc[[i],'userIDs']      = pd.Series([all_training_userIDs[i-N]],index=[i])
+        images.loc[[i],'truelabel']    = citizen_training_labels[i-N]
 
     dummy = random_permutation(range(250),int(N+N/5))
 
     for i in range(int(N+N/5)):
-        images['imageID'][i] = dummy[i]
+        images.loc[[i],'imageID'] = dummy[i]
 
     conf_matrices  = pd.DataFrame({ 'userID' : conf_userIDs,'conf_matrix' : conf_matrices})
 
