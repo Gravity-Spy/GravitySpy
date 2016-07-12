@@ -15,7 +15,7 @@ def random_permutation(iterable, r=None):
 
 #function to generate one batch of test data for use with gravspy_main2.py
 def gen_data():
-    images = pd.DataFrame(np.zeros((120,6)), columns=['type','labels','userIDs','ML_posterior','true_label','imageID']) #images is final dataframe
+    images = pd.DataFrame(np.zeros((120,6)), columns=['type','labels','userIDs','ML_posterior','truelabel','imageID']) #images is final dataframe
 
     #initialization
     N = 100 #100 images
@@ -23,8 +23,8 @@ def gen_data():
     C = 15 #15 classes
 
     #simulate training labels and true labels for test data
-    true_labels = (np.random.randint(1,high=C+1,size=(1,N)))[0] #generate 1xN array of numbers 1 to C, corresponding to true labels of images
-    citizen_training_labels = (np.random.randint(1,high=C+1,size=(1,int(N/5))))[0] #generate 1x(N/5) array of numbers 1 to C, corresponding to citizen labels of images
+    true_labels = (np.random.randint(0,high=C,size=(1,N)))[0] #generate 1xN array of numbers 1 to C, corresponding to true labels of images
+    citizen_training_labels = (np.random.randint(0,high=C,size=(1,int(N/5))))[0] #generate 1x(N/5) array of numbers 1 to C, corresponding to citizen labels of images
 
     #simulate ML decisions
     ML_dec = np.zeros((C,N)) #create empty matrix for machine decisions
@@ -78,7 +78,7 @@ def gen_data():
         labels = [] #create empty list
         total = int(20+10*np.random.rand()) #total amount of labels applied to image, 20 to 30
         correct = int(6+14*np.random.rand()) #amount of correct labels, 6 to 20
-        rest = (np.random.randint(1,high=C+1,size=(1,total-correct)))[0] #generate 1x(total-correct) array of numbers 1 to C, corresponding to random citizen labels
+        rest = (np.random.randint(0,high=C,size=(1,total-correct)))[0] #generate 1x(total-correct) array of numbers 1 to C, corresponding to random citizen labels
 
         for j in range(correct): #iterate over range of correct
 
@@ -98,7 +98,7 @@ def gen_data():
 
         training_labels = [] #create empty list
         training_correct = int(6+14*np.random.rand()) #amount of correct labels, 6 to 20
-        training_rest = (np.random.randint(1,high=C+1,size=(1,R-training_correct)))[0] #generate 1x(R-correct) array of numbers 1 to C, corresponding to random citizen labels
+        training_rest = (np.random.randint(0,high=C,size=(1,R-training_correct)))[0] #generate 1x(R-correct) array of numbers 1 to C, corresponding to random citizen labels
 
         for j in range(training_correct): #iterate over range of training_correct
 
@@ -116,13 +116,13 @@ def gen_data():
         images.loc[[i],'labels'] = pd.Series([all_labels[i]],index=[i])
         images.loc[[i],'userIDs'] = pd.Series([all_userIDs[i]],index=[i])
         images.loc[[i],'ML_posterior'] = pd.Series([ML_dec[i,:]],index=[i])
-        images['true_label'][i] = -1
+        images['truelabel'][i] = -1
 
     for i in range(N,int(N+N/5)):
         images['type'][i] = 'G'
         images.loc[[i],'labels'] = pd.Series([all_training_labels[i-N]],index=[i])
         images.loc[[i],'userIDs'] = pd.Series([all_training_userIDs[i-N]],index=[i])
-        images['true_label'][i] = citizen_training_labels[i-N]
+        images['truelabel'][i] = citizen_training_labels[i-N]
 
     dummy = random_permutation(range(250),int(N+N/5))
 
