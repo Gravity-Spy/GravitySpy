@@ -1,40 +1,20 @@
 #gravspy_main2 script by Luke Calian, 6/29/16
-#before running, run run_main in matlab and save each batch as a .mat file
-#save conf_matrices, PP_matrices, true_labels, and retired_images as .mat files
+# Updated by Scott Coughlin July 12, 2016
 
-#import modules
+# ---- Import standard modules to the python path.
 import numpy as np
 from scipy.io import loadmat
+import random
 from pdb import set_trace
 import pandas as pd
+# Import the random data generation function get_data.py also in this folder.
+import gen_data
 
-#import data that does not change between batches
-conf_matrices = loadmat('conf_matrices.mat')
-
-#tmpPP  = []
-#tmpPP1 = []
-#for iN in range(PP_matrices['PP_matrices'][0].size):
-#    tmpPP.append(PP_matrices['PP_matrices'][0][iN]['imageID'][0][0])
-#    tmpPP1.append(PP_matrices['PP_matrices'][0][iN]['matrix'])
-
-
-tmpCM  = []
-tmpCM1 = []
-for iN in range(conf_matrices['conf_matrices'].size):
-    tmpCM.append(conf_matrices['conf_matrices'][iN]['userID'][0][0][0])
-    tmpCM1.append(conf_matrices['conf_matrices'][iN]['conf_matrix'][0])
-
-
-#tmpRI  = []
-#tmpRI1 = []
-#for iN in range(retired_images['retired_images'].size):
-#    tmpRI.append(retired_images['retired_images'][0][iN]['imageID'][0][0])
-#    tmpRI1.append(retired_images['retired_images'][0][iN]['class'][0][0])
-
-
-conf_matrices  = pd.DataFrame({ 'userID' : tmpCM,'conf_matrix' : tmpCM1})
-retired_images = pd.DataFrame({ 'imageID' : [], 'class' : []})
-PP_matrices    = pd.DataFrame({ 'imageID' : [],'pp_matrix' : []}) 
+###############################################################################
+##########################                     ################################
+##########################     decider         ################################
+##########################                     ################################
+###############################################################################
 
 #decider function to determine where an image is placed
 def decider(pp_matrix, ML_dec, t, R_lim, num_annotators):
@@ -63,6 +43,12 @@ def decider(pp_matrix, ML_dec, t, R_lim, num_annotators):
 
     return decision, image_class
 
+###############################################################################
+##########################                         ############################
+##########################  main_trainingandtest   ############################
+##########################                         ############################
+###############################################################################
+
 #main function to evaluate batch of images
 def main_trainingandtest(images,conf_matrices,PP_matrices,retired_images):
 
@@ -75,6 +61,8 @@ def main_trainingandtest(images,conf_matrices,PP_matrices,retired_images):
             C = images['ML_posterior'][i].size
             break
 
+    # Flat priors. We have no sense of what category a given image should be
+    # ahead of time.
     priors = np.ones((1,C))/C
     t = .4*np.ones((C,1)) #initialize t, threshold vector of .4 for each class
 
@@ -143,6 +131,7 @@ def main_trainingandtest(images,conf_matrices,PP_matrices,retired_images):
                         break
 
                 pp_matrix = np.zeros((C,num_annotators)) #create posterior matrix
+                print labels
                 for k in range(num_annotators): #iterate over citizens that labeled image
                     for iN in range(len(conf_matrices)): #iterate over confusion matrices
 
@@ -201,16 +190,16 @@ Updating the Confusion Matrices for Test Data and Promotion
                     conf_matrices = conf_matrices.append(tmp)
 
     """    for jj = 1:len(conf_matrices)  # for all the citizens
-    
+
         conf_update = conf_matrices['conf_matrix'][jj]; # their conf. matrices are taken one by one
-    
-        conf_update_divided,x,z,s = np.linalg.lstsq(np.diag(sum(conf_update,2)),conf_update) #calculate p(l|j) value 
-    
+
+        conf_update_divided,x,z,s = np.linalg.lstsq(np.diag(sum(conf_update,2)),conf_update) #calculate p(l|j) value
+
         alpha[:,jj] = np.diag(conf_update_divided);    # alpha parameters are recalculated
     """
     #Thresholding alpha vectors and citizen evaluation (needs work)
 
-    
+
     # Ordering the images and sending/saving them
     counter1 = len(retired_images)
     counter2 = len(PP_matrices)
@@ -220,47 +209,69 @@ Updating the Confusion Matrices for Test Data and Promotion
         if dec_matrix[0,i] == 1: # if it is decided to be retired
             tmp = pd.DataFrame({ 'imageID' : [images['imageID'][i]],'class' : [class_matrix[0,i]]},index = [counter1])
             retired_images = retired_images.append(tmp)
-        
+
             counter1 = counter1 + 1
-    
+
         elif dec_matrix[0,i] == 2 or dec_matrix[0,i] == 3:  #if the decision is forwarding to the upper class or wait for more labels
-        
+
             dummy_decider = 1
-        
+
             for y in range(len(PP_matrices)):        #in case the image was waiting for more labels beforehand
-            
+
                 if images['imageID'][i] == PP_matrices['imageID'][y]:
                     PP_matrices['pp_matrix'][y] = pp_matrices_rack[i]      #the PP matrix is overwritten.
                     dummy_decider = 0
                     break
-        
+
             if dummy_decider:
                 tmp = pd.DataFrame({ 'imageID' : [images['imageID'][i]],'pp_matrix' : [pp_matrices_rack[i]]},index = [counter2])
                 PP_matrices = PP_matrices.append(tmp)
-        
+
                 counter2 = counter2 + 1
     return conf_matrices, PP_matrices, retired_images
 
-#for loop to iterate over each batch
-for i in range(1,11):
-    batch_name = 'batch' + str(i) + '.mat' #batch1.mat, batch2.mat, etc
-    batch = loadmat(batch_name) #read batch file
-    tmpType         = []
-    tmpLabels       = []
-    tmpuserIDs      = []
-    tmpTruelabel    = []
-    tmpImageID      = []
-    tmpML_posterior = []
-    # Subtracting 1 off the index from the mat file for the "labels" so that the indexing works in python. 
-    for iN in range(batch['images'].size):
-        tmpType.append(batch['images'][iN]['type'][0][0])
-        tmpLabels.append(batch['images'][iN]['labels'][0][0]-1)
-        tmpuserIDs.append(batch['images'][iN]['IDs'][0][0])
-        tmpTruelabel.append(batch['images'][iN]['truelabel'][0][0][0]-1)
-        tmpML_posterior.append(batch['images'][iN]['ML_posterior'][0][0])
-        tmpImageID.append(batch['images'][iN]['imageID'][0][0][0])
 
-    images = pd.DataFrame({'type' : tmpType,'labels' : tmpLabels,'userIDs' : tmpuserIDs, 'ML_posterior' : tmpML_posterior, 'truelabel' : tmpTruelabel, 'imageID' : tmpImageID})
+###############################################################################
+##########################                     ################################
+##########################      MAIN CODE      ################################
+##########################                     ################################
+###############################################################################
 
-    conf_matrices, PP_matrices, retired_images = main_trainingandtest(images,conf_matrices,PP_matrices,retired_images) #call main_trainingandtest function to evaluate batch
-    print('Batch done')
+if __name__ == '__main__':
+    #import data that does not change between batches
+    conf_matrices = loadmat('conf_matrices.mat')
+
+    tmpCM  = []
+    tmpCM1 = []
+    for iN in range(conf_matrices['conf_matrices'].size):
+        tmpCM.append(conf_matrices['conf_matrices'][iN]['userID'][0][0][0])
+        tmpCM1.append(conf_matrices['conf_matrices'][iN]['conf_matrix'][0])
+
+    conf_matrices  = pd.DataFrame({ 'userID' : tmpCM,'conf_matrix' : tmpCM1})
+
+    #for loop to iterate over each batch
+    for i in range(1,11):
+        batch_name = 'batch' + str(i) + '.mat' #batch1.mat, batch2.mat, etc
+        batch = loadmat(batch_name) #read batch file
+        tmpType         = []
+        tmpLabels       = []
+        tmpuserIDs      = []
+        tmpTruelabel    = []
+        tmpImageID      = []
+        tmpML_posterior = []
+        # Subtracting 1 off the index from the mat file for the "labels" so that the indexing works in python.
+        for iN in range(batch['images'].size):
+            tmpType.append(batch['images'][iN]['type'][0][0])
+            tmpLabels.append(batch['images'][iN]['labels'][0][0]-1)
+            tmpuserIDs.append(batch['images'][iN]['IDs'][0][0])
+            tmpTruelabel.append(batch['images'][iN]['truelabel'][0][0][0]-1)
+            tmpML_posterior.append(batch['images'][iN]['ML_posterior'][0][0])
+            tmpImageID.append(batch['images'][iN]['imageID'][0][0][0])
+
+        images = pd.DataFrame({'type' : tmpType,'labels' : tmpLabels,'userIDs' : tmpuserIDs, 'ML_posterior' : tmpML_posterior, 'truelabel' : tmpTruelabel, 'imageID' : tmpImageID})
+
+        images,conf_matrices = gen_data.gen_data()
+
+        conf_matrices, PP_matrices, retired_images = main_trainingandtest(images,conf_matrices,PP_matrices,retired_images) #call main_trainingandtest function to evaluate batch
+        print('Batch done')
+
