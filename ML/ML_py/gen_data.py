@@ -18,6 +18,7 @@ def random_permutation(iterable, r=None):
 def gen_data():
     images = pd.DataFrame(np.zeros((120,6)), columns=['type','labels','userIDs','ML_posterior','truelabel','imageID']) #images is final dataframe
     images['truelabel'] = images['truelabel'].astype('int')
+    images['imageID'] = images['imageID'].astype('int')
 
     #initialization
     N = 100 #100 images
