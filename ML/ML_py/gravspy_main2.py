@@ -248,6 +248,10 @@ if __name__ == '__main__':
         tmpCM1.append(conf_matrices['conf_matrices'][iN]['conf_matrix'][0])
 
     conf_matrices  = pd.DataFrame({ 'userID' : tmpCM,'conf_matrix' : tmpCM1})
+    retired_images = pd.DataFrame({ 'imageID' : [], 'class' : []})
+    PP_matrices    = pd.DataFrame({ 'imageID' : [],'pp_matrix' : []}) 
+
+    hold,conf_matrices = gen_data.gen_data()
 
     #for loop to iterate over each batch
     for i in range(1,11):
@@ -270,7 +274,7 @@ if __name__ == '__main__':
 
         images = pd.DataFrame({'type' : tmpType,'labels' : tmpLabels,'userIDs' : tmpuserIDs, 'ML_posterior' : tmpML_posterior, 'truelabel' : tmpTruelabel, 'imageID' : tmpImageID})
 
-        images,conf_matrices = gen_data.gen_data()
+        images,hold = gen_data.gen_data()
 
         conf_matrices, PP_matrices, retired_images = main_trainingandtest(images,conf_matrices,PP_matrices,retired_images) #call main_trainingandtest function to evaluate batch
         print('Batch done')
