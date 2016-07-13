@@ -131,7 +131,6 @@ def main_trainingandtest(images,conf_matrices,PP_matrices,retired_images):
                         break
 
                 pp_matrix = np.zeros((C,num_annotators)) #create posterior matrix
-                print labels
                 for k in range(num_annotators): #iterate over citizens that labeled image
                     for iN in range(len(conf_matrices)): #iterate over confusion matrices
 
@@ -239,15 +238,15 @@ Updating the Confusion Matrices for Test Data and Promotion
 
 if __name__ == '__main__':
     #import data that does not change between batches
-    conf_matrices = loadmat('conf_matrices.mat')
+    #conf_matrices = loadmat('conf_matrices.mat')
 
-    tmpCM  = []
-    tmpCM1 = []
-    for iN in range(conf_matrices['conf_matrices'].size):
-        tmpCM.append(conf_matrices['conf_matrices'][iN]['userID'][0][0][0])
-        tmpCM1.append(conf_matrices['conf_matrices'][iN]['conf_matrix'][0])
+    #tmpCM  = []
+    #tmpCM1 = []
+    #for iN in range(conf_matrices['conf_matrices'].size):
+    #    tmpCM.append(conf_matrices['conf_matrices'][iN]['userID'][0][0][0])
+    #    tmpCM1.append(conf_matrices['conf_matrices'][iN]['conf_matrix'][0])
 
-    conf_matrices  = pd.DataFrame({ 'userID' : tmpCM,'conf_matrix' : tmpCM1})
+    #conf_matrices  = pd.DataFrame({ 'userID' : tmpCM,'conf_matrix' : tmpCM1})
     retired_images = pd.DataFrame({ 'imageID' : [], 'class' : []})
     PP_matrices    = pd.DataFrame({ 'imageID' : [],'pp_matrix' : []}) 
 
@@ -255,24 +254,24 @@ if __name__ == '__main__':
 
     #for loop to iterate over each batch
     for i in range(1,11):
-        batch_name = 'batch' + str(i) + '.mat' #batch1.mat, batch2.mat, etc
-        batch = loadmat(batch_name) #read batch file
-        tmpType         = []
-        tmpLabels       = []
-        tmpuserIDs      = []
-        tmpTruelabel    = []
-        tmpImageID      = []
-        tmpML_posterior = []
+        #batch_name = 'batch' + str(i) + '.mat' #batch1.mat, batch2.mat, etc
+        #batch = loadmat(batch_name) #read batch file
+        #tmpType         = []
+        #tmpLabels       = []
+        #tmpuserIDs      = []
+        #tmpTruelabel    = []
+        #tmpImageID      = []
+        #tmpML_posterior = []
         # Subtracting 1 off the index from the mat file for the "labels" so that the indexing works in python.
-        for iN in range(batch['images'].size):
-            tmpType.append(batch['images'][iN]['type'][0][0])
-            tmpLabels.append(batch['images'][iN]['labels'][0][0]-1)
-            tmpuserIDs.append(batch['images'][iN]['IDs'][0][0])
-            tmpTruelabel.append(batch['images'][iN]['truelabel'][0][0][0]-1)
-            tmpML_posterior.append(batch['images'][iN]['ML_posterior'][0][0])
-            tmpImageID.append(batch['images'][iN]['imageID'][0][0][0])
+        #for iN in range(batch['images'].size):
+        #    tmpType.append(batch['images'][iN]['type'][0][0])
+        #    tmpLabels.append(batch['images'][iN]['labels'][0][0]-1)
+        #    tmpuserIDs.append(batch['images'][iN]['IDs'][0][0])
+        #    tmpTruelabel.append(batch['images'][iN]['truelabel'][0][0][0]-1)
+        #    tmpML_posterior.append(batch['images'][iN]['ML_posterior'][0][0])
+        #    tmpImageID.append(batch['images'][iN]['imageID'][0][0][0])
 
-        images = pd.DataFrame({'type' : tmpType,'labels' : tmpLabels,'userIDs' : tmpuserIDs, 'ML_posterior' : tmpML_posterior, 'truelabel' : tmpTruelabel, 'imageID' : tmpImageID})
+        #images = pd.DataFrame({'type' : tmpType,'labels' : tmpLabels,'userIDs' : tmpuserIDs, 'ML_posterior' : tmpML_posterior, 'truelabel' : tmpTruelabel, 'imageID' : tmpImageID})
 
         images,hold = gen_data.gen_data()
 
