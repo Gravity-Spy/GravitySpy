@@ -221,7 +221,7 @@ Updating the Confusion Matrices for Test Data and Promotion
 
                 if images['imageID'][i] == PP_matrices['imageID'][y]:
                     #the PP matrix is overwritten.
-                    PP_matrices.loc[[y],'pp_matrix'] = [pp_matrices_rack[i]
+                    PP_matrices.loc[[y],'pp_matrix'] = [pp_matrices_rack[i]]
                     dummy_decider = 0
                     break
 
