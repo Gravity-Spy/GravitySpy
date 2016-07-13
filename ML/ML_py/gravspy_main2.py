@@ -64,6 +64,7 @@ def main_trainingandtest(images,conf_matrices,PP_matrices,retired_images):
     # Flat priors. We have no sense of what category a given image should be
     # ahead of time.
     priors = np.ones((1,C))/C
+    b = .4*np.ones((1,C)) #initialize b, ML ===> golden in terms of confusion
     t = .4*np.ones((C,1)) #initialize t, threshold vector of .4 for each class
 
     dec_matrix = np.zeros((1,N)) #define dec_matrix, matrix of each image's decision
@@ -166,27 +167,28 @@ citizen evaluation/promotion.
 Updating the Confusion Matrices for Test Data and Promotion
     """
     for i in range(N):
-        if dec_matrix[0,i] == 1: #if image is retired
-            labels = images['labels'][i] #the citizen label of the image is taken
-            userIDs = images['userIDs'][i] #the IDs of the citizens that labeld that image are taken
-            for ii in range(userIDs.size): #iterate over user IDs of image
+        if images['type'][i] == 'T': #if image is retired
+            if (images['ML_posterior'][i] > b).any():
+                labels = images['labels'][i] #the citizen label of the image is taken
+                userIDs = images['userIDs'][i] #the IDs of the citizens that labeld that image are taken
+                for ii in range(userIDs.size): #iterate over user IDs of image
 
-                indicator2 = 0
+                    indicator2 = 0
 
-                for cc in range(len(conf_matrices)): #iterate over confusion matrices
+                    for cc in range(len(conf_matrices)): #iterate over confusion matrices
 
-                    if userIDs[ii] == conf_matrices['userID'][cc]: #if user is registered
+                        if userIDs[ii] == conf_matrices['userID'][cc]: #if user is registered
 
-                        #take confusion matrix of citizen and index by true label, label given by user and update the confusion matrix at that entry.
-                        conf_matrices['conf_matrix'][cc][tlabel,labels[ii]] += 1
-                        indicator2 = 1
+                            #take confusion matrix of citizen and index by true label, label given by user and update the confusion matrix at that entry.
+                            conf_matrices['conf_matrix'][cc][tlabel,labels[ii]] += 1
+                            indicator2 = 1
 
-                if indicator2 == 0: #if user not registered
+                    if indicator2 == 0: #if user not registered
 
-                    dummy_matrix = np.zeros((C,C)) #create dummy matrix
-                    dummy_matrix[tlabel,labels[ii]] += 1 #update dummy matrix
-                    tmp = pd.DataFrame({ 'userID' : [userIDs[ii]],'conf_matrix' : [dummy_matrix]},index = [len(conf_matrices)])
-                    conf_matrices = conf_matrices.append(tmp)
+                        dummy_matrix = np.zeros((C,C)) #create dummy matrix
+                        dummy_matrix[tlabel,labels[ii]] += 1 #update dummy matrix
+                        tmp = pd.DataFrame({ 'userID' : [userIDs[ii]],'conf_matrix' : [dummy_matrix]},index = [len(conf_matrices)])
+                        conf_matrices = conf_matrices.append(tmp)
 
     """    for jj = 1:len(conf_matrices)  # for all the citizens
 
@@ -218,7 +220,8 @@ Updating the Confusion Matrices for Test Data and Promotion
             for y in range(len(PP_matrices)):        #in case the image was waiting for more labels beforehand
 
                 if images['imageID'][i] == PP_matrices['imageID'][y]:
-                    PP_matrices['pp_matrix'][y] = pp_matrices_rack[i]      #the PP matrix is overwritten.
+                    #the PP matrix is overwritten.
+                    PP_matrices.loc[[y],'pp_matrix'] = [pp_matrices_rack[i]
                     dummy_decider = 0
                     break
 
@@ -248,7 +251,7 @@ if __name__ == '__main__':
 
     #conf_matrices  = pd.DataFrame({ 'userID' : tmpCM,'conf_matrix' : tmpCM1})
     retired_images = pd.DataFrame({ 'imageID' : [], 'class' : []})
-    PP_matrices    = pd.DataFrame({ 'imageID' : [],'pp_matrix' : []}) 
+    PP_matrices    = pd.DataFrame({ 'imageID' : [],'pp_matrix' : []})
 
     hold,conf_matrices = gen_data.gen_data()
 
