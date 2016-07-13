@@ -140,7 +140,7 @@ def main_trainingandtest(images,conf_matrices,PP_matrices,retired_images):
                             conf = conf_matrices['conf_matrix'][iN] #take confusion matrix of citizen
                             break
 
-                    conf_divided,x,z,s = np.linalg.lstsq(np.diag(sum(conf,2)),conf) #calculate p(l|j) value
+                    conf_divided,x,z,s = np.linalg.lstsq(np.diag(np.sum(conf,axis=1)),conf) #calculate p(l|j) value
 
                     for j in range(C): #iterate over classes
 
