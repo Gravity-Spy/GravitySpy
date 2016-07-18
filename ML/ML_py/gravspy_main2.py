@@ -161,15 +161,15 @@ further step. Not currently implemented.
 Also, the confusion matrices are updated based on the golden images.
 
 Next step is updating the confusion matrices for the test images and
-citizen evaluation/promotion.
-
-
-Updating the Confusion Matrices for Test Data and Promotion
-    """
-    for i in range(N):
+citizen evaluation/promotion."""
+   
+    for i in range(N): #iterate over images to update confusion matrices
+        
         if dec_matrix[0,i] == 1: #if image is retired
+            
             labels = images['labels'][i] #the citizen label of the image is taken
             userIDs = images['userIDs'][i] #the IDs of the citizens that labeld that image are taken
+            
             for ii in range(userIDs.size): #iterate over user IDs of image
 
                 indicator2 = 0
