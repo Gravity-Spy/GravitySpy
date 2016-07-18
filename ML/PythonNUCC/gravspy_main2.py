@@ -1,5 +1,5 @@
-#gravspy_main2 script by Luke Calian, 6/29/16
-# Updated by Scott Coughlin July 12, 2016
+#Script by CIERA Intern Group, 7/12/16
+#Updated by Scott Coughlin July 12, 2016
 
 # ---- Import standard modules to the python path.
 import numpy as np
@@ -132,6 +132,10 @@ def main_trainingandtest(images,conf_matrices,PP_matrices,retired_images):
                         break
 
                 pp_matrix = np.zeros((C,num_annotators)) #create posterior matrix
+<<<<<<< HEAD:ML/PythonNUCC/gravspy_main2.py
+=======
+                #print(labels)
+>>>>>>> refs/remotes/origin/lcalian:ML/ML_py/gravspy_main2.py
                 for k in range(num_annotators): #iterate over citizens that labeled image
                     for iN in range(len(conf_matrices)): #iterate over confusion matrices
 
@@ -150,7 +154,7 @@ def main_trainingandtest(images,conf_matrices,PP_matrices,retired_images):
 
                 dec_matrix[0,i], class_matrix[0,i] = decider(pp_matrix, ML_dec, t, R_lim, num_annotators) #make decisions for each image in batch
 
-    """At this point, the decisions for each image in the batch are given. For
+"""At this point, the decisions for each image in the batch are given. For
 golden images in the set, the decision is 0. For the ML labelled images, the
 decisions are one of 1,2, or 3.
 
