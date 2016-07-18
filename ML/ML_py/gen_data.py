@@ -1,5 +1,5 @@
-#gen_data script by CIERA Intern Group, 7/8/16
-# Updated by Scott Coughlin July 12, 2016
+#Script by CIERA Intern Group, 7/8/16
+#Updated by Scott Coughlin July 12, 2016
 
 #import modules
 import numpy as np
