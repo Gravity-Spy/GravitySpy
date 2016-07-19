@@ -92,6 +92,10 @@ end
 
 t = 0.4*ones(C,1);
 
+alpha_threshold = 0.4*ones(C,1);
+
+g_c = 0.7*ones(C,1);
+
 load('true_labels.mat')
 
 load('retired_images.mat')
@@ -186,9 +190,14 @@ for i = 1:N  %for each image
             end
         
             for j = 1:C       %for each class
-                for k = 1:no_annotators   
+                for k = 1:no_annotators   % loop over number of annotators for this image
+                    for iN = 1:length(conf_matrices) % loop over confusion matrix structure array to find the specific users matrix
+                        if IDs(k) == conf_matrices(iN).userID
+                            break
+                        end
+                    end
             
-                    conf = conf_matrices{IDs(k)};      %the conference matrix of the citizen is taken
+                    conf = conf_matrices(iN).conf_matrix;      %the conference matrix of the citizen is taken
             
                     conf_divided = diag(sum(conf,2))\conf;     %The p(l|j) value is calculated
             
@@ -270,6 +279,18 @@ end
 
 %Thresholding alpha vectors and citizen evaluation (needs work)
 
+for jj = 1:length(conf_matrices)
+    
+    if alpha(:,jj) > alpha_threshold
+        
+        citizen_decision(jj).decision = 'P';
+        citizen_decision(jj).userID = conf_matrices(jj).userID;
+    else
+        
+        citizen_decision(jj).decision = 'R';
+        citizen_decision(jj).userID = conf_matrices(jj).userID;
+    end
+end
     
 %% Ordering the images and sending/saving them
 
@@ -301,7 +322,7 @@ for i = 1:N %for each image
         for y = 1:length(PP_matrices)        %in case the image was waiting for more labels beforehand
             
             if images(i).imageID == PP_matrices(y).imageID
-                PP_matrices(y).imageID = images(i).imageID;      %the PP matrix is overwritten.
+                PP_matrices(y).matrix = pp_matrices_rack{i};      %the PP matrix is overwritten.
                 dummy_decider = 0;
                 break
             end
@@ -328,4 +349,4 @@ save('true_labels', 'true_labels')
 
 save('retired_images', 'retired_images')    
 
-
+save('citizen_decision', 'citizen_decision')
