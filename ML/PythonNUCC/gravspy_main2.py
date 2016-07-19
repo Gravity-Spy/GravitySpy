@@ -132,10 +132,6 @@ def main_trainingandtest(images,conf_matrices,PP_matrices,retired_images):
                         break
 
                 pp_matrix = np.zeros((C,num_annotators)) #create posterior matrix
-<<<<<<< HEAD:ML/PythonNUCC/gravspy_main2.py
-=======
-                #print(labels)
->>>>>>> refs/remotes/origin/lcalian:ML/ML_py/gravspy_main2.py
                 for k in range(num_annotators): #iterate over citizens that labeled image
                     for iN in range(len(conf_matrices)): #iterate over confusion matrices
 
@@ -154,7 +150,7 @@ def main_trainingandtest(images,conf_matrices,PP_matrices,retired_images):
 
                 dec_matrix[0,i], class_matrix[0,i] = decider(pp_matrix, ML_dec, t, R_lim, num_annotators) #make decisions for each image in batch
 
-"""At this point, the decisions for each image in the batch are given. For
+    """At this point, the decisions for each image in the batch are given. For
 golden images in the set, the decision is 0. For the ML labelled images, the
 decisions are one of 1,2, or 3.
 
@@ -165,21 +161,6 @@ further step. Not currently implemented.
 Also, the confusion matrices are updated based on the golden images.
 
 Next step is updating the confusion matrices for the test images and
-<<<<<<< HEAD:ML/ML_py/gravspy_main2.py
-citizen evaluation/promotion."""
-   
-    for i in range(N): #iterate over images to update confusion matrices
-        
-        if dec_matrix[0,i] == 1: #if image is retired
-            
-            labels = images['labels'][i] #the citizen label of the image is taken
-            userIDs = images['userIDs'][i] #the IDs of the citizens that labeld that image are taken
-            
-            for ii in range(userIDs.size): #iterate over user IDs of image
-=======
-citizen evaluation/promotion.
-
-
 Updating the Confusion Matrices for Test Data and Promotion
     """
     for i in range(N):
@@ -188,7 +169,6 @@ Updating the Confusion Matrices for Test Data and Promotion
                 labels = images['labels'][i] #the citizen label of the image is taken
                 userIDs = images['userIDs'][i] #the IDs of the citizens that labeld that image are taken
                 for ii in range(userIDs.size): #iterate over user IDs of image
->>>>>>> 28396a641c89355ae8b91a6119fc14c6ecc11ece:ML/PythonNUCC/gravspy_main2.py
 
                     indicator2 = 0
 
