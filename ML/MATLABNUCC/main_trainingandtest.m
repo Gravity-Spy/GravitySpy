@@ -313,6 +313,13 @@ for i = 1:N %for each image
             end
         end
         
+        if max(images(i).ML_posterior) > g_c(class(i))
+            retired_images(counter1).ret_cat = 'G';
+        else
+            retired_images(counter1).ret_cat = '?';
+        end
+        
+        
         counter1 = counter1 + 1;
     
     elseif decision(i) == 2 || decision(i) == 3      %if the decision is forwarding to the upper class or wait for more labels
