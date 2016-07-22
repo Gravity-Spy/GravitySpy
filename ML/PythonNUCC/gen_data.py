@@ -1,5 +1,5 @@
-#gen_data script by CIERA Intern Group, 7/8/16
-# Updated by Scott Coughlin July 12, 2016
+#Script by CIERA Intern Group, 7/8/16
+#Updated by Scott Coughlin July 12, 2016
 
 #import modules
 import numpy as np
@@ -16,14 +16,15 @@ def random_permutation(iterable, r=None):
 
 #function to generate one batch of test data for use with gravspy_main2.py
 def gen_data():
-    images = pd.DataFrame(np.zeros((120,6)), columns=['type','labels','userIDs','ML_posterior','truelabel','imageID']) #images is final dataframe
+    
+    #initialization
+    N = 500 #images
+    R = 100 #citizens
+    C = 20 #classes
+
+    images = pd.DataFrame(np.zeros((N+N/5,6)), columns=['type','labels','userIDs','ML_posterior','truelabel','imageID']) #images is final dataframe
     images['truelabel'] = images['truelabel'].astype('int')
     images['imageID'] = images['imageID'].astype('int')
-
-    #initialization
-    N = 100 #100 images
-    R = 30 #30 citizens
-    C = 15 #15 classes
 
     #simulate training labels and true labels for test data
     true_labels = (np.random.randint(0,high=C,size=(1,N)))[0] #generate 1xN array of numbers 1 to C, corresponding to true labels of images
@@ -129,7 +130,7 @@ def gen_data():
         images.loc[[i],'userIDs']      = pd.Series([all_training_userIDs[i-N]],index=[i])
         images.loc[[i],'truelabel']    = citizen_training_labels[i-N]
 
-    dummy = random_permutation(range(250),int(N+N/5))
+    dummy = random_permutation(range(2*N),int(N+N/5))
 
     for i in range(int(N+N/5)):
         images.loc[[i],'imageID'] = dummy[i]

@@ -8,7 +8,7 @@ import random
 from pdb import set_trace
 import pandas as pd
 
-# Import the random data generation function get_data.py also in this folder.
+#import the random data generation function get_data.py also in this folder.
 import gen_data
 
 ###############################################################################
@@ -55,24 +55,26 @@ def main_trainingandtest(images,conf_matrices,PP_matrices,retired_images):
 
     R_lim = 23 #initialize R, max # of citizens who can look at an image before it is passed to a higher level if consensus is not reached
     N = images['type'].size #initialize N, # of images in batch
+    C = images[images.type == 'T']['ML_posterior'][0].size #initialize C, # of classes
 
-    #initialize C, # of classes
-    for i in range(N):
-        if images['type'][i] == 'T':
-            C = images['ML_posterior'][i].size
-            break
-   
-    priors = np.ones((1,C))/C #initialixe flat priors b/c we do not know what category the image is in
+    priors = np.ones((1,C))/C #initialize flat priors b/c we do not know what category the image is in
     alpha = .4*np.ones((C,1)) #initialize alpha, threshold for user promotion
-    g_c = .4*np.ones((1,C)) #initialize g_c, ML ===> golden in terms of confusion
+    g_c = .7*np.ones((C,1)) #initialize g_c, ML ===> golden in terms of confusion
     t = .4*np.ones((C,1)) #initialize t, threshold vector of .4 for each class
 
-    dec_matrix = np.zeros((1,N)) #define dec_matrix, matrix of each image's decision
-    class_matrix = np.zeros((1,N)) #define class_matrix, matrix of each decision's class
+    dec_matrix = np.zeros((N,1),dtype=np.int) #define dec_matrix, matrix of each image's decision
+    class_matrix = np.zeros((N,1),dtype=np.int) #define class_matrix, matrix of each decision's class
 
     pp_matrices_rack = [] #create list of pp_matrices for all images #np.zeros((15,23,N)) create 3D matrix of all posterior matrices
 
     #main for loop to iterate over images
+    golden_images = images[images.type == 'G']
+    labels = golden_images['labels']
+    
+    
+    
+    
+    
     for i in range(N):
 
         if images['type'][i] == 'G': #check if golden set image
