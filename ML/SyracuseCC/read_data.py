@@ -1,139 +1,262 @@
 #Script by CIERA Intern Group, 7/19/16
 
-#import modules
+### Import standard modules ###
 import numpy as np
-import json
 import pandas as pd
+import json
 
-def read_data():
+### Main function to read classification data ###
+def read_data(file):
+
   
-  #read in files
-  data = pd.read_csv('gravity-spy-classifications.csv', skiprows=29573, nrows=20008) #reads data after Beta 2.0
-  data = np.asarray(data) #convert to numpy array
+  ### Define set of parsing functions ###
+  def CustomParser(data):
+      j1 = json.loads(data)
+      return j1
+
+  def filter_json(x):
+      x=x[0]
+      try:
+          x['value']=x['value'][0]
+      except:
+          x['value'] = {u'answers': {}, u'choice': {}, u'filters': {}}
+      return x
+
+  def extract_choice(x):
+      y = []
+      y.append((str(x['value']['choice'])))
+      return y
+
+  def extract_tasks(x):
+      x=x['task']
+      return x
+
+  def extract_answers(x):
+      x=x['value']['answers']
+      return x
+
+  def extract_filters(x):
+      x=['value']['filters']
+      return x
+
+  def extract_zooID(x):
+      x=int(list(x.keys())[0])
+      return x
+
+  def extract_FileName1(x):
+      try:
+          x = x[list(x.keys())[0]]['Filename1'].split('_')[1]
+      except:
+          x = ''
+      return x
+
+  def check_upload(x):
+      if len(x.split(';')) == 4:
+          x = True
+      else:
+          x = False
+      return x
+
+  def check_anno(x):
+      if len(x) == 1:
+          x = True
+      else:
+          x = False
+      return x
+
+  def convert_to_int(x):
+      try:
+          x=int(x)
+      except:
+          x=0
+      return x
+      
   
-  #create dict for converting old imageIDs to new imageIDs (due to timestamp error)
-  tmp_new = [] #empty list of new imageIDs
-  tmp_old = [] #empty list of old imageIDs
-  no_match = [] #list of imageIDs with no match (timestamp errors)
-  id_dict = {} #create empty dict
+  ### Read in csv with custom read for those column in JSON format ###
 
-  id_match = pd.read_csv('IDmatchall.txt') #read in file
+  # Define location of classification file
+  class_file = "gravity-spy-classifications.csv" 
 
-  for i in id_match['# New       Old']: #iterate over data in file
-      
-      if len(i)>10: #to ignore new imageIDs that have no corresponding old imageIDs
-          
-          i = i.split(' ') #split new and old imageIDs, append to corresponding lists
-          tmp_new.append(i[0])
-          tmp_old.append(i[1])
+  # Create dataframe from csv
+  data1 = pd.read_csv(class_file,converters={'annotations':CustomParser,'subject_data':CustomParser})
 
-  id_match = pd.DataFrame({'new':tmp_new,'old':tmp_old}) #create dataframe of old and new imageIDs
+  # Change ID to int
+  data1['user_id']        = data1['user_id'].apply(convert_to_int)
+  # Doing a mild work around for the json format of the annontation column
+  data1['annotations']    = data1['annotations'].apply(filter_json)
+  # Extract choice and making it a column
+  data1['choice']         = data1['annotations'].apply(extract_choice)
+  # Extract the task entry and making it a column
+  data1['tasks']          = data1['annotations'].apply(extract_tasks)
+  # Extract answers and making it a column
+  data1['answers']        = data1['annotations'].apply(extract_answers)
+  # Extract zooniverse ID it gave this subject and making it a column
+  data1['zooID']          = data1['subject_data'].apply(extract_zooID) 
+  # Extract uniqueID assigned to the image during image creation and making it a column
+  data1['imageID']        = data1['subject_data'].apply(extract_FileName1)
+  # Get cumulative count of number of prior classifications by user
+  data1['classification_number'] = data1.groupby('user_id').cumcount()
+  # Check that the subject_ids for a given classification is 4. If not I uploaded the images wrong for that subject
+  data1['goodUpload']     = data1['subject_ids'].apply(check_upload)
+  # Check that the number of annotation is of size 1 (i.e. they did not do multiple annotation)
+  data1['numAnnotations'] = data1['choice'].apply(check_anno)
 
-  for a,b in zip(id_match['new'],id_match['old']): #iterate over imageID dataframe
-      id_dict[b] = a #map old imageID to new imageID in dict
-      
-  #create dict for mapping alpha labels to numeric labels
-  label_dict = {'45MHZLGHTMDLTN':1,'LGHTMDLTN':1,'50HZ':2,'RCMPRSSR50HZ':2,'BLP':3,'CHRP':4,'XTRMLLD':5,'HLX':6,'KFSH':7,
-              'LWFRQNCBRST':8,'LWFRQNCLN':9,'NGLTCH':10,'DNTSGLTCH':10,'NNFTHBV':11,'PRDDVS':12,'60HZPWRLN':13,'60HZPWRMNS':13,
-              'PWRLN60HZ':13,'RPTNGBLPS':14,'SCTTRDLGHT':15,'SCRTCH':16,'TMT':17,'VLNHRMNC500HZ':18,'VLNMDHRMNC500HZ':18,
-              'HRMNCS':18,'WNDRNGLN':19,'WHSTL':20}
-              
-  #create dataframe from classification data
-  tmp_user= [] #create empty lists
-  tmp_user_id = []
-  tmp_workflow = []
-  tmp_task = []
-  tmp_choice = []
-  tmp_retired = []
-  tmp_unique_id = []
-  tmp_zoo_id = []
 
-  for i in range(len(data)): #create list to hold to output information of each classification
-      
-      output = [] #check that there was only 1 choice made...
-      annotations = json.loads(data[i][11])
-      idcheck = data[i][2]
-      
-      if str(annotations).count('choice') == 1 and not np.isnan(idcheck):
-          
-          user = data[i,1]
-          user_id = data[i,2]
-          workflow = data[i,5]
-          
-          #annotations
-          task = annotations[0]["task"]
-          choice = annotations[0]["value"][0]["choice"]
-          
-          #subject data
-          subject_data = json.loads(data[i][12])
-          for key in subject_data:
-              zoo_id = key
-              retired = subject_data[key]['retired']
-              unique_id = subject_data[key]['subject_id']
-          
-          #append this information into a temporary output file
-          tmp_user_id.append(user_id)
-          tmp_workflow.append(workflow)
-          tmp_task.append(task)
-          tmp_choice.append(choice)
-          tmp_retired.append(retired)
-          tmp_unique_id.append(unique_id)
-          tmp_zoo_id.append(zoo_id)
-          
-  #store classification data in dataframe
-  classifications = pd.DataFrame({'imageID':tmp_unique_id,'userID':tmp_user_id,'workflow':tmp_workflow,
-                                  'task':tmp_task,'label':tmp_choice,'type':tmp_retired, 'zooID':tmp_zoo_id})
+  # Dropping annotations,subject_data, and subject_ids
+  data1 = data1.drop('annotations',1)
+  data1 = data1.drop('subject_data',1)
+  data1 = data1.drop('subject_ids',1)
   
-  #create list of unique imageIDs that have new IDs and appear in classification data                                
-  uniques = set(np.unique(classifications['imageID'])) #create set of unique imageIDs
-  keys = set(id_dict.keys()) #create set of new imageIDs from id_dict
-  uniques = list(uniques.intersection(keys)) #find intersection of sets, convert to list
   
-  #function to create lists of empty lists
-  def emptylist(x):
-      elist = []
-      for i in range(x):
-          elist.append([])
-      return elist
-      
-  #read data from GravSpy beta
-  pd.options.mode.chained_assignment = None  # default='warn', turns off unnecessary warning about setting values to slice of dataframe
+  ### Check if workflow version is acceptable ###
+  versions = [692.102,714.11399999999992] # List of acceptable versions
+  data1['goodWorkFlow'] = (data1['workflow_version'].isin(versions)) # Add column of booleans, true means acceptable
+  
+  
+  ### Version specific quality checks ###
 
-  #create dataframe, length of uniques, without labels or userIDs
-  images = pd.DataFrame({'type':['T']*len(uniques),'labels':emptylist(len(uniques)),
-                          'userIDs':emptylist(len(uniques)),'ML_posterior':emptylist(len(uniques)),
-                          'truelabel':[-1]*len(uniques),'imageID':uniques,'zooID':emptylist(len(uniques))})
+  # Data for converting old to new imageIDs
+  id_data = pd.read_csv('IDmatchall.txt',delim_whitespace=True,skiprows=1,names=['new_imageID','old_imageID'])
 
-  for i in range(len(uniques)): #iterate over unique imageIDs
-      
-      classifications_idx = np.where((uniques[i] == classifications['imageID']))[0][0]
-      
-      images['zooID'][i] = int(classifications.loc[[classifications_idx], 'zooID'])
-      
-      for locations in np.where(uniques[i] == classifications['imageID']): #iterate over arrays of where unique imageID appears
-          
-          images_idx = np.where(uniques[i] == images['imageID'])[0][0] #find index of line in images where unique imageID appears
-          
-          for location in locations: #iterate over elements in array of locations in classifications where unique imageID appears
-          
-              images['labels'][images_idx].append(label_dict[classifications['label'][location]]) #append numeric label
-              images['userIDs'][images_idx].append(int(classifications['userID'][location])) #append userID
-              
-  for imageID in images['imageID']: #iterate over imageIDs
+  beta_check = ~data1['workflow_version'].isin([692.102, 714.11399999999992]) # Check if classification from beta 2.0
+  id_check = data1['imageID'].isin(id_data['old_imageID']) # Check if imageID has a new ID
 
-      imageID = id_dict[imageID] #convert old imageIDs to new imageIDs using dict
-   
-  #read data from golden images
+  data1['goodID'] = beta_check | id_check # Apply 'bitwise-or' to checks, append to dataframe
+  
+  
+  ### Apply data quality cuts ###
+  data1 = data1[data1.goodUpload & data1.numAnnotations & data1.goodWorkFlow & data1.goodID & data1.user_id != 0]
+
+  # Drop unnecessary columns
+  data1 = data1.drop('user_ip',1)
+  data1 = data1.drop('workflow_name',1)
+  data1 = data1.drop('created_at',1)
+  data1 = data1.drop('gold_standard',1)
+  data1 = data1.drop('expert',1)
+  data1 = data1.drop('tasks',1)
+  data1 = data1.drop('answers',1)
+  data1 = data1.drop('goodUpload',1)
+  data1 = data1.drop('numAnnotations',1)
+  data1 = data1.drop('goodWorkFlow',1)
+  data1 = data1.drop('goodID',1)
+  data1 = data1.drop('metadata',1)
+  
+  
+  ### Convert alpha labels to int labels and old to new imageIDs ###
+
+  label_dict = {'45MHZLGHTMDLTN':5,'LGHTMDLTN':5,'50HZ':8,'RCMPRSSR50HZ':8,'BLP':9,'CHRP':2,'XTRMLLD':6,'HLX':14,'KFSH':18,
+                'LWFRQNCBRST':1,'LWFRQNCLN':7,'NGLTCH':19,'DNTSGLTCH':19,'NNFTHBV':16,'PRDDVS':11,'60HZPWRLN':10,'60HZPWRMNS':10,
+                'PWRLN60HZ':10,'RPTNGBLPS':3,'SCTTRDLGHT':4,'SCRTCH':15,'TMT':12,'VLNHRMNC500HZ':17,'VLNMDHRMNC500HZ':17,
+                'HRMNCS':17,'WNDRNGLN':13,'WHSTL':0}
+
+  def choice_replace(x):
+      return label_dict[x[0]]
+
+  old_imageID = list(id_data['old_imageID'])
+  new_imageID = list(id_data['new_imageID'])
+  id_dict = {}
+
+  for a,b in zip(old_imageID,new_imageID):
+      id_dict[a] = b
+
+  def imageID_replace(x):
+      try:
+          x = id_dict[x]
+          return x
+      except:
+          return x
+      
+  data1['choice']      = data1['choice'].apply(choice_replace)
+  data1['imageID']     = data1['imageID'].apply(imageID_replace)
+  
+  
+  ### Pivot dataframe to make index imageID and get choice, user_id, and workflow_version ###
+
+  # Function to aggregate data
+  def lister(x):
+      return list(x)
+
+  # Use pandas pivot_table, create columns corresponding to image type and true label
+  image_values         = ['choice', 'user_id','workflow_version','classification_number','zooID']
+  images               = pd.pivot_table(data1,index='imageID',values=image_values,aggfunc=lister)
+  images['zooID']      = images['zooID'].apply(np.unique)
+  images['type']       = ['T']*len(images)
+  images['true_label'] = [-1]*len(images)
+  
+  
+  ### Read in ML_scores ###
+
+  # Remove Hanford and Livingston designations
+  def name_clean(x):
+      x = x.split('_')[1]
+      return x
+
+  ML_scores_L       = pd.read_csv('scores_L.csv')
+  ML_scores_H       = pd.read_csv('scores_H.csv')
+  ML_scores         = ML_scores_L.append(ML_scores_H)
+  ML_scores['Name'] = ML_scores['Name'].apply(name_clean)
+  
+  
+  ### Append ML_posterior matrix ###
+
+  # Get number of classes
+  classes = len(ML_scores.columns[2:])
+
+  # Create posterior matrix from dataframe columns
+  ML_posterior = ML_scores['confidence of class 0']
+
+  # Iterate over columns of dataframe
+  for i in range(1,classes): 
+      ML_posterior = np.vstack((ML_posterior,ML_scores['confidence of class %s' % str(i)]))
+
+  ML_posterior = ML_posterior.T
+  ML_posterior = list(ML_posterior)
+  imageIDs = list(ML_scores['Name'])
+
+  # Map imageID to ML_posterior
+  ML_dict = {}
+  for a,b in zip(imageIDs,ML_posterior):
+      ML_dict[a] = b
+      
+  def ML_append(x):
+      try:
+          return ML_dict[x]
+      except:
+          return []
+
+  images_index = pd.Series(images.index)
+  ML_posterior = images_index.apply(ML_append)
+
+  # Append ML_posterior matrix to corresponding imageID
+  images['ML_posterior'] = list(ML_posterior)
+  
+  
+  ### Read classification of golden images ###
+
   goldendata = pd.read_csv('GLabel.csv')
 
-  for i in range(len(goldendata)): #iterate over data
-      
+  # Map zooID to true_label
+  gold_dict = {}
+  for a,b in zip(goldendata['zooID'],goldendata['Classification']):
+      gold_dict[int(a)] = int(b)
+
+  # Change type of golden images 
+  def type_map(x):
+      x = int(x)
+      if x in list(gold_dict.keys()):
+          return 'G'
+      else:
+          return 'T'
+
+  # Change true_label of golden images  
+  def label_map(x):
+      x = int(x)
       try:
-          images_idx = np.where(int(goldendata['zooID'][i]) == images['zooID'])[0][0] #find location in images dataframe
-          images['truelabel'][images_idx] = int(goldendata['Classification'][i]) #change true label to golden classification
-          images['type'][images_idx] = 'G' #change image type to golden
-          
+          return gold_dict[x]
       except:
-          pass #to catch errors caused by images in goldendata not being in images dataframe
-          
+          return -1
+
+  images['type']       = images['zooID'].apply(type_map)
+  images['true_label'] = images['zooID'].apply(label_map)
+  
   return images
