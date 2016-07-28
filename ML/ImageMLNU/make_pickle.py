@@ -36,7 +36,7 @@ def main():
     print(opts)
     # Default input dataset path
     dataset_path = opts.dataset_path
-    dataset_path =+ '/'
+    dataset_path += '/'
 
     # default address to save pickle files
     save_address = opts.save_address

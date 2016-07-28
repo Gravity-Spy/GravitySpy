@@ -5,6 +5,7 @@ from functions_fusion import square_early_concatenate_feature
 import sys, gzip, cPickle, os
 from getopt import GetoptError, getopt
 from keras.models import model_from_json
+import optparse
 
 
 '''
@@ -35,15 +36,15 @@ def main():
     opts = parse_commandline()
 
     # Pickles of unlabelled glitches have already saved in this address
-    pickle_adr = opts.pickle-address
+    pickle_adr = opts.pickle_address
     pickle_adr += '/'
 
     # the path where the trained is saved there
-    model_adr = opts.model-address
+    model_adr = opts.model_address
     model_adr += '/'
 
     # the path where the .csv files of the results are saved there
-    save_adr = opts.save-address
+    save_adr = opts.save_address
     save_adr += '/'
 
     if not os.path.exists(save_adr):
