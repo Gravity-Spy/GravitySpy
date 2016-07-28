@@ -23,8 +23,8 @@ def parse_commandline():
     """
     parser = optparse.OptionParser()
     parser.add_option("--dataset-path",default='./data/',help="path to unlabelled images")
-    parser.add_option("--save-address",default='./datapickled/',help="path to save the pickled images") 
-    parser.add_option("--test-flag",type=int,default=1,help="testflag") 
+    parser.add_option("--save-address",default='./datapickled/',help="path to save the pickled images")
+    parser.add_option("--test-flag",type=int,default=1,help="testflag")
     opts, args = parser.parse_args()
 
 
