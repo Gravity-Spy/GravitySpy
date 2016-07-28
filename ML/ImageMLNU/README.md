@@ -3,7 +3,9 @@ This README explain how to run the ML Image classifer for GravitySpy
 required packages include
 
 http://scikit-image.org/docs/dev/install.html
+
 http://deeplearning.net/software/theano/install.html#install
+
 http://keras.io/#installation
 
 Scenario one
