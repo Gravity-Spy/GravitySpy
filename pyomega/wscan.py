@@ -55,6 +55,7 @@ def parse_commandline():
     parser.add_option("--plot-highpassfiltered-timeseries", action="store_true", default=False,help="Plot high pass filtered timeseries")
     parser.add_option("--plot-raw-timeseries", action="store_true", default=False,help="Plot raw timeseries")
     parser.add_option("--plot-eventgram", action="store_true", default=False,help="Plot eventgram")
+    parser.add_option("--runML", action="store_true", default=False,help="Run the ML classifer on the omega scans")
     opts, args = parser.parse_args()
 
 
@@ -2840,3 +2841,7 @@ if __name__ == '__main__':
                  plotTimeRanges, plotFrequencyRange, \
                  plotDurationInflation, plotBandwidthInflation, \
                  plotNormalizedERange,IDstring)
+
+    if opts.runML:
+         sys.path.append(os.path.join(os.path.dirname(__file__), '..','ML','ImageMLNU'))
+         import make_pickle, labelling_test_glitches
