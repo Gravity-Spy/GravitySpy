@@ -2843,5 +2843,22 @@ if __name__ == '__main__':
                  plotNormalizedERange,IDstring)
 
     if opts.runML:
-         sys.path.append(os.path.join(os.path.dirname(__file__), '..','ML','ImageMLNU'))
-         import make_pickle, labelling_test_glitches
+        import ML.make_pickle as make_pickle
+        import ML.labelling_test_glitches as label_glitches
+        lastPath = (opts.outDir).split('/')[-2]
+        make_pickle.main(opts.outDir.replace(lastPath,""),opts.outDir + '/pickleddata/',1)
+        scores,MLlabel = label_glitches.main(opts.outDir + '/pickleddata/','ML/trained_model/',opts.outDir + '/labeled/')
+        scores = scores.tolist()
+        classes = ["Whistle","Low_Frequency_Burst","Chirp","Repeating_Blips","Scattered_Light","45Mhz_Light_Modulation","Extremely_Loud","Low_Frequency_Lines","50_Hz","Blip","Power_Line","Paired_Doves","Tomte","Wandering_Line","Helix","Scratchy","None_of_the_Above","Violin_Mode","Koi_Fish","No_Glitch"]
+        theClass = classes[int(MLlabel)]
+        finalPath = opts.outDir + theClass
+        if not os.path.isdir(finalPath):
+            os.makedirs(finalPath)
+        system_call = "mv {0}*.png {1}".format(opts.outDir,finalPath)
+        os.system(system_call)
+        imagemetadata = open('imagemeta.csv','a')
+        imagemetadata.write('20160801,{0},{1},{2},{3},{4},"[{5}]"'.format(opts.ID,finalPath + '/' + scores[0] + '_spectrogram_0.5.png',finalPath + '/'+ scores[0] + '_spectrogram_1.0.png',finalPath + '/' + scores[0] + '_spectrogram_2.0.png',finalPath + '/' +scores[0] + '_spectrogram_4.0.png',','.join(scores)))
+        system_call = 'montage -geometry +2+2 {0}*{1}*.png {1}.png'.format(finalPath + '/',opts.ID)
+        os.system(system_call)
+        system_call = 'montage -geometry +1+1 -frame 15 {0}.png {0}.png'.format(opts.ID)
+        os.system(system_call)

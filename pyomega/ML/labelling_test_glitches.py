@@ -5,7 +5,6 @@ from functions_fusion import square_early_concatenate_feature
 import sys, gzip, cPickle, os
 from getopt import GetoptError, getopt
 from keras.models import model_from_json
-import optparse
 
 
 '''
@@ -18,33 +17,15 @@ options:
 -s save_adr, the .csv file is saved in this address
 '''
 
-def parse_commandline():
-    """Parse the options given on the command-line.
-    """
-    parser = optparse.OptionParser()
-    parser.add_option("--pickle-address",default='./pickeled/',help="path to unlabelled images")
-    parser.add_option("--save-address",default='./dataout/',help="path to save the pickled images")
-    parser.add_option("--model-address",default='./model/',help="path to save the pickled images")
-    opts, args = parser.parse_args()
-
-
-    return opts
-
-
-def main():
-
-    opts = parse_commandline()
+def main(pickle_adr,model_adr,save_adr):
 
     # Pickles of unlabelled glitches have already saved in this address
-    pickle_adr = opts.pickle_address
     pickle_adr += '/'
 
     # the path where the trained is saved there
-    model_adr = opts.model_address
     model_adr += '/'
 
     # the path where the .csv files of the results are saved there
-    save_adr = opts.save_address
     save_adr += '/'
 
     if not os.path.exists(save_adr):
@@ -110,8 +91,9 @@ def main():
 
     dw = np.concatenate((name_array_unlabelled, score2_unlabelled_array, score3_unlabelled), axis=1)
     np.savetxt(save_adr + '/scores.csv', dw, delimiter=',', fmt='%s')
+    return dw[0],dw[0][1]
 
 if __name__ == "__main__":
    print 'Start ...'
-   main()
+   main(pickle_adr,model_adr,save_adr)
    print 'Done!'

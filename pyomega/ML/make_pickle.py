@@ -2,7 +2,6 @@
 from GS_utils import my_read_image, my_save_dataset_test, my_save_dataset, listdir_nohidden
 import numpy as np
 import getopt, sys, os
-import optparse
 
 
 '''
@@ -18,34 +17,16 @@ options:
 note: small 'class2idx.csv' file is saved in current directory, that shows the indexing from glitch classes to numbers
 '''
 
-def parse_commandline():
-    """Parse the options given on the command-line.
-    """
-    parser = optparse.OptionParser()
-    parser.add_option("--dataset-path",default='./data/',help="path to unlabelled images")
-    parser.add_option("--save-address",default='./datapickled/',help="path to save the pickled images")
-    parser.add_option("--test-flag",type=int,default=1,help="testflag")
-    opts, args = parser.parse_args()
+def main(dataset_path,save_address,test_flag):
 
-
-    return opts
-
-def main():
-
-    opts = parse_commandline()
-    print(opts)
     # Default input dataset path
-    dataset_path = opts.dataset_path
     dataset_path += '/'
 
     # default address to save pickle files
-    save_address = opts.save_address
     save_address += '/'
 
     # if input dataset is the collection of unlabelled glitches it is "1",
     # if it is golden set set, it is "0".
-    test_flag = opts.test_flag
-    print(test_flag,dataset_path,save_address)
 
     print 'input dataset path', dataset_path
     print 'save adress', save_address
@@ -104,5 +85,5 @@ def main():
 if __name__ == "__main__":
 
     print "Start making pickles!"
-    main()
+    main(dataset_path,save_address,test_flag)
     print('Done!')
