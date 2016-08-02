@@ -57,6 +57,7 @@ def parse_commandline():
     parser.add_option("--plot-raw-timeseries", action="store_true", default=False,help="Plot raw timeseries")
     parser.add_option("--plot-eventgram", action="store_true", default=False,help="Plot eventgram")
     parser.add_option("--runML", action="store_true", default=False,help="Run the ML classifer on the omega scans")
+    parser.add_option("--verbose", action="store_true", default=False,help="Run in Verbose Mode")
     opts, args = parser.parse_args()
 
 
@@ -1076,7 +1077,7 @@ def wthreshold(transforms, tiling, startTime, falseEventRate,
 
     if len(frequencyRange) != 2:
         raise ValueError('Frequency range must be two component vector [fmin fmax].')
-    print qRange
+
     if len(qRange) > 2:
         raise ValueError('Q range must be scalar or two component vector [Qmin Qmax].')
 
@@ -2666,9 +2667,11 @@ if __name__ == '__main__':
 
     # report status
     if not os.path.isdir(outDir):
-        print('creating event directory')
+        if opts.verbose:
+            print('creating event directory')
         os.makedirs(outDir)
-    print('outputDirectory:  {0}'.format(outDir))
+    if opts.verbose:
+        print('outputDirectory:  {0}'.format(outDir))
 
     ########################################################################
     #     Determine if this is a normal omega scan or a Gravityspy         #
@@ -2848,9 +2851,9 @@ if __name__ == '__main__':
         import ML.labelling_test_glitches as label_glitches
 
         lastPath = (opts.outDir).split('/')[-2]
-        make_pickle.main(opts.outDir.replace(lastPath,""),opts.outDir + '/pickleddata/',1)
+        make_pickle.main(opts.outDir.replace(lastPath,""),opts.outDir + '/pickleddata/',1,opts.verbose)
 
-        scores,MLlabel = label_glitches.main(opts.outDir + '/pickleddata/','ML/trained_model/',opts.outDir + '/labeled/')
+        scores,MLlabel = label_glitches.main(opts.outDir + '/pickleddata/','ML/trained_model/',opts.outDir + '/labeled/',opts.verbose)
 
         scores = scores.tolist()
         classes = ["Whistle","Low_Frequency_Burst","Chirp","Repeating_Blips","Scattered_Light","45Mhz_Light_Modulation","Extremely_Loud","Low_Frequency_Lines","50_Hz","Blip","Power_Line","Paired_Doves","Tomte","Wandering_Line","Helix","Scratchy","None_of_the_Above","Violin_Mode","Koi_Fish","No_Glitch"]

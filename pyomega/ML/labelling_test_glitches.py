@@ -17,7 +17,7 @@ options:
 -s save_adr, the .csv file is saved in this address
 '''
 
-def main(pickle_adr,model_adr,save_adr):
+def main(pickle_adr,model_adr,save_adr,verbose):
 
     # Pickles of unlabelled glitches have already saved in this address
     pickle_adr += '/'
@@ -29,8 +29,9 @@ def main(pickle_adr,model_adr,save_adr):
     save_adr += '/'
 
     if not os.path.exists(save_adr):
-                print ('making... ' + save_adr)
-                os.makedirs(save_adr)
+        if verbose:
+            print ('making... ' + save_adr)
+        os.makedirs(save_adr)
 
     np.random.seed(1986)  # for reproducibility
 
@@ -38,7 +39,8 @@ def main(pickle_adr,model_adr,save_adr):
     nb_classes = 20
 
     # load a model and weights
-    print ('Retrieving the trained ML classifier')
+    if verbose:
+        print ('Retrieving the trained ML classifier')
     load_folder = model_adr
     f = gzip.open(load_folder + '/model.pklz', 'rb')
     json_string = cPickle.load(f)
@@ -51,30 +53,32 @@ def main(pickle_adr,model_adr,save_adr):
                         # optimizer=model_optimizer,
                         metrics=['accuracy'])
 
-    print ('Scoring unlabelled glitches')
+    if verbose:
+        print ('Scoring unlabelled glitches')
 
     # reading all 4 duration pickles
     unlabelled_pickles = os.listdir(pickle_adr)  # adding option to do in in alphabetical order
 
     # read duration 1 second
     #dataset_test_unlabelled_1 = load_dataset_unlabelled_glitches(pickle_adr + 'img_1.0_class2_norm.pkl.gz')
-    dataset_test_unlabelled_1 = load_dataset_unlabelled_glitches(pickle_adr + unlabelled_pickles[0])
+    dataset_test_unlabelled_1 = load_dataset_unlabelled_glitches(pickle_adr + unlabelled_pickles[0],verbose)
     [test_set_unlabelled_x_1, test_set_unlabelled_y_1, test_set_unlabelled_name_1] = dataset_test_unlabelled_1
     test_set_unlabelled_x_1 = test_set_unlabelled_x_1.reshape(-1, 1, img_rows, img_cols)
 
-    dataset_test_unlabelled_2 = load_dataset_unlabelled_glitches(pickle_adr + unlabelled_pickles[1])
+    dataset_test_unlabelled_2 = load_dataset_unlabelled_glitches(pickle_adr + unlabelled_pickles[1],verbose)
     [test_set_unlabelled_x_2, test_set_unlabelled_y_2, test_set_unlabelled_name_2] = dataset_test_unlabelled_2
     test_set_unlabelled_x_2 = test_set_unlabelled_x_2.reshape(-1, 1, img_rows, img_cols)
 
-    dataset_test_unlabelled_3 = load_dataset_unlabelled_glitches(pickle_adr + unlabelled_pickles[2])
+    dataset_test_unlabelled_3 = load_dataset_unlabelled_glitches(pickle_adr + unlabelled_pickles[2],verbose)
     [test_set_unlabelled_x_3, test_set_unlabelled_y_3, test_set_unlabelled_name_3] = dataset_test_unlabelled_3
     test_set_unlabelled_x_3 = test_set_unlabelled_x_3.reshape(-1, 1, img_rows, img_cols)
 
-    dataset_test_unlabelled_4 = load_dataset_unlabelled_glitches(pickle_adr + unlabelled_pickles[3])
+    dataset_test_unlabelled_4 = load_dataset_unlabelled_glitches(pickle_adr + unlabelled_pickles[3],verbose)
     [test_set_unlabelled_x_4, test_set_unlabelled_y_4, test_set_unlabelled_name_4] = dataset_test_unlabelled_4
     test_set_unlabelled_x_4 = test_set_unlabelled_x_4.reshape(-1, 1, img_rows, img_cols)
 
-    print('The number of unlabelled glitches is: ', test_set_unlabelled_x_1.shape[0])
+    if verbose:
+        print('The number of unlabelled glitches is: ', test_set_unlabelled_x_1.shape[0])
 
 
     concat_test_unlabelled = square_early_concatenate_feature(test_set_unlabelled_x_1, \
@@ -95,5 +99,5 @@ def main(pickle_adr,model_adr,save_adr):
 
 if __name__ == "__main__":
    print 'Start ...'
-   main(pickle_adr,model_adr,save_adr)
+   main(pickle_adr,model_adr,save_adr,verbose)
    print 'Done!'

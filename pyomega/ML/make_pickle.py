@@ -17,7 +17,7 @@ options:
 note: small 'class2idx.csv' file is saved in current directory, that shows the indexing from glitch classes to numbers
 '''
 
-def main(dataset_path,save_address,test_flag):
+def main(dataset_path,save_address,test_flag,verbose):
 
     # Default input dataset path
     dataset_path += '/'
@@ -28,11 +28,13 @@ def main(dataset_path,save_address,test_flag):
     # if input dataset is the collection of unlabelled glitches it is "1",
     # if it is golden set set, it is "0".
 
-    print 'input dataset path', dataset_path
-    print 'save adress', save_address
-    print 'test flag', test_flag
+    if verbose:
+        print 'input dataset path', dataset_path
+        print 'save adress', save_address
+        print 'test flag', test_flag
     if not os.path.exists(save_address):
-        print ('making... ' + save_address)
+        if verbose:
+            print ('making... ' + save_address)
         os.makedirs(save_address)
 
     # these lines read all images with duration 1.0, 0.5, 2.0 and 4 seconds
@@ -85,5 +87,5 @@ def main(dataset_path,save_address,test_flag):
 if __name__ == "__main__":
 
     print "Start making pickles!"
-    main(dataset_path,save_address,test_flag)
+    main(dataset_path,save_address,test_flag,verbose)
     print('Done!')

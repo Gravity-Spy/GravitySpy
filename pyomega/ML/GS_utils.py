@@ -48,14 +48,14 @@ def my_load_dataset(dataset):
     rval = [(train_set_x, train_set_y, train_set_name), (valid_set_x, valid_set_y, valid_set_name), (test_set_x, test_set_y, test_set_name)]
     return rval
 
-def load_dataset_unlabelled_glitches(dataset):
+def load_dataset_unlabelled_glitches(dataset,verbose):
     with gzip.open(dataset, 'rb') as f:
         try:
             test_set = pickle.load(f, encoding='latin1')
         except:
             test_set = pickle.load(f)
-
-    print 'my_load_dataset_test size test set shape', len(test_set)
+    if verbose:
+        print 'my_load_dataset_test size test set shape', len(test_set)
     #[[(test_set_x, test_set_y, test_set_name)] = test_set
     #rval = [(test_set_x, test_set_y, test_set_name)]
     return test_set
@@ -147,7 +147,6 @@ def my_read_image(data_path, dataset_str):
     for index, item in enumerate(classes):
       path = data_path + classes[index]
       if not classes[index].startswith('.') and os.path.isdir(path):
-        print(path)
         for f in os.listdir(path):
             if dataset_str in f:
                 test = io.imread(os.path.join(path, f))
