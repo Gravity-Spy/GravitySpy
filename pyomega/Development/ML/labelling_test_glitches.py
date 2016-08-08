@@ -50,7 +50,6 @@ def main(pickle_adr,model_adr,save_adr,verbose):
 
     final_model.compile(loss='categorical_crossentropy',
                         optimizer='adadelta',
-                        # optimizer=model_optimizer,
                         metrics=['accuracy'])
 
     if verbose:
@@ -60,7 +59,7 @@ def main(pickle_adr,model_adr,save_adr,verbose):
     unlabelled_pickles = os.listdir(pickle_adr)  # adding option to do in in alphabetical order
 
     # read duration 1 second
-    #dataset_test_unlabelled_1 = load_dataset_unlabelled_glitches(pickle_adr + 'img_1.0_class2_norm.pkl.gz')
+
     dataset_test_unlabelled_1 = load_dataset_unlabelled_glitches(pickle_adr + unlabelled_pickles[0],verbose)
     [test_set_unlabelled_x_1, test_set_unlabelled_y_1, test_set_unlabelled_name_1] = dataset_test_unlabelled_1
     test_set_unlabelled_x_1 = test_set_unlabelled_x_1.reshape(-1, 1, img_rows, img_cols)
@@ -84,18 +83,14 @@ def main(pickle_adr,model_adr,save_adr,verbose):
     concat_test_unlabelled = square_early_concatenate_feature(test_set_unlabelled_x_1, \
                             test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4,[img_rows, img_cols])
 
-    score2_unlabelled = final_model.predict_classes(concat_test_unlabelled, verbose=0)
-    score2_unlabelled_array = np.array([score2_unlabelled.tolist()])
-    score2_unlabelled_array = np.transpose(score2_unlabelled_array)
-
     score3_unlabelled = final_model.predict_proba(concat_test_unlabelled, verbose=0)
 
     name_array_unlabelled = np.array([test_set_unlabelled_name_1.tolist()])
     name_array_unlabelled = np.transpose(name_array_unlabelled)
 
-    dw = np.concatenate((name_array_unlabelled, score2_unlabelled_array, score3_unlabelled), axis=1)
-    np.savetxt(save_adr + '/scores.csv', dw, delimiter=',', fmt='%s')
-    return dw[0],dw[0][1]
+    dw = np.concatenate((name_array_unlabelled, score3_unlabelled), axis=1)
+
+    return dw[0],np.argmax(score3_unlabelled)
 
 if __name__ == "__main__":
    print 'Start ...'

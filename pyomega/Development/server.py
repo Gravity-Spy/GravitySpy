@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import wscan
 import sys
-import cProfile
 
 # Echo server program
 import socket
@@ -28,12 +27,14 @@ for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC,
 if s is None:
     print 'could not open socket'
     sys.exit(1)
-conn, addr = s.accept()
-print 'Connected by', addr
-while 1:
-    data = conn.recv(1024)
-    if not data: break
-    sys.argv = data.split(' ')
-    cProfile.run('wscan.main()',filename='wscan.prof')
-    conn.send(data)
-conn.close()
+
+while True:
+    conn, addr = s.accept()
+    print 'Connected by', addr
+    while 1:
+        data = conn.recv(1024)
+        if not data: break
+        sys.argv = data.split(' ')
+        wscan.main()
+        conn.send(data)
+    conn.close()

@@ -25,7 +25,8 @@ if s is None:
     print 'could not open socket'
     sys.exit(1)
 
-s.sendall('server.py --inifile wini.ini --eventTime 1127700030.877928972 --outDir ./PyOmegaDev/ML/ --uniqueID --ID 123abc1234 --NSDF --runML')
+args = sys.argv
+s.sendall(' '.join(args))
 data = s.recv(1024)
 s.close()
 print 'Received', repr(data)

@@ -2160,7 +2160,7 @@ def wmeasure(transforms, tiling, startTime,
 
 def wspectrogram(transforms, tiling, outDir,IDstring,startTime,
                  referenceTime, timeRange, frequencyRange, qRange,
-                 normalizedEnergyRange, horizontalResolution,detectorName):
+                 plotNormalizedERange, horizontalResolution,detectorName):
 
     """Display time-frequency Q transform spectrograms
     """
@@ -2302,7 +2302,7 @@ def wspectrogram(transforms, tiling, outDir,IDstring,startTime,
         ymax = max(freq)
 
         #myvmax = np.max(Energ)
-        myvmax = np.max(normalizedEnergyRange)
+        myvmax = np.max(plotNormalizedERange)
         cmap = cm.get_cmap(name='viridis')
         myInterp='bicubic'
 
@@ -2335,9 +2335,80 @@ def wspectrogram(transforms, tiling, outDir,IDstring,startTime,
 
         fig.savefig(outDir + detectorName + '_' + IDstring + '_spectrogram_' + str(dur) +'.png')
 
+    f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2,sharey=True)
+
+    for iN in np.arange(0,len(timeRange)):
+        timestr = 'time' + str(iN)
+        time = times[timestr]
+        freq = frequencies
+        Energ = normalizedEnergies[timestr]
+
+        # Make Omega Spectrogram
+
+        locals()["ax"+str(iN+1)].xaxis.set_ticks_position('bottom')
+
+        myfontsize = 15
+        myColor = 'k'
+        mylabelfontsize = 20
+
+        if (iN == 0) or (iN == 2):
+            locals()["ax"+str(iN+1)].set_ylabel("Frequency (Hz)", fontsize=mylabelfontsize, color=myColor)
+        if (iN == 2) or (iN == 3):
+            locals()["ax"+str(iN+1)].set_xlabel("Time (s)", fontsize=mylabelfontsize, color=myColor)
+        if detectorName == 'H1':
+            title = "Hanford"
+        elif detectorName == 'L1':
+            title = "Livingston"
+        else:
+            title = "VIRGO"
+
+        xmin = min(time)
+        xmax = max(time)
+        dur = xmax-xmin
+        xticks = np.linspace(xmin,xmax,5)
+        xticklabels = []
+        for i in xticks:
+            xticklabels.append(str(i))
+
+        ymin = min(freq)
+        ymax = max(freq)
+
+        #myvmax = np.max(Energ)
+        myvmax = np.max(plotNormalizedERange)
+        cmap = cm.get_cmap(name='viridis')
+        myInterp='bicubic'
+
+        cax = locals()["ax"+str(iN+1)].matshow(Energ, cmap=cmap, \
+                           interpolation=myInterp,aspect='auto', origin='lower', \
+                           vmin=0.0,extent=[xmin,xmax,ymin,ymax],vmax=myvmax)
+
+        locals()["ax"+str(iN+1)].set_yscale('log', basey=2, subsy=None)
+        locals()["ax"+str(iN+1)].axes.get_yaxis().set_major_formatter(ScalarFormatter())
+        locals()["ax"+str(iN+1)].ticklabel_format(axis='y', style='plain')
+
+        locals()["ax"+str(iN+1)].set_xticks(xticks)
+        locals()["ax"+str(iN+1)].set_xticklabels(xticklabels,fontsize=myfontsize)
+
+        # Create Colorbar
+        locals()["ax"+str(iN+1)].xaxis.set_ticks_position('bottom')
+
+    # Make an axis: [left, bottom, width, height], plotting area from 0 to 1
+    cbaxes = f.add_axes([0.925, 0.1, 0.03, 0.8])
+    colorbarticks=range(0,30,5)
+    colorbarticklabels=["0","5","10","15","20","25"]
+    colorbarlabel = 'Normalized energy'
+
+    cbar   = f.colorbar(cax, ticks=colorbarticks,cax=cbaxes)
+    cbaxes.set_yticklabels(colorbarticklabels,verticalalignment='center'\
+                           , color=myColor)
+
+    f.suptitle(title,fontsize=mylabelfontsize, color=myColor)
+    f.savefig(outDir + IDstring + '.png')
+
+
 def weventgram(events, tiling, startTime, referenceTime,
                   timeRanges, frequencyRange, durationInflation,
-                  bandwidthInflation, normalizedEnergyRange,IDstring):
+                  bandwidthInflation, plotNormalizedERange,IDstring,detectorName,outDir):
 
     """WEVENTGRAM Display statistically significant time-frequency events
 
@@ -2352,7 +2423,7 @@ def weventgram(events, tiling, startTime, referenceTime,
        handles = weventgram(events, tiling, startTime, referenceTime, ...
                         timeRanges, frequencyRange, ...
                         durationInflation, bandwidthInflation, ...
-                        normalizedEnergyRange)
+                        plotNormalizedERange)
 
          events                  cell array of time-frequency event matrices
          tiling                  q transform tiling structure
@@ -2362,7 +2433,7 @@ def weventgram(events, tiling, startTime, referenceTime,
          frequencyRange          vector range of frequencies to plot
          durationInflation       multiplicative factor for tile durations
          bandwidthInflation      multiplicative factor for tile bandwidths
-         normalizedEnergyRange   vector range of normalized energies for colormap
+         plotNormalizedERange   vector range of normalized energies for colormap
 
          handles                 vector of axis handles for each eventgram
 
@@ -2407,7 +2478,7 @@ def weventgram(events, tiling, startTime, referenceTime,
     displayed events.  If not specified, these parameters both default to unity
     such that the resulting events have unity time-frequency area.
 
-    The optional normalizedEnergyRange argument specifies the range of values to
+    The optional plotNormalizedERange argument specifies the range of values to
     encode using the colormap.  By default, the lower bound is zero and the upper
     bound is autoscaled to the maximum normalized energy encountered in the
     specified range of time and frequency.
@@ -2475,14 +2546,14 @@ def weventgram(events, tiling, startTime, referenceTime,
             times = np.array([-1,1])*timeRange/2
             # default start time for
             if times[0] == float('-Inf'):
-                if isempty(tiling):
+                if not tiling:
                     times[0] = np.floor(np.min(startTimes))
                 else:
                     times[0] = startTime - referenceTime
 
             # default stop time
             if times[1] == float('Inf'):
-                if isempty(tiling):
+                if not tiling:
                     times[1] = np.ceil(np.max(stopTimes))
                 else:
                     times[1] = startTime - referenceTime + \
@@ -2490,7 +2561,7 @@ def weventgram(events, tiling, startTime, referenceTime,
 
             # default minimum frequency
             if frequencyRange[0] == float('-Inf'):
-                if isempty(tiling):
+                if not tiling:
                     frequencyRange[0] = 2**(np.floor(np.log2(np.min(lowFrequencies))))
                 else:
                     frequencyRange[0] = tiling['plane0.0']['minimumFrequency']
@@ -2601,9 +2672,6 @@ def weventgram(events, tiling, startTime, referenceTime,
 ##########################                     ################################
 ###############################################################################
 
-if __name__ == '__main__':
-    main()
-
 def main():
     # Parse commandline arguments
 
@@ -2704,7 +2772,7 @@ def main():
 
     # Read in the data
     if opts.NSDF:
-        data = TimeSeries.fetch(channelName,startTime,stopTime,host='nds.ligo-la.caltech.edu',verbose=True)
+        data = TimeSeries.fetch(channelName,startTime,stopTime,host='nds.ligo-la.caltech.edu')
     else:
         connection = datafind.GWDataFindHTTPConnection()
         cache = connection.find_frame_urls(det, frameType, startTime, stopTime, urltype='file')
@@ -2849,7 +2917,7 @@ def main():
         weventgram(whitenedSignificants, tiling, startTime, centerTime, \
                  plotTimeRanges, plotFrequencyRange, \
                  plotDurationInflation, plotBandwidthInflation, \
-                 plotNormalizedERange,IDstring)
+                 plotNormalizedERange,IDstring,detectorName,outDir)
 
     if opts.runML:
 
@@ -2861,7 +2929,14 @@ def main():
         scores = scores.tolist()
         classes = ["Whistle","Low_Frequency_Burst","Chirp","Repeating_Blips","Scattered_Light","45Mhz_Light_Modulation","Extremely_Loud","Low_Frequency_Lines","50_Hz","Blip","Power_Line","Paired_Doves","Tomte","Wandering_Line","Helix","Scratchy","None_of_the_Above","Violin_Mode","Koi_Fish","No_Glitch"]
         theClass = classes[int(MLlabel)]
-        finalPath = opts.outDir + theClass
+        threshold = [.9995,0,0,0,0,0,0,0,0,.9999998,0,0,0,0,0,0,0,0,0,0]
+        workFlows = ['Beginner','Apprentice']
+
+        if scores[int(MLlabel)]>threshold[int(MLlabel)]:
+            workFlow = 'Beginner'
+        else:
+            workFlow = 'Apprentice'
+        finalPath = opts.outDir + theClass + '/' + workFlow
 
         if not os.path.isdir(finalPath):
             os.makedirs(finalPath)
@@ -2869,13 +2944,12 @@ def main():
         shutil.rmtree(opts.outDir + '/pickleddata/')
         shutil.rmtree(opts.outDir + '/labeled/')
         os.system(system_call)
-        imagemetadata = open('imagemeta.csv','a')
-        imagemetadata.write('20160801,{0},{1},{2},{3},{4},"[{5}]"\n'.format(opts.ID,scores[0] + \
+        imagemetadata = open(finalPath + '/' + 'imagemeta.csv','a')
+        imagemetadata.write('20160802,{0},{1},{2},{3},{4},"[{5}]"\n'.format(opts.ID,scores[0] + \
                           '_spectrogram_0.5.png', scores[0] + '_spectrogram_1.0.png', scores[0] \
                           + '_spectrogram_2.0.png',scores[0] + '_spectrogram_4.0.png',\
-                          ','.join(scores[2::])))
+                          ','.join(scores[1::])))
 
-        system_call = 'montage -geometry +2+2 {0}*{1}*.png {0}{1}.png'.format(finalPath + '/',opts.ID)
-        os.system(system_call)
-        system_call = 'montage -geometry +1+1 -frame 15 {0}{1}.png {0}{1}.png'.format(finalPath + '/',opts.ID)
-        os.system(system_call)
+
+if __name__ == '__main__':
+    main()
