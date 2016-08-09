@@ -138,16 +138,22 @@ def my_save_dataset(save_adress, new_ind, imgs, labels, names, str_name ):
 
 
 def my_read_image(data_path, dataset_str):
-    #classes = listdir_nohidden(data_path) # adding option to do in in alphabetical order
+
     classes = os.listdir(data_path)
-    #classes = classes.sort()
+    classes = [c for c in classes if not c.startswith('.') ]
     imgs = []
     labels = []
     names = []
+
     for index, item in enumerate(classes):
       path = data_path + classes[index]
-      if not classes[index].startswith('.') and os.path.isdir(path):
-        for f in os.listdir(path):
+      #if os.path.isdir(path):
+      if 1:
+        print(path)
+        files = os.listdir(path)
+        files = [f for f in files if not f.startswith('.')]
+        #np.savetxt('/Users/Sara/Desktop/data/pkl/all/path_files_' + dataset_str + '.csv', files, delimiter=',', fmt='%s')
+        for f in files:
             if dataset_str in f:
                 test = io.imread(os.path.join(path, f))
                 test = test[66:532, 105:671, :]
@@ -164,6 +170,40 @@ def my_read_image(data_path, dataset_str):
     np.savetxt('class2idx.csv', classes, delimiter=',', fmt='%s')
     return [imgs, labels, names]
 
+def my_read_image2(data_path, dataset_str):
+
+    classes = os.listdir(data_path)
+    classes = [c for c in classes if not c.startswith('.')]
+
+    imgs = []
+    labels = []
+    names = []
+
+    # np.savetxt('/Users/Sara/Desktop/data/pkl/all25/path_folders_'+ dataset_str +'.csv', classes, delimiter=',', fmt='%s')
+    for index, item in enumerate(classes):
+        path = data_path + classes[index]
+        # if os.path.isdir(path):
+        if 1:
+            print(path)
+            files = os.listdir(path)
+            files = [f for f in files if not f.startswith('.')]
+            # np.savetxt('/Users/Sara/Desktop/data/pkl/all/path_files_' + dataset_str + '.csv', files, delimiter=',', fmt='%s')
+            for f in files:
+                if dataset_str in f:
+                    test = io.imread(os.path.join(path, f))
+                    test = test[66:532, 105:671, :]
+                    # plt.imshow(test)
+                    test = rgb2gray(test)
+                    test = rescale(test, [0.1, 0.1])
+                    # test = resize(test, (50, 50))
+                    # num_feature = test.shape
+                    dim = numpy.int(reduce(lambda x, y: x * y, test.shape))
+                    imgs.append(numpy.reshape(test, (dim)))  # vectorizing
+                    names.append(f[0:13])  # its name
+                    labels.append(index)
+                    # labels.append(1)
+    np.savetxt('class2idx.csv', classes, delimiter=',', fmt='%s')
+    return [imgs, labels, names, classes]
 
 def load_data(dataset):
     with gzip.open(dataset, 'rb') as f:
@@ -183,7 +223,7 @@ def load_data(dataset):
 def build_cnn(img_rows, img_cols):
     model = Sequential()
     #model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
-    model.add(Convolution2D(nb_filter=512, nb_row=5, nb_col=5,
+    model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
                             init='glorot_uniform', activation='linear',
                             border_mode='valid',
                             input_shape=(1, img_rows, img_cols)))
@@ -192,7 +232,7 @@ def build_cnn(img_rows, img_cols):
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
     #model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
-    model.add(Convolution2D(nb_filter=512, nb_row=5, nb_col=5,
+    model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
                             init='glorot_uniform', activation='linear',
                             border_mode='valid'))
     model.add(Activation('relu'))
