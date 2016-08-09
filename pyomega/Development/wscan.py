@@ -32,7 +32,7 @@ from glue import datafind
 
 from gwpy.timeseries import TimeSeries
 
-import ML.make_pickle as make_pickle
+import ML.make_pickle_for_linux as make_pickle
 import ML.labelling_test_glitches as label_glitches
 
 pdb.Pdb.complete = rlcompleter.Completer(locals()).complete
@@ -2335,7 +2335,7 @@ def wspectrogram(transforms, tiling, outDir,IDstring,startTime,
 
         fig.savefig(outDir + detectorName + '_' + IDstring + '_spectrogram_' + str(dur) +'.png')
 
-    f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2,sharey=True)
+    f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4,sharey=True,figsize=(27,6))
 
     for iN in np.arange(0,len(timeRange)):
         timestr = 'time' + str(iN)
@@ -2351,10 +2351,9 @@ def wspectrogram(transforms, tiling, outDir,IDstring,startTime,
         myColor = 'k'
         mylabelfontsize = 20
 
-        if (iN == 0) or (iN == 2):
+        if iN == 0:
             locals()["ax"+str(iN+1)].set_ylabel("Frequency (Hz)", fontsize=mylabelfontsize, color=myColor)
-        if (iN == 2) or (iN == 3):
-            locals()["ax"+str(iN+1)].set_xlabel("Time (s)", fontsize=mylabelfontsize, color=myColor)
+        locals()["ax"+str(iN+1)].set_xlabel("Time (s)", fontsize=mylabelfontsize, color=myColor)
         if detectorName == 'H1':
             title = "Hanford"
         elif detectorName == 'L1':
@@ -2393,7 +2392,7 @@ def wspectrogram(transforms, tiling, outDir,IDstring,startTime,
         locals()["ax"+str(iN+1)].xaxis.set_ticks_position('bottom')
 
     # Make an axis: [left, bottom, width, height], plotting area from 0 to 1
-    cbaxes = f.add_axes([0.925, 0.1, 0.03, 0.8])
+    cbaxes = f.add_axes([0.925, 0.1, 0.02, 0.8])
     colorbarticks=range(0,30,5)
     colorbarticklabels=["0","5","10","15","20","25"]
     colorbarlabel = 'Normalized energy'
@@ -2402,8 +2401,8 @@ def wspectrogram(transforms, tiling, outDir,IDstring,startTime,
     cbaxes.set_yticklabels(colorbarticklabels,verticalalignment='center'\
                            , color=myColor)
 
-    f.suptitle(title,fontsize=mylabelfontsize, color=myColor)
-    f.savefig(outDir + IDstring + '.png')
+    f.suptitle(title,fontsize=mylabelfontsize, color=myColor,x=0.51)
+    f.savefig(outDir + IDstring + '.png',bbox_inches='tight')
 
 
 def weventgram(events, tiling, startTime, referenceTime,
@@ -2675,6 +2674,8 @@ def weventgram(events, tiling, startTime, referenceTime,
 def main():
     # Parse commandline arguments
 
+    import time
+    start = time.time()
     opts = parse_commandline()
 
     if opts.condor:
@@ -2735,7 +2736,7 @@ def main():
     if opts.outDir is None:
         outDir = './scans'
     else:
-        outDir = opts.outDir
+        outDir = opts.outDir + '/' + opts.ID + '/' + opts.ID
     outDir += '/'
 
     # report status
@@ -2772,7 +2773,7 @@ def main():
 
     # Read in the data
     if opts.NSDF:
-        data = TimeSeries.fetch(channelName,startTime,stopTime,host='nds.ligo-la.caltech.edu')
+        data = TimeSeries.fetch(channelName,startTime,stopTime)
     else:
         connection = datafind.GWDataFindHTTPConnection()
         cache = connection.find_frame_urls(det, frameType, startTime, stopTime, urltype='file')
@@ -2883,6 +2884,7 @@ def main():
                  plotTimeRanges, plotFrequencyRange, \
                  mostSignificantQ, plotNormalizedERange, \
                  plotHorizontalResolution,detectorName)
+    print('wscan finished: {0}'.format(time.time()-start))
 
     if opts.plot_eventgram:
         # identify significant whitened q transform tiles
@@ -2921,18 +2923,19 @@ def main():
 
     if opts.runML:
 
-        lastPath = (opts.outDir).split('/')[-2]
-        make_pickle.main(opts.outDir.replace(lastPath,""),opts.outDir + '/pickleddata/',1,opts.verbose)
+        lastPath = (outDir).split('/')[-2]
+        make_pickle.main(outDir.replace(lastPath,"",1),outDir + '/pickleddata/',1,opts.verbose)
 
-        scores,MLlabel = label_glitches.main(opts.outDir + '/pickleddata/','ML/trained_model/',opts.outDir + '/labeled/',opts.verbose)
+        scores,MLlabel = label_glitches.main(outDir + '/pickleddata/','ML/trained_model/',outDir + '/labeled/',opts.verbose)
 
         scores = scores.tolist()
-        classes = ["Whistle","Low_Frequency_Burst","Chirp","Repeating_Blips","Scattered_Light","45Mhz_Light_Modulation","Extremely_Loud","Low_Frequency_Lines","50_Hz","Blip","Power_Line","Paired_Doves","Tomte","Wandering_Line","Helix","Scratchy","None_of_the_Above","Violin_Mode","Koi_Fish","No_Glitch"]
-        theClass = classes[int(MLlabel)]
-        threshold = [.9995,0,0,0,0,0,0,0,0,.9999998,0,0,0,0,0,0,0,0,0,0]
-        workFlows = ['Beginner','Apprentice']
+        classes = ["Light_Modulation","Air_Compressor","Blip","Chirp","Extremely_Loud","Helix","Koi_Fish","Low_Frequency_Burst","Low_Frequency_Lines","No_Glitch","None_of_the_Above","Paired_Doves","Power_Line","Repeating_Blips","Scattered_Light","Scratchy","Tomte","Violin_Mode","Wandering_Line","Whistle"]
 
-        if scores[int(MLlabel)]>threshold[int(MLlabel)]:
+        theClass = classes[MLlabel]
+        threshold = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        workFlows = ['Beginner','Apprentice','Master']
+
+        if scores[int(MLlabel)]>threshold[MLlabel]:
             workFlow = 'Beginner'
         else:
             workFlow = 'Apprentice'
@@ -2940,15 +2943,19 @@ def main():
 
         if not os.path.isdir(finalPath):
             os.makedirs(finalPath)
-        system_call = "mv {0}*.png {1}".format(opts.outDir,finalPath)
-        shutil.rmtree(opts.outDir + '/pickleddata/')
-        shutil.rmtree(opts.outDir + '/labeled/')
+        system_call = "mv {0}*.png {1}".format(outDir,finalPath)
         os.system(system_call)
-        imagemetadata = open(finalPath + '/' + 'imagemeta.csv','a')
+        shutil.rmtree(outDir.replace(lastPath,"",1))
+        imagemetadata = open(finalPath + '/' + 'imagemeta.csv','a+')
         imagemetadata.write('20160802,{0},{1},{2},{3},{4},"[{5}]"\n'.format(opts.ID,scores[0] + \
                           '_spectrogram_0.5.png', scores[0] + '_spectrogram_1.0.png', scores[0] \
                           + '_spectrogram_2.0.png',scores[0] + '_spectrogram_4.0.png',\
                           ','.join(scores[1::])))
+        imagemetadata.close()
+        scorestable = open(opts.outDir + theClass + '/' + 'scores.csv','a+')
+        scorestable.write('{0},{1}\n'.format(opts.ID,','.join(scores[1::],)))
+        scorestable.close()
+        print('ML finished: {0}'.format(time.time()-start))
 
 
 if __name__ == '__main__':

@@ -90,7 +90,7 @@ def main(pickle_adr,model_adr,save_adr,verbose):
 
     dw = np.concatenate((name_array_unlabelled, score3_unlabelled), axis=1)
 
-    return dw[0],np.argmax(score3_unlabelled)
+    return dw[0],np.argmax(score3_unlabelled[0])
 
 if __name__ == "__main__":
    print 'Start ...'
