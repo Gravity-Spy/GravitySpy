@@ -179,7 +179,7 @@ def write_dagfile(eventTime,ID,i):
     with open('gravityspy.dag','a+') as dagfile:
         dagfile.write('JOB {0} ./condor/gravityspy.sub\n'.format(i))
         dagfile.write('RETRY {0} 3\n'.format(i))
-        dagfile.write('VARS {0} jobNumber="{0}" eventTime="{0}" ID="{1}"'.format(eventTime,ID,i))
+        dagfile.write('VARS {0} jobNumber="{0}" eventTime="{1}" ID="{2}"'.format(i,eventTime,ID))
         dagfile.write('\n\n')
 
 
@@ -238,7 +238,7 @@ i = 0
 for omicrontrigger in omicrontriggers:
     if opts.uniqueID:
         ID = id_generator()
-        i =+1
+        i = i +1
         write_dagfile(omicrontrigger.get_peak(),ID,i)
         with open('./metadata/metadata_L1PostDQ.txt','a+') as f:
             f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10}:{11}\n'.format(omicrontrigger.snr,omicrontrigger.amplitude,omicrontrigger.peak_frequency,omicrontrigger.central_freq,omicrontrigger.duration,omicrontrigger.bandwidth,omicrontrigger.chisq,omicrontrigger.chisq_dof,omicrontrigger.get_peak(),ID,omicrontrigger.ifo,omicrontrigger.channel))
