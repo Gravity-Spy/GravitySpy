@@ -56,8 +56,10 @@ def main(pickle_adr,model_adr,save_adr,verbose):
         print ('Scoring unlabelled glitches')
 
     # reading all 4 duration pickles
-    unlabelled_pickles = os.listdir(pickle_adr)  # adding option to do in in alphabetical order
+    unlabelled_pickles = ['img_1.0_class1_norm.pkl.gz', 'img_2.0_class1_norm.pkl.gz', 'img_4.0_class1_norm.pkl.gz', 'img_5.0_class1_norm.pkl.gz']  # adding option to do in in alphabetical order
 
+    import pdb
+    pdb.set_trace()
     # read duration 1 second
 
     dataset_test_unlabelled_1 = load_dataset_unlabelled_glitches(pickle_adr + unlabelled_pickles[0],verbose)
