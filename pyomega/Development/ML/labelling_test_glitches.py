@@ -5,6 +5,7 @@ from functions_fusion import square_early_concatenate_feature
 import sys, gzip, cPickle, os
 from getopt import GetoptError, getopt
 from keras.models import model_from_json
+import glob
 
 
 '''
@@ -56,25 +57,23 @@ def main(pickle_adr,model_adr,save_adr,verbose):
         print ('Scoring unlabelled glitches')
 
     # reading all 4 duration pickles
-    unlabelled_pickles = ['img_1.0_class1_norm.pkl.gz', 'img_2.0_class1_norm.pkl.gz', 'img_4.0_class1_norm.pkl.gz', 'img_5.0_class1_norm.pkl.gz']  # adding option to do in in alphabetical order
+    unlabelled_pickles = ['img_1.0*', 'img_2.0*', 'img_4.0*', 'img_5.0*']  # adding option to do in in alphabetical order
 
-    import pdb
-    pdb.set_trace()
     # read duration 1 second
 
-    dataset_test_unlabelled_1 = load_dataset_unlabelled_glitches(pickle_adr + unlabelled_pickles[0],verbose)
+    dataset_test_unlabelled_1 = load_dataset_unlabelled_glitches(glob.glob(pickle_adr + unlabelled_pickles[0])[0],verbose)
     [test_set_unlabelled_x_1, test_set_unlabelled_y_1, test_set_unlabelled_name_1] = dataset_test_unlabelled_1
     test_set_unlabelled_x_1 = test_set_unlabelled_x_1.reshape(-1, 1, img_rows, img_cols)
 
-    dataset_test_unlabelled_2 = load_dataset_unlabelled_glitches(pickle_adr + unlabelled_pickles[1],verbose)
+    dataset_test_unlabelled_2 = load_dataset_unlabelled_glitches(glob.glob(pickle_adr + unlabelled_pickles[1])[0],verbose)
     [test_set_unlabelled_x_2, test_set_unlabelled_y_2, test_set_unlabelled_name_2] = dataset_test_unlabelled_2
     test_set_unlabelled_x_2 = test_set_unlabelled_x_2.reshape(-1, 1, img_rows, img_cols)
 
-    dataset_test_unlabelled_3 = load_dataset_unlabelled_glitches(pickle_adr + unlabelled_pickles[2],verbose)
+    dataset_test_unlabelled_3 = load_dataset_unlabelled_glitches(glob.glob(pickle_adr + unlabelled_pickles[2])[0],verbose)
     [test_set_unlabelled_x_3, test_set_unlabelled_y_3, test_set_unlabelled_name_3] = dataset_test_unlabelled_3
     test_set_unlabelled_x_3 = test_set_unlabelled_x_3.reshape(-1, 1, img_rows, img_cols)
 
-    dataset_test_unlabelled_4 = load_dataset_unlabelled_glitches(pickle_adr + unlabelled_pickles[3],verbose)
+    dataset_test_unlabelled_4 = load_dataset_unlabelled_glitches(glob.glob(pickle_adr + unlabelled_pickles[3])[0],verbose)
     [test_set_unlabelled_x_4, test_set_unlabelled_y_4, test_set_unlabelled_name_4] = dataset_test_unlabelled_4
     test_set_unlabelled_x_4 = test_set_unlabelled_x_4.reshape(-1, 1, img_rows, img_cols)
 
