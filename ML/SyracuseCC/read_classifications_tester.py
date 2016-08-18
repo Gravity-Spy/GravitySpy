@@ -5,6 +5,9 @@ ML_values = []
 citizen_values = []
 retirement_values = []
 true_confidence_sum_values = []
+true_percentages = []
+ML_true_percentages = []
+citizen_true_percentages = []
 
 ### Import standard modules ###
 
@@ -218,6 +221,7 @@ class_data['imageID']     = class_data['imageID'].apply(imageID_replace)
 
 class_data = class_data.sort_values('classification_id')
 
+retired_dict = pk.load(open("retired_dict.p", "rb"))
 
 def classify(parameter):
 
@@ -467,32 +471,62 @@ def classify(parameter):
   citizen_percentage = citizen_correct/len(citizen_labels)
   retirement_percentage = len(retired)/len(images)
   true_confidence_sum = np.sum(true_confidences)
-
-  return(ML_percentage,citizen_percentage,retirement_percentage,true_confidence_sum)
+  
+  true_correct = 0
+  true_ML = 0
+  true_citizen = 0
+  citizen_total = 0
+  total = 0
+  
+  for image,label,ML_label,citizen_labels in zip(retired.index.values,retired['true_label'],retired['ML_label'],retired['choice']):
+    if image in retired_dict:
+      total += 1
+      if label in retired_dict[image]:
+        true_correct += 1
+      if ML_label in retired_dict[image]:
+        true_ML += 1
+      for citizen_label in citizen_labels:
+        citizen_total += 1
+        if citizen_label in retired_dict[image]:
+          true_citizen += 1
+  
+  true_percentage = true_correct/total
+  ML_true_percentage = true_ML/total
+  citizen_true_percentage = true_citizen/citizen_total
+  
+  return(ML_percentage,citizen_percentage,retirement_percentage,true_confidence_sum,true_percentage,ML_true_percentage,citizen_true_percentage)
 
 parameter = [.7,.73,.76,.79,.82,.85,.88,.91,.94,.95,.995,.9995]
+#parameter = [.7,.73]
 
 for item in parameter:
   t_values.append(item)
-  ML_percentage,citizen_percentage,retirement_percentage,true_confidence_sum = classify(item)
+  ML_percentage,citizen_percentage,retirement_percentage,true_confidence_sum,true_percentage,ML_true_percentage,citizen_true_percentage = classify(item)
   ML_values.append(ML_percentage)
   citizen_values.append(citizen_percentage)
   retirement_values.append(retirement_percentage)
   true_confidence_sum_values.append(true_confidence_sum)
+  true_percentages.append(true_percentage)
+  ML_true_percentages.append(ML_true_percentage)
+  citizen_true_percentages.append(citizen_true_percentage)
   
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-f, axarr = plt.subplots(2, sharex=True)
+f, axarr = plt.subplots(3, sharex=True)
 green_patch = mpatches.Patch(color='green', label='ML agreement')
 blue_patch = mpatches.Patch(color='blue', label='Citizen agreement')
 magenta_patch = mpatches.Patch(color='magenta', label='Sum of retirement confidences')
 red_patch = mpatches.Patch(color='red', label='Retirement percentage')
 axarr[0].plot(t_values, ML_values, 'g^', t_values, citizen_values, 'bs', t_values, retirement_values, 'ro')
-axarr[0].legend(handles=[green_patch,blue_patch,red_patch])
+axarr[0].legend(handles=[green_patch,blue_patch,red_patch],bbox_to_anchor=(1.005, 1), loc=2, borderaxespad=0.)
 axarr[0].yaxis.set_ticks(np.arange(0,1,.05))
 axarr[1].plot(t_values, true_confidence_sum_values, 'mp',)
-axarr[1].legend(handles=[magenta_patch])
+axarr[1].legend(handles=[magenta_patch],bbox_to_anchor=(1.005, 1), loc=2, borderaxespad=0.)
+axarr[2].plot(t_values, ML_true_percentages, 'g^', t_values, citizen_true_percentages, 'bs', t_values, true_percentages, 'ro')
+green_patch = mpatches.Patch(color='green', label='ML accuracy')
+blue_patch = mpatches.Patch(color='blue', label='Citizen accuracy')
+red_patch = mpatches.Patch(color='red', label='Combined accuracy')
+axarr[2].legend(handles=[green_patch,blue_patch,red_patch],bbox_to_anchor=(1.005, 1), loc=2, borderaxespad=0.)
 
 plt.show()
-
