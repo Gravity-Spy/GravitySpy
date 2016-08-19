@@ -4,7 +4,7 @@ t_values = []
 ML_values = []
 citizen_values = []
 retirement_values = []
-true_confidence_sum_values = []
+cost_function = []
 true_percentages = []
 ML_true_percentages = []
 citizen_true_percentages = []
@@ -470,7 +470,7 @@ def classify(parameter):
   ML_percentage = len(ML_correct)/len(retired)
   citizen_percentage = citizen_correct/len(citizen_labels)
   retirement_percentage = len(retired)/len(images)
-  true_confidence_sum = np.sum(true_confidences)
+  true_confidence_avg = np.average(true_confidences)
   
   true_correct = 0
   true_ML = 0
@@ -494,18 +494,18 @@ def classify(parameter):
   ML_true_percentage = true_ML/total
   citizen_true_percentage = true_citizen/citizen_total
   
-  return(ML_percentage,citizen_percentage,retirement_percentage,true_confidence_sum,true_percentage,ML_true_percentage,citizen_true_percentage)
+  return(ML_percentage,citizen_percentage,retirement_percentage,true_confidence_avg,true_percentage,ML_true_percentage,citizen_true_percentage)
 
 parameter = [.7,.73,.76,.79,.82,.85,.88,.91,.94,.95,.995,.9995]
 #parameter = [.7,.73]
 
 for item in parameter:
   t_values.append(item)
-  ML_percentage,citizen_percentage,retirement_percentage,true_confidence_sum,true_percentage,ML_true_percentage,citizen_true_percentage = classify(item)
+  ML_percentage,citizen_percentage,retirement_percentage,true_confidence_avg,true_percentage,ML_true_percentage,citizen_true_percentage = classify(item)
   ML_values.append(ML_percentage)
   citizen_values.append(citizen_percentage)
   retirement_values.append(retirement_percentage)
-  true_confidence_sum_values.append(true_confidence_sum)
+  cost_function.append((true_confidence_avg**2)*retirement_percentage)
   true_percentages.append(true_percentage)
   ML_true_percentages.append(ML_true_percentage)
   citizen_true_percentages.append(citizen_true_percentage)
@@ -516,12 +516,12 @@ import matplotlib.patches as mpatches
 f, axarr = plt.subplots(3, sharex=True)
 green_patch = mpatches.Patch(color='green', label='ML agreement')
 blue_patch = mpatches.Patch(color='blue', label='Citizen agreement')
-magenta_patch = mpatches.Patch(color='magenta', label='Sum of retirement confidences')
+magenta_patch = mpatches.Patch(color='magenta', label='Cost function')
 red_patch = mpatches.Patch(color='red', label='Retirement percentage')
 axarr[0].plot(t_values, ML_values, 'g^', t_values, citizen_values, 'bs', t_values, retirement_values, 'ro')
 axarr[0].legend(handles=[green_patch,blue_patch,red_patch],bbox_to_anchor=(1.005, 1), loc=2, borderaxespad=0.)
 axarr[0].yaxis.set_ticks(np.arange(0,1,.05))
-axarr[1].plot(t_values, true_confidence_sum_values, 'mp',)
+axarr[1].plot(t_values, cost_function, 'mp')
 axarr[1].legend(handles=[magenta_patch],bbox_to_anchor=(1.005, 1), loc=2, borderaxespad=0.)
 axarr[2].plot(t_values, ML_true_percentages, 'g^', t_values, citizen_true_percentages, 'bs', t_values, true_percentages, 'ro')
 green_patch = mpatches.Patch(color='green', label='ML accuracy')
