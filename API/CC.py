@@ -34,15 +34,28 @@ images.classification_number = images.classification_number.apply(ast.literal_ev
 # Start of the CC classifier #
 ##############################
 # initialize variables
-r_lim = 4 # Make 23         # Max citizens who can look at image before it is given to upper class if threshold not reached
-c = len(images.ML_posterior[0])                      # Classes
-priors = np.ones((1,c))/c   # Flat priors b/c we do not know what category the image is in
-alpha = .9*np.ones(c)   # Threshold vector for user promotion
-g_c = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]     # Threshold vector for updating confusion matrix
-t   = [0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]       # Threshold vector for image retirement
+
+# Max citizens who can look at image before it is given to upper class if threshold not reached
+r_lim = 4 # Make 23
+
+# Number of classes
+c = len(images[images['type']=='T'].ML_posterior[0])
+
+# Flat priors b/c we do not know what category the image is in
+priors = np.ones((1,c))/c
+
+ # Threshold vector for user promotion
+alpha = .9*np.ones(c)
+
+# Threshold vector for what minimum ML confidence we are willing to update the confusion matrix of a user who labels that image.
+#g_c = [0.725,0.999,0.5,0.99999,0,0.99,0.995,0.99999999,0,0,0,0,0,0,0,0,0,0,0,0]
+g_c = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+
+# Threshold vector for image retirement
+t = [0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
+
 
 # initilize empty pp_matrices pandas. Only for plotting do not need to save
-# pp_matrices    = pd.DataFrame({ 'imageID' : images.imageID,'pp_matrix' : np.empty((len(images.imageID), 0)).tolist()})
 
 def make_pp_matrices(x):
     
@@ -53,17 +66,19 @@ def make_pp_matrices(x):
     else:
         pass
 
-images['pp_matrix'] = images[['userID','type','ML_posterior']].apply(make_pp_matrices, axis = 1)
+# Initialize PP_Matrix for the images that are in the testing set (no need for golden images whose label is already known)
 
-# This function either receives a pre existing confusion matrix or creates a new one.
+images['pp_matrix'] = [images['type']=='T'][['userID','type','ML_posterior']].apply(make_pp_matrices, axis = 1)
+
+# This function creates a confusion matrix for all users.
 def make_conf_matrices(x):
     tmp = np.zeros((c,c))
     return tmp
 
-# Creat list of unique userIDs from the images variable
+# Create list of unique userIDs from the classifications variable which contains all the classifcations done for the project
 unique_users = pd.DataFrame({'userID' : classifications.userID.unique().tolist()})
 
-# See if we already have a confusion matrix or not for these users. If not create one
+# Initialize some confusion matrices for all the users
 unique_users['conf_matrix'] = unique_users.userID.apply(make_conf_matrices)
 
 # We must update the confusion matrix of a user in order and then create pp_matrix for the image with the confusion matrix of the user at the time they labelled the image.
@@ -167,7 +182,9 @@ def det_promoted(x):
 
 unique_users['promoted'] =  unique_users.promotion.apply(det_promoted)
 
-#images['decision'] = images[['imageID','zooID','userID','true_label','choiceINT','type','ML_posterior','ML_label','ML_confidence']].apply(cc_classifier, axis = 1)
+
+# All of the corwd sourcing work has finished and the rest of the code simply manipulates the data to make it easy to save into a mySQL database that will be loaded later in the post processing stages of the CC algorithm.
+
 def prep_for_sql(x):
     try:
         x = str(x.flatten().tolist())

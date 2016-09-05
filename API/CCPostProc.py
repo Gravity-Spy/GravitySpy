@@ -28,9 +28,9 @@ workflow_dict = {"B1":1610, "B2":1934, "B3":1935, "B4":1936,"A":2360,"M":2117}
 # Determine who is promoted and change their workflow preference
 def promote_users(x):
     user = User.find("{0}".format(x.userID))
-    new_settings = {"workflow_id": "{0}".format(workflow_dict[x.promoted])}
-    print(user)
-    print(new_settings)
-    #ProjectPreferences.save_settings(project=project, user=user, settings=new_settings)
+    new_settings = {"workflow_id": "{0}".format(workflow_dict['B2'])}#.format(workflow_dict[x.promoted])}
+    #print(user)
+    #print(new_settings)
+    ProjectPreferences.save_settings(project=project, user=user, settings=new_settings)
 
-confusion_matrices[confusion_matrices.promoted != 'S'][['userID','promoted']].apply(promote_users,axis =1)
+confusion_matrices[confusion_matrices.userID == 386563][['userID','promoted']].apply(promote_users,axis =1)

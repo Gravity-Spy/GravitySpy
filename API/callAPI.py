@@ -23,7 +23,9 @@ if not np.isnan(classificationsInit.classificationID.max()):
 else:
     lastID = "15573889"
 
+lastID = "16693132"
 lastID = "15994276"
+
 # Connect to panoptes and query all classifications done on project 1104 (i.e. GravitySpy)
 Panoptes.connect()
 project = Project.find(slug='zooniverse/gravity-spy')
@@ -104,7 +106,7 @@ classifications['classification_number'] = classifications.groupby('userID').cum
 # These choices are strings and we need to change them to integers in order to run the crowd sourcing classifer (CC for short). This is the thing that evaluates users and images.
 
 label_dict = {'45MHZLGHTMDLTN':0,'LGHTMDLTN':0,'50HZ':1,'RCMPRSSR50HZ':1,'BLP':2,'CHRP':3,'XTRMLLD':4,'HLX':5,'KFSH':6,
-              'LWFRQNCBRST':7,'LWFRQNCLN':8,'NGLTCH':9,'DNTSGLTCH':9,'NNFTHBV':10,'PRDDVS':11,'60HZPWRLN':12,'60HZPWRMNS':12,
+              'LWFRQNCBRST':7,'LWFRQNCLN':8,'NGLTCH':10,'DNTSGLTCH':10,'NNFTHBV':9,'PRDDVS':11,'60HZPWRLN':12,'60HZPWRMNS':12,
               'PWRLN60HZ':12,'RPTNGBLPS':13,'SCTTRDLGHT':14,'SCRTCH':15,'TMT':16,'VLNHRMNC500HZ':17,'VLNMDHRMNC500HZ':17,
               'HRMNCS':17,'WNDRNGLN':18,'WHSTL':19}
 
@@ -125,7 +127,7 @@ classifications['choiceINT'] = classifications['choice'].apply(extract_choiceINT
 # Drop rows where anything is False
 classifications = classifications[classifications.choiceINT !=-1]
 # Temperorary
-classifications = classifications[classifications.workflow==1610]
+classifications = classifications[classifications.workflow!=1479]
 
 # Append this new classifications table to the old one
 classifications = pd.concat([classificationsInit,classifications],ignore_index=True)
