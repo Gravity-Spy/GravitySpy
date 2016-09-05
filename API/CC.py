@@ -37,7 +37,7 @@ images.classification_number = images.classification_number.apply(ast.literal_ev
 r_lim = 4 # Make 23         # Max citizens who can look at image before it is given to upper class if threshold not reached
 c = len(images.ML_posterior[0])                      # Classes
 priors = np.ones((1,c))/c   # Flat priors b/c we do not know what category the image is in
-alpha = .9*np.ones((c,1))   # Threshold vector for user promotion
+alpha = .9*np.ones(c)   # Threshold vector for user promotion
 g_c = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]     # Threshold vector for updating confusion matrix
 t   = [0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]       # Threshold vector for image retirement
 
@@ -56,7 +56,7 @@ def make_pp_matrices(x):
 images['pp_matrix'] = images[['userID','type','ML_posterior']].apply(make_pp_matrices, axis = 1)
 
 # This function either receives a pre existing confusion matrix or creates a new one.
-def get_conf_matrices(x):
+def make_conf_matrices(x):
     tmp = np.zeros((c,c))
     return tmp
 
@@ -64,7 +64,7 @@ def get_conf_matrices(x):
 unique_users = pd.DataFrame({'userID' : classifications.userID.unique().tolist()})
 
 # See if we already have a confusion matrix or not for these users. If not create one
-unique_users['conf_matrix'] = unique_users.userID.apply(get_conf_matrices)
+unique_users['conf_matrix'] = unique_users.userID.apply(make_conf_matrices)
 
 # We must update the confusion matrix of a user in order and then create pp_matrix for the image with the confusion matrix of the user at the time they labelled the image.
 classifications = classifications[classifications.zooID.isin(images.zooID)]
@@ -77,7 +77,7 @@ images.set_index('zooID',inplace=True)
 for imageID,userID,user_label in zip(classifications.zooID,classifications.userID,classifications.choiceINT):
     
                 
-    if (images.loc[imageID,'type'] == 'G') or (images.loc[imageID,'type'] == 'R'): # If golden image
+    if (images.loc[imageID,'type'] == 'G') or (images.loc[imageID,'type'] == 'R'): # If golden image or retired
         
         true_label = images.loc[imageID,'true_label']
         unique_users.conf_matrix[unique_users.userID==userID].iloc[0][true_label,user_label] += 1
@@ -121,8 +121,8 @@ def decider(x):
     if maximum >= t[maxIdx]: # If maximum is above threshold for given class, retire image
         
         true_label = maxIdx # true_label is index of maximum value
-        #images.set_value(x.name, 'true_label', true_label) # Change true_label of image
-        #images.set_value(x.name, 'type', 'R') # Change type of image
+        images.set_value(x.name, 'true_label', true_label) # Change true_label of image
+        images.set_value(x.name, 'type', 'R') # Change type of image
             
         print('Image is retired to class', true_label)
         return 1
@@ -139,6 +139,33 @@ def decider(x):
         return 3
     
 images['decision'] = images[images['type']=='T'][['pp_matrix','choice']].apply(decider,axis=1)
+
+# We determine user promotion here
+
+def get_alpha_values(x):
+    conf_divided,a1,a2,a3 = np.linalg.lstsq(np.diag(np.sum(x,axis=1)),x)
+    return np.diag(conf_divided)
+
+unique_users['promotion'] = unique_users.conf_matrix.apply(get_alpha_values)
+
+def det_promoted(x):
+    if (x[np.where(x !=0)] > alpha[np.where(x !=0)]).all():
+        if len(x[np.where(x !=0)]) == 2:
+            return 'B2'
+        elif len(x[np.where(x !=0)]) == 4:
+            return 'B3'
+        elif len(x[np.where(x !=0)]) == 6:
+            return 'B4'
+        elif len(x[np.where(x !=0)]) == 8:
+            return 'A'
+        elif len(x[np.where(x !=0)]) == 20:
+            return 'M'
+        else:
+            return 'S'
+    else:
+        return 'S'
+
+unique_users['promoted'] =  unique_users.promotion.apply(det_promoted)
 
 #images['decision'] = images[['imageID','zooID','userID','true_label','choiceINT','type','ML_posterior','ML_label','ML_confidence']].apply(cc_classifier, axis = 1)
 def prep_for_sql(x):

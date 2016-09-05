@@ -76,7 +76,7 @@ def plt_conf_matrices(x):
     ax.set_yticklabels(np.array(int_to_label)[confEntries].tolist())
     ax.xaxis.set_ticks_position('bottom')
 
-    fig.savefig('confusion/{0}_confusion.png'.format(x.userID))
+    fig.savefig('/var/www/html/images/DataProducts/confusion/{0}_confusion.png'.format(x.userID))
     plt.close(fig)
 
 def plt_pp_matrix(x):
@@ -92,7 +92,7 @@ def plt_pp_matrix(x):
     ax.set_ylabel('classes')
     ax.set_yticks(range(len(x.pp_matrix)))
     ax.set_yticklabels(int_to_label)
-    fig.savefig('pp_matrices/{0}_pp_matrix.png'.format(x.imageID))
+    fig.savefig('/var/www/html/images/DataProducts/pp_matrices/{0}_pp_matrix.png'.format(x.imageID))
     plt.close(fig)
 
 images[images['type']=='T'][['imageID','pp_matrix']].apply(plt_pp_matrix,axis=1)
