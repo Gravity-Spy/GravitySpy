@@ -32,8 +32,8 @@ def promote_users(x):
 confusion_matrices[confusion_matrices.userID == 386563][['userID','promoted']].apply(promote_users,axis =1)
 
 def move_image(x):
-    # Find subject set it should be moved to which for the beginner workflows is the NOA beginner set and for the other workflows apprentice NOA.
-    tmp = SubjectSet.find(5675)
+    # If has received enough labels or enough NOA form the beginner workflows that it has not been retired then we move it into the NOA Apprentice workflow for further analysis. We also remove it from whatever subject set it was in before.
+    tmp = SubjectSet.find(5676)
     subject = Subject.find(x.zooID)
     # Add to new subject set
     tmp.add(subject)

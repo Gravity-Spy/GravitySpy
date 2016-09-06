@@ -141,13 +141,11 @@ def decider(x):
     v = np.sum(x['pp_matrix'][0], axis=1)/np.sum(np.sum(x['pp_matrix'][0])) # Create vector of normalized sums of pp_matrix2
     maximum = np.amax(v) # Initialize maximum, max value of v
     maxIdx = np.argmax(v) # Initialize maxIdx, index of max value of v
-    true_confidences.append(maximum)
-    true_labels.append(maxIdx)
+    true_label = maxIdx # true_label is index of maximum value
+    images.set_value(x.name, 'true_label', true_label)
 
     if maximum >= t[maxIdx]: # If maximum is above threshold for given class, retire image
         
-        true_label = maxIdx # true_label is index of maximum value
-        images.set_value(x.name, 'true_label', true_label) # Change true_label of image
         images.set_value(x.name, 'type', 'R') # Change type of image
             
         print('Image is retired to class', true_label)

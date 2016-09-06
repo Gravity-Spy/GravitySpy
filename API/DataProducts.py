@@ -1,13 +1,41 @@
 import pandas as pd
+import glob
 import numpy as np
 from sqlalchemy.engine import create_engine
 import ast
 import os
-import pdb
+import optparse
 
 from matplotlib import use
 use('agg')
 from matplotlib import (pyplot as plt, cm)
+
+def parse_commandline():
+    """Parse the options given on the command-line.
+    """
+    parser = optparse.OptionParser()
+    parser.add_option("--outPath", help="Where you would like the GSpy out pages to live")
+    parser.add_option("--pp-matrix", help="pp_matrices path")
+    parser.add_option("--confusion-matrix", help="confusion matrix path")
+    parser.add_option("--verbose", action="store_true", default=False,help="Run in Verbose Mode")
+    opts, args = parser.parse_args()
+
+
+    return opts
+
+opts = parse_commandline()
+
+pp_matrix_path   = opts.pp_matrix + '/'
+outPath          = opts.outPath + '/'
+confusion_matrix_path = opts.confusion_matrix + '/'
+indPages         = outPath + 'indPages/'
+
+# report status
+if not os.path.isdir(indPages):
+    os.makedirs(indPages)
+
+# Initialize a list of the Glitch types
+types = ["Air_Compressor","Blip","Chirp","Extremely_Loud","Helix","Koi_Fish","Light_Modulation","Low_Frequency_Burst","Low_Frequency_Lines","None_of_the_Above","No_Glitch","Paired_Doves","Power_Line","Repeating_Blips","Scattered_Light","Scratchy","Tomte","Violin_Mode","Wandering_Line","Whistle"]
 
 # Load my sql tables of confusion matrices and pp_matrices
 SQL_USER = os.environ['SQL_USER']
@@ -63,7 +91,7 @@ def plt_conf_matrices(x):
     ax.set_yticklabels(np.array(int_to_label)[confEntries].tolist())
     ax.xaxis.set_ticks_position('bottom')
 
-    fig.savefig('/var/www/html/images/DataProducts/confusion/{0}_confusion.png'.format(x.userID))
+    fig.savefig('{0}/{1}_confusion.png'.format(confusion_matrix_path,x.userID))
     plt.close(fig)
 
 def plt_pp_matrix(x):
@@ -79,8 +107,61 @@ def plt_pp_matrix(x):
     ax.set_ylabel('classes')
     ax.set_yticks(range(len(x.pp_matrix)))
     ax.set_yticklabels(int_to_label)
-    fig.savefig('/var/www/html/images/DataProducts/pp_matrices/{0}_pp_matrix.png'.format(x.imageID))
+    fig.savefig('{0}/{1}_pp_matrix.png'.format(pp_matrix_path,x.imageID))
     plt.close(fig)
 
 images[images['type']=='T'][['imageID','pp_matrix']].apply(plt_pp_matrix,axis=1)
 confusion_matrices[['userID','conf_matrix']].apply(plt_conf_matrices,axis=1)
+
+# Make summary page based on combined human and ML classifications
+GravitySpySummary = open('{0}/summary.html'.format(outPath),'w')
+
+header = """<head>
+    <link rel="stylesheet" type="text/css" href="../../Production/Production/css/classes.css">
+</head>
+<body>
+    <h1>Gravity Spy Summary</h1>
+    <h1>Individual Glitch Class Home Pages</h1>
+"""
+GravitySpySummary.write(header + '\n')
+for Type in types:
+    tmp = """<p><a href="indPages/{0}.html" > {0} </a></p>""".format(Type)
+    GravitySpySummary.write(tmp + '\n')
+
+GravitySpySummary.close()
+
+iN = 0
+def tile_images(x):
+    # First find path to the image from ML summary page
+    pathToImage = glob.glob('/var/www/html/images/Production/Production/GravitySpyO1ImageFinal/**/**/**/{0}.png'.format(x))
+    page.write('       <div class="grid-item">')
+    page.write(' <img src="../../../{0}"'.format(pathToImage[0].split('images')[1]))
+    page.write(' /></div>\n')
+    page.write('       <div class="grid-item">')
+    page.write(' <img src="../../pp_matrices/{0}_pp_matrix.png"'.format(x))
+    page.write(' /></div>\n')
+
+
+for Type in types:
+
+    # Open a new html page which is named after the type
+    page= open('{0}/{1}.html'.format(indPages,Type),"w")
+
+    # Create the same header for each type. This follows the masonry jQuery lay out and therefore you will need the masonry jQuery plug in to work. (http://masonry.desandro.com)
+
+    header = """<head>
+    <link rel="stylesheet" type="text/css" href="../../../Production/Production/css/classes.css">
+    <script src="../../../Production/Production/node_modules//masonry.pkgd.min.js"></script>
+</head>
+<body>
+    <h1>{0}</h1>
+    <div class="grid">
+    <div class="grid-sizer"></div>""".format(Type)
+    page.write(header + '\n')
+    tmp1 = images[images['type']=='T']
+    tmp = tmp1[tmp1.true_label == iN]
+    tmp.imageID.apply(tile_images)
+    page.write('    </div>\n')
+    page.write('</body>')
+    page.close()
+    iN = iN + 1
