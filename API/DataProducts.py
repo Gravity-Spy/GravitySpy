@@ -22,7 +22,7 @@ confusion_matrices = pd.read_sql('SELECT * FROM confusion_matrices',engine)
 images.ML_posterior = images.ML_posterior.apply(ast.literal_eval)
 images.choice       = images.choice.apply(ast.literal_eval)
 
-C = len(images[images['type']=='T'].ML_posterior[0])
+C = len(images[images['type']=='T'].ML_posterior.iloc[0])
 
 def reshape_array(x):
     try:
@@ -39,20 +39,7 @@ images.pp_matrix               = images.pp_matrix.apply(reshape_array)
 
 # These choices are strings and we need to change them to integers in order to run the crowd sourcing classifer (CC for short). This is the thing that evaluates users and images.
 
-int_to_label = ["AIRCOMP","BLIP","CHIRP","EXTREMELOUD","HELIX","KFISH","LM","LFB","LFL","NOGTCH","NOA","PRDDVS","PLINE","REBLIPS","STTDLGHT","STCHY","TOMTE","VM","WL","WSTLE"]
-
-B1 = 1610
-B2 = 1934
-B3 = 1935
-B4 = 1936
-A  = 2360
-M  = 2117
-B1_Types = [1,19]
-B2_Types = [1,5,12,19]
-B3_Types = [1,2,5,12,14,19]
-B4_Types = [1,2,5,9,10,12,14,19]
-
-options   = [[]]
+int_to_label = ["AIRCOMP","BLIP","CHIRP","EXTREMELOUD","HELIX","KFISH","LM","LFB","LFL","NOA","NOGTCH","PRDDVS","PLINE","REBLIPS","STTDLGHT","STCHY","TOMTE","VM","WL","WSTLE"]
 
 def plt_conf_matrices(x):
     reducedConf = x.conf_matrix[~np.all(x.conf_matrix == 0,axis=1)]

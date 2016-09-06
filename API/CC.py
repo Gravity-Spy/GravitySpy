@@ -52,8 +52,15 @@ alpha = .9*np.ones(c)
 g_c = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
 # Threshold vector for image retirement
-t = [0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
+t = [0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.999,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
 
+# Workflow numbers
+
+B1 = 1610
+B2 = 1934
+B3 = 1935
+A  = 2360
+M  = 2117
 
 # initilize empty pp_matrices pandas. Only for plotting do not need to save
 
@@ -67,8 +74,7 @@ def make_pp_matrices(x):
         pass
 
 # Initialize PP_Matrix for the images that are in the testing set (no need for golden images whose label is already known)
-
-images['pp_matrix'] = [images['type']=='T'][['userID','type','ML_posterior']].apply(make_pp_matrices, axis = 1)
+images['pp_matrix'] = images[images['type']=='T'][['userID','type','ML_posterior']].apply(make_pp_matrices, axis = 1)
 
 # This function creates a confusion matrix for all users.
 def make_conf_matrices(x):
@@ -99,8 +105,13 @@ for imageID,userID,user_label in zip(classifications.zooID,classifications.userI
 
     elif (images.loc[imageID,'type'] == 'T') and (images.loc[imageID,'ML_confidence']>g_c[images.loc[imageID,'ML_label']]):
 
-        true_label = images.loc[imageID,'ML_label']
-        unique_users.conf_matrix[unique_users.userID==userID].iloc[0][true_label,user_label] += 1
+        if (images.loc[imageID,'workflow'][0] in [B1,B2,B3]) and (user_label == 9):
+            # We do not update if select NOA in the beginner workflows and it is not a golden image.
+            doNothing = None
+        else:
+
+            true_label = images.loc[imageID,'ML_label']
+            unique_users.conf_matrix[unique_users.userID==userID].iloc[0][true_label,user_label] += 1
         
         #print('Confusion matrix updated')        
     
@@ -143,13 +154,11 @@ def decider(x):
         return 1
 
     elif len(x['choice']) >= r_lim: # Pass to a higher workflow if more than r_lim annotators and no decision reached
-            
+
         print('Image is given to a higher workflow')
         return 2
-            
 
     else: # If fewer than r_lim annotators have looked at image, keep image
-            
         print('More labels are needed for the image')
         return 3
     
@@ -167,11 +176,9 @@ def det_promoted(x):
     if (x[np.where(x !=0)] > alpha[np.where(x !=0)]).all():
         if len(x[np.where(x !=0)]) == 2:
             return 'B2'
-        elif len(x[np.where(x !=0)]) == 4:
+        elif len(x[np.where(x !=0)]) == 5:
             return 'B3'
-        elif len(x[np.where(x !=0)]) == 6:
-            return 'B4'
-        elif len(x[np.where(x !=0)]) == 8:
+        elif len(x[np.where(x !=0)]) == 9:
             return 'A'
         elif len(x[np.where(x !=0)]) == 20:
             return 'M'
@@ -210,4 +217,5 @@ images.classification_number = images.classification_number.apply(str)
 images.workflow              = images.workflow.apply(str)
 images.ML_posterior          = images.ML_posterior.apply(str)
 images.pp_matrix             = images.pp_matrix.apply(prep_for_sql2)
+images = images.reset_index()
 images.to_sql(con=engine, name='images_for_pp', if_exists='replace', flavor='mysql',index=False)
