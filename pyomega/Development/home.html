@@ -1,0 +1,319 @@
+<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN'>
+<html lang="en">
+<head>
+<link media="all" href="main.css" type="text/css" rel="stylesheet" />
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://ldas-jobs.ligo-la.caltech.edu/~scoughlin/O1GravitySpy/css/style.css" />
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src= https://cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js></script>
+<script src=https://cdn.datatables.net/1.10.12/js/dataTables.bootstrap.min.js></script> 
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.12/css/dataTables.bootstrap.min.css">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+<title>{{ header }}</title>
+</head>
+
+<body>
+    <h1>{{ header }}</h1>
+
+    <div id="tooltip_freq" style="position:absolute; visability: hidden;"></div>
+    <div id="chart_area_freq"></div>
+    <div id="glitches_freq"></div>
+    <script>
+        d3.json("metadata.json", function(metadata) { 
+        
+            var filtered_metadata = metadata.map(function(glitch_metadata) { return glitch_metadata; });
+            // Add name checkboxes
+            glitches_freq = d3.select("#glitches_freq");
+            glitches_freq.selectAll("input")
+                .data(d3.map(metadata, function(d) { return d.Label }).keys())
+                .enter()
+                .append("div")
+                    .append("input")
+                        .attr("Label", "Label") // Check this line
+                        .attr("type", "checkbox")
+                        .attr("value", String)
+                        .attr("checked", true)
+                        .on("change", function() {
+                            var type = this.value;
+                            if (this.checked) { 
+                                var new_metadata = metadata.filter(function(glitch_metadata){ return glitch_metadata.Label == type;});
+                                filtered_metadata = filtered_metadata.concat(new_metadata);
+                            } else { 
+                                filtered_metadata = filtered_metadata.filter(function(glitch_metadata){ return glitch_metadata.Label != type;});
+                            }
+                            update();                            
+                        })
+                        // Get out of the input element
+                        .select(function() { return this.parentNode; })
+                    .append("span")
+                        .text(String)
+
+            
+            var chart_area_freq = d3.select("#chart_area_freq");
+            var frame = chart_area_freq.append("svg");
+            // Create canvas inside frame.
+            var canvas = frame.append("g");
+
+            // Set margins, width, and height.
+            var margin = {top: 110.5, right: 50.5, bottom: 50.5, left: 50.5};
+            var frame_width = 900;
+            var frame_height = 500;
+            var canvas_width = frame_width - margin.left - margin.right;
+            var canvas_height = frame_height - margin.top - margin.bottom;
+
+            // Set svg attributes width and height.
+            frame.attr("width", frame_width);
+            frame.attr("height", frame_height);
+
+            // Shift the chart and make it slightly smaller than the svg canvas.
+            canvas.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            // Various scales. These domains make assumptions of data, naturally.
+            var xScale = d3.scale.linear(); // GPS_time
+            xScale.domain([1126200000, 1137500000]);
+            xScale.range([0, canvas_width]);  
+
+            var yScale = d3.scale.log().domain([9, 2048]).range([canvas_height, 0]);  // peak_frequency
+            var rScale = d3.scale.log().domain([7,100]).range([1, 4]); // snr
+
+            // Creating the x & y axes
+            var xAxis = d3.svg.axis().orient("bottom").scale(xScale);
+            var yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+            // create a color scale with 20 different categories.
+            var colorScale = d3.scale.category20();
+                    
+            // Next step: push the axes into the chart
+            // Add the x-axis.
+            canvas.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + canvas_height + ")")
+                .call(xAxis);
+
+            // Add the y-axis.
+            canvas.append("g")
+                .attr("class", "y axis")
+                .call(yAxis);
+
+            // Add axes labels
+            canvas.append("text")
+                .attr("x", canvas_width/2)
+                .attr("y", -30)
+                .style("text-anchor", "middle")
+                .text("Peak Frequency vs Time");
+            canvas.append("text")
+                .attr("x", canvas_width/2)
+                .attr("y", canvas_height+35)
+                .style("text-anchor", "middle")
+                .text("GPS time (metric days)");
+            canvas.append("text")
+                .attr("x", -canvas_height/2)
+                .attr("y", -40)
+                .style("text-anchor", "middle")
+                .attr("transform", "rotate(-90)")
+                .text("Frequency (Hz)");
+            
+            // Add Legend // This isn't working yet...
+            legend = canvas.append("g")
+                //.attr("class","legend")
+                //.attr("transform","translate(50,30)")
+                .style("font-size","12px")
+                //.call(d3.legend)
+            legend.append("text")
+                .attr("x", canvas_width - canvas_width/2)
+                .attr("y", canvas_height - canvas_height/2)
+                .style("text-anchor", "end")
+                .text(function(d) { return d;})
+
+
+            data_canvas = canvas.append("g")
+            .attr("class", "data_canvas")
+
+            update();
+
+            function update() {
+                var dot = data_canvas.selectAll(".dot")
+                .data(filtered_metadata, function(d){return d.ID});
+        
+                var tooltip_freq = d3.select("#tooltip_freq");
+
+                dot.enter().append("circle").attr("class","dot")
+                        .style("fill", function(d) {  return colorScale(d.Label); })
+                        .on('mouseover', function(d) {  tooltip_freq.style('visibility', 'visible')
+                                .html('ID: ' + d.ID +'<br/>'+ 'GPStime: ' + d.GPStime +'<br/>'+ 'Class: ' + d.Label +'<br/>'+ 'SNR: '+ d.snr +'<br/>'+'peak_freq: '+ d.peak_frequency +' Hz' +'<br/>'+ 'ML confidence: ' + d.score); })
+                        .on('click', function(d) {  tooltip_freq.style('visibility', 'visible')
+                                .html('<img src=' + d.linkBig +" width='900px' height='300px' />"); })
+                        .attr("cx", function(d) { return xScale(d.GPStime); })
+                        .attr("cy", function(d) { return yScale(d.peak_frequency); })
+                        .attr("r", function(d) { return rScale(d.snr); });
+                        //.attr("xlink:href", "http://en.wikipedia.org/wiki/");
+                dot.exit().remove();
+            }
+            })
+    </script>
+
+    <div id="tooltip_snr" style="position:absolute; visability: hidden;"></div>
+    <div id="chart_area_snr"></div>
+    <div id="glitches_snr"></div>
+
+    <script>
+        d3.json("metadata.json", function(metadata1) { 
+        
+            var filtered_metadata1 = metadata1.map(function(glitch_metadata1) { return glitch_metadata1; });
+            // Add name checkboxes
+            glitches_snr = d3.select("#glitches_snr");
+            glitches_snr.selectAll("input")
+                .data(d3.map(metadata1, function(d) { return d.Label }).keys())
+                .enter()
+                .append("div")
+                    .append("input")
+                        .attr("Label", "Label") // Check this line
+                        .attr("type", "checkbox")
+                        .attr("value", String)
+                        .attr("checked", true)
+                        .on("change", function() {
+                            var type = this.value;
+                            if (this.checked) { 
+                                var new_metadata1 = metadata1.filter(function(glitch_metadata1){ return glitch_metadata1.Label == type;});
+                                filtered_metadata1 = filtered_metadata1.concat(new_metadata1);
+                            } else { 
+                                filtered_metadata1 = filtered_metadata1.filter(function(glitch_metadata1){ return glitch_metadata1.Label != type;});
+                            }
+                            update1();                            
+                        })
+                        // Get out of the input element
+                        .select(function() { return this.parentNode; })
+                    .append("span")
+                        .text(String)
+
+            
+            var chart_area_snr = d3.select("#chart_area_snr");
+            var frame = chart_area_snr.append("svg");
+
+            // Create canvas inside frame.
+            var canvas = frame.append("g");
+
+            // Set margins, width, and height.
+            var margin = {top: 110.5, right: 50.5, bottom: 50.5, left: 50.5};
+            var frame_width = 900;
+            var frame_height = 500;
+            var canvas_width = frame_width - margin.left - margin.right;
+            var canvas_height = frame_height - margin.top - margin.bottom;
+
+            // Set svg attributes width and height.
+            frame.attr("width", frame_width);
+            frame.attr("height", frame_height);
+
+            // Shift the chart and make it slightly smaller than the svg canvas.
+            canvas.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            // Various scales. These domains make assumptions of data, naturally.
+            var xScale = d3.scale.linear(); // GPS_time
+            xScale.domain([1126200000, 1137500000]);
+            xScale.range([0, canvas_width]);  
+
+            var yScale = d3.scale.log().domain([7, 1000]).range([canvas_height, 0]);  // peak_frequency
+            var rScale = d3.scale.log().domain([10,2048]).range([1, 5]); // snr
+
+            // Creating the x & y axes
+            var xAxis = d3.svg.axis().orient("bottom").scale(xScale);
+            var yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+            // create a color scale with 20 different categories.
+            var colorScale = d3.scale.category20();
+                    
+            // Next step: push the axes into the chart
+            // Add the x-axis.
+            canvas.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + canvas_height + ")")
+                .call(xAxis);
+
+            // Add the y-axis.
+            canvas.append("g")
+                .attr("class", "y axis")
+                .call(yAxis);
+            
+            // Add axes labels
+            canvas.append("text")
+                .attr("x", canvas_width/2)
+                .attr("y", -50)
+                .style("text-anchor", "middle")
+                .text("SNR vs Time");
+            canvas.append("text")
+                .attr("x", canvas_width/2)
+                .attr("y", canvas_height+35)
+                .style("text-anchor", "middle")
+                .text("GPS time (metric days)");
+            canvas.append("text")
+                .attr("x", -canvas_height/2)
+                .attr("y", -40)
+                .style("text-anchor", "middle")
+                .attr("transform", "rotate(-90)")
+                .text("SNR");
+            
+            // Add Legend // This isn't working yet...
+            legend = canvas.append("g")
+                //.attr("class","legend")
+                //.attr("transform","translate(50,30)")
+                .style("font-size","12px")
+                //.call(d3.legend)
+            legend.append("text")
+                .attr("x", canvas_width - canvas_width/2)
+                .attr("y", canvas_height - canvas_height/2)
+                .style("text-anchor", "end")
+                .text(function(d) { return d;})
+
+            data_canvas = canvas.append("g")
+            .attr("class", "data_canvas")
+
+            update1();
+            
+            function update1() {
+                var dot = data_canvas.selectAll(".dot")
+                .data(filtered_metadata1, function(d){return d.ID});
+        
+                var tooltip_snr = d3.select("#tooltip_snr");
+
+                dot.enter().append("circle").attr("class","dot")
+                        .style("fill", function(d) {  return colorScale(d.Label); })
+                        .on('mouseover', function(d) {  tooltip_snr.style('visibility', 'visible')
+                                .html('ID: ' + d.ID +'<br/>'+ 'GPStime: ' + d.GPStime +'<br/>'+ 'Class: ' + d.Label +'<br/>'+ 'SNR: '+ d.snr +'<br/>'+'peak_freq: '+ d.peak_frequency +' Hz' +'<br/>'+ 'ML confidence: ' + d.score); })
+                        .on('click', function(d) {  tooltip_snr.style('visibility', 'visible')
+                                .html('<img src=' + d.linkBig +" width='900px' height='300px' />"); }) 
+                        .attr("cx", function(d) { return xScale(d.GPStime); })
+                        .attr("cy", function(d) { return yScale(d.snr); })
+                        .attr("r", function(d) { return rScale(d.peak_frequency);
+                        });
+                        //.attr("xlink:href", "http://en.wikipedia.org/wiki/");
+                dot.exit().remove();
+            }
+        });
+    </script>
+
+    <textarea rows="10" cols="100">
+         All LIGO Livingston omicron triggers SNR>7.5 and 10<f<2048Hz and which have survived the C02 burst Data Quality Vetoes, categorized by  machine learning algorithms.
+Start time = 1126400000 September 15, 2015
+End time = 1137250000 January 18, 2016
+Number of triggers = 29652
+Fig 1: Time-frequency plot of all triggers, with colors and shapes assigned based on categories assigned to these in the training set.
+Fig 2: Time-SNR plot of the same.
+Fig 3: Breakdown of the number of triggers in each category.
+Please click the link to daily cumulative trigger plots to see Fig 1 and 2 for individual days.
+    </textarea>
+
+    <h1>Individual Glitch Class Home Pages</h1>
+
+          {% for Type in types %}
+            <p><a href="indPages/{{ Type }}.html">{{ Type }}</a></p>
+            {% endfor %}
+</body>
+</html>
