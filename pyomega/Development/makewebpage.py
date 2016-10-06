@@ -239,7 +239,7 @@ if opts.ML:
     reader = csv.reader(open('{0}/test.csv'.format(dataPath)), delimiter=",")
     list1 = sorted(reader)
     list2 = [x for x in list1 if len(x) == (len(types)+1)]
-    scores = pd.DataFrame(list2,columns=["ID","Light_Modulation","Air_Compressor","Blip","Chirp","Extremely_Loud","Helix","Koi_Fish","Low_Frequency_Burst","Low_Frequency_Lines","No_Glitch","None_of_the_Above","Paired_Doves","Power_Line","Repeating_Blips","Scattered_Light","Scratchy","Tomte","Violin_Mode","Wandering_Line","Whistle"])
+    scores = pd.DataFrame(list2,columns=["ID","Air_Compressor","Blip","Chirp","Extremely_Loud","Helix","Koi_Fish","Light_Modulation","Low_Frequency_Burst","Low_Frequency_Lines","None_of_the_Above","No_Glitch","Paired_Doves","Power_Line","Repeating_Blips","Scattered_Light","Scratchy","Tomte","Violin_Mode","Wandering_Line","Whistle"])
     bigTable = pd.merge(bigTable,scores)
 
 
