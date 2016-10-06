@@ -258,6 +258,27 @@ bigTable.GPStime        = bigTable.GPStime.apply(float)
 bigTable.snr            = bigTable.snr.apply(float)
 bigTable.peak_frequency = bigTable.peak_frequency.apply(float)
 
+bigTable.Air_Compressor = bigTable.Air_Compressor.apply(float)
+bigTable.Blip = bigTable.Blip.apply(float)
+bigTable.Chirp = bigTable.Chirp.apply(float)
+bigTable.Extremely_Loud = bigTable.Extremely_Loud.apply(float)
+bigTable.Helix = bigTable.Helix.apply(float)
+bigTable.Koi_Fish = bigTable.Koi_Fish.apply(float)
+bigTable.Light_Modulation = bigTable.Light_Modulation.apply(float)
+bigTable.Low_Frequency_Burst = bigTable.Low_Frequency_Burst.apply(float)
+bigTable.Low_Frequency_Lines = bigTable.Low_Frequency_Lines.apply(float)
+bigTable.None_of_the_Above = bigTable.None_of_the_Above.apply(float)
+bigTable.No_Glitch = bigTable.No_Glitch.apply(float)
+bigTable.Paired_Doves = bigTable.Paired_Doves.apply(float)
+bigTable.Power_Line = bigTable.Power_Line.apply(float)
+bigTable.Repeating_Blips = bigTable.Repeating_Blips.apply(float)
+bigTable.Scattered_Light = bigTable.Scattered_Light.apply(float)
+bigTable.Scratchy = bigTable.Scratchy.apply(float)
+bigTable.Tomte = bigTable.Tomte.apply(float)
+bigTable.Violin_Mode = bigTable.Violin_Mode.apply(float)
+bigTable.Wandering_Line = bigTable.Wandering_Line.apply(float)
+bigTable.Whistle = bigTable.Whistle.apply(float)
+
 for i in xrange(len(bigTable)):
     temp_dict={}
     col_vals = bigTable.columns.values  # Save the values of the columns
