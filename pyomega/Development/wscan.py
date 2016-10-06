@@ -828,9 +828,9 @@ def wtransform(data, tiling, outlierFactor,
                 sortedEnergies = \
                     np.sort(energies[channelstr][validIndices[channelstr]])
                 lowerQuartile[channelstr] = \
-                sortedEnergies[np.round(0.25 * len(validIndices[channelstr])).astype('int')]
+                sortedEnergies[np.round(0.25 * len(energies[channelstr][validIndices[channelstr]])).astype('int')]
                 upperQuartile[channelstr] = \
-                sortedEnergies[np.round(0.75 * len(validIndices[channelstr])).astype('int')]
+                sortedEnergies[np.round(0.75 * len(energies[channelstr][validIndices[channelstr]])).astype('int')]
 
                 # determine inter quartile range
                 interQuartileRange[channelstr] = upperQuartile[channelstr] - \
