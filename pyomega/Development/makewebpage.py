@@ -347,7 +347,7 @@ bigTable.drop('linkBig',1,inplace=True)
 # Make HTML table for uber table
 mHTML = open('{0}/metadata.html'.format(outPath),'w')
 mHTML.write(tableHeader + '\n')
-bigTable.drop('linkInd', axis=1)[0:1000].to_html(mHTML,classes= 'table table-striped table-bordered" id = "bigtable" width="100%" cellspacing="0',float_format=lambda x: '%10.7f' % x,escape=False)
+bigTable.drop('linkInd', axis=1).to_html(mHTML,classes= 'table table-striped table-bordered" id = "bigtable" width="100%" cellspacing="0',float_format=lambda x: '%10.7f' % x,escape=False)
 mHTML.write(tableFooter + '\n')
 mHTML.close()
 
