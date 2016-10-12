@@ -251,7 +251,7 @@
     <div class="grid">
     <div class="grid-sizer"></div>
           {% for path in imagePath %}
-            <div class="grid-item"><img src="{{ path }}"/></div>
+            <div class="grid-item"><img src="{{ path }}" title="{{ title[path] }}"/></div>
             {% endfor %}
     </div>
 </body>

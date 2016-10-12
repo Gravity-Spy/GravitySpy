@@ -140,6 +140,8 @@ if opts.verbose:
 # Based on the directory you point to determine the classes of glitches.
 types = [ name for name in os.listdir(dataPath) if os.path.isdir(os.path.join(dataPath, name)) ]
 types = sorted(types)
+types[10] = 'No_Glitch'
+types[9] = 'None_of_the_Above'
 
 # Open and create a home page
 # Determine type of summary page being made
@@ -186,6 +188,7 @@ for Type in types:
 
     try:
         imagePaths = []
+        scoreInd   = []
         if opts.ML:
             # Open the scores file for all the images put into that glitch category
             reader = csv.reader(open('{0}/{1}/scores.csv'.format(dataPath,Type)), delimiter=",")
@@ -205,6 +208,7 @@ for Type in types:
                 imagePaths.append(''.join(['../'] * len(filter(None,indPages.split(tmp[-1])[1].split('/')))) + image[0].split(tmp[-1])[1])
                 imagePathAllInd.append(''.join(['../'] * len(filter(None,indPages.split(tmp[-1])[1].split('/')))) + image[0].split(tmp[-1])[1])
                 imagePathAllBig.append(''.join(['../'] * (len(filter(None,indPages.split(tmp[-1])[1].split('/')))-1)) + image[0].split(tmp[-1])[1])
+                scoreInd.append(score[iN])
 
         elif opts.TrainingSet:
             tmp = metadata[metadata.Label == Type]
@@ -222,11 +226,14 @@ for Type in types:
 
 
         # Open a new html page which is named after the type
+        title = dict(zip(imagePaths,scoreInd))
         indSummary= open('{0}/{1}.html'.format(indPages,Type),"w")
         template = env.get_template('individual.html')
-        print >>indSummary, template.render(imagePath=imagePaths,glitchType=Type)
+        print >>indSummary, template.render(imagePath=imagePaths,glitchType=Type,title=title)
         indSummary.close()
+        iN = iN + 1
     except:
+        iN = iN + 1
         print('Warning: {0} failed'.format(Type))
 
 
