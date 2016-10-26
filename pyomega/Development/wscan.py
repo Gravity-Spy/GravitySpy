@@ -2929,7 +2929,7 @@ def main():
         scores,MLlabel = label_glitches.main(outDir + '/pickleddata/','ML/trained_model/',outDir + '/labeled/',opts.verbose)
 
         scores = scores.tolist()
-        classes = ["Light_Modulation","Air_Compressor","Blip","Chirp","Extremely_Loud","Helix","Koi_Fish","Low_Frequency_Burst","Low_Frequency_Lines","No_Glitch","None_of_the_Above","Paired_Doves","Power_Line","Repeating_Blips","Scattered_Light","Scratchy","Tomte","Violin_Mode","Wandering_Line","Whistle"]
+        classes = ["Air_Compressor","Blip","Chirp","Extremely_Loud","Helix","Koi_Fish","Light_Modulation","Low_Frequency_Burst","Low_Frequency_Lines","None_of_the_Above","No_Glitch","Paired_Doves","Power_Line","Repeating_Blips","Scattered_Light","Scratchy","Tomte","Violin_Mode","Wandering_Line","Whistle"]
 
         theClass = classes[MLlabel]
         threshold = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
