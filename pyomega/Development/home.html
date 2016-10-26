@@ -78,7 +78,7 @@
 
             // Various scales. These domains make assumptions of data, naturally.
             var xScale = d3.scale.linear(); // GPS_time
-            xScale.domain([1126200000, 1137500000]);
+            xScale.domain([{{ gpsStart }}, {{ gpsEnd }}]);
             xScale.range([0, canvas_width]);  
 
             var yScale = d3.scale.log().domain([9, 2048]).range([canvas_height, 0]);  // peak_frequency
@@ -217,7 +217,7 @@
 
             // Various scales. These domains make assumptions of data, naturally.
             var xScale = d3.scale.linear(); // GPS_time
-            xScale.domain([1126200000, 1137500000]);
+            xScale.domain([{{ gpsStart }}, {{ gpsEnd }}]);
             xScale.range([0, canvas_width]);  
 
             var yScale = d3.scale.log().domain([7, 1000]).range([canvas_height, 0]);  // peak_frequency
@@ -300,10 +300,7 @@
     </script>
 
     <textarea rows="10" cols="100">
-         All LIGO Livingston omicron triggers SNR>7.5 and 10<f<2048Hz and which have survived the C02 burst Data Quality Vetoes, categorized by  machine learning algorithms.
-Start time = 1126400000 September 15, 2015
-End time = 1137250000 January 18, 2016
-Number of triggers = 29652
+         All LIGO Livingston omicron triggers SNR>7.5 and 10<f<2048Hz categorized by  machine learning algorithms.
 Fig 1: Time-frequency plot of all triggers, with colors and shapes assigned based on categories assigned to these in the training set.
 Fig 2: Time-SNR plot of the same.
 Fig 3: Breakdown of the number of triggers in each category.

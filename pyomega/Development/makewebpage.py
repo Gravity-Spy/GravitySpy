@@ -15,7 +15,9 @@ import difflib
 from gwpy.table.lsctables import SnglBurstTable
 from gwpy.segments import SegmentList, Segment
 
-import matplotlib.pyplot as plt
+from matplotlib import use
+use('agg')
+from matplotlib import (pyplot as plt, cm)
 
 # Set this options so that we can print the href link to the image fromt he glitch metadata table
 pd.set_option('display.max_colwidth',1000)
@@ -105,7 +107,7 @@ outPath          += '/'
 if opts.GravitySpy:
     summaryType = "tmp/"
 elif opts.ML:
-    summaryType = "GravitySpyO1Final/"
+    summaryType = "O2/"
 elif opts.TrainingSet:
     summaryType = "TrainingSet/"
 else:
@@ -140,8 +142,8 @@ if opts.verbose:
 # Based on the directory you point to determine the classes of glitches.
 types = [ name for name in os.listdir(dataPath) if os.path.isdir(os.path.join(dataPath, name)) ]
 types = sorted(types)
-types[10] = 'No_Glitch'
-types[9] = 'None_of_the_Above'
+#types[10] = 'No_Glitch'
+#types[9] = 'None_of_the_Above'
 
 # Open and create a home page
 # Determine type of summary page being made
@@ -153,12 +155,6 @@ elif opts.TrainingSet:
     header1 = "Training Set"
 else:
     ValueError("Please supply type of summary page you want")
-
-summaryPage = open('{0}/index.html'.format(outPath),"w")
-env = Environment(loader=FileSystemLoader('./'))
-template = env.get_template('home.html')
-print >>summaryPage, template.render(types=types,header=header1)
-summaryPage.close()
 
 # iN is represent which Glitch we are making html pages and trigger grams for
 iN = 1
@@ -184,6 +180,14 @@ elif opts.TrainingSet:
 else:
     ValueError("Please supply type of summary page you want")
 
+
+metadata.GPStime = metadata.GPStime.apply(float)
+summaryPage = open('{0}/index.html'.format(outPath),"w")
+env = Environment(loader=FileSystemLoader('./'))
+template = env.get_template('home.html')
+print >>summaryPage, template.render(types=types,header=header1,gpsStart=np.floor(metadata.GPStime.min()),gpsEnd=np.ceil(metadata.GPStime.max()))
+summaryPage.close()
+
 for Type in types:
 
     try:
@@ -194,7 +198,7 @@ for Type in types:
             reader = csv.reader(open('{0}/{1}/scores.csv'.format(dataPath,Type)), delimiter=",")
             # sort it
             list1 = sorted(reader)
-            list2 = [x for x in list1 if len(x) == (len(types)+1)]
+            list2 = [x for x in list1 if len(x) == (21)]
             sortedlist = sorted(list2, key=itemgetter(iN),reverse=True)
             for score in sortedlist:
                 # The score.csv file is laid out so that the first entry is the unqiueID of the image. The subsequent inputs are the 1 by 20 scores which correspond to the types in the order of the "types" variable defined above.
@@ -243,12 +247,11 @@ bigTable = pd.merge(tmpTable,metadata)
 
 if opts.ML:
     # Load aggregate score information
-    reader = csv.reader(open('{0}/test.csv'.format(dataPath)), delimiter=",")
+    reader = csv.reader(open('{0}/allscores.csv'.format(dataPath)), delimiter=",")
     list1 = sorted(reader)
-    list2 = [x for x in list1 if len(x) == (len(types)+1)]
+    list2 = [x for x in list1 if len(x) == (21)]
     scores = pd.DataFrame(list2,columns=["ID","Air_Compressor","Blip","Chirp","Extremely_Loud","Helix","Koi_Fish","Light_Modulation","Low_Frequency_Burst","Low_Frequency_Lines","None_of_the_Above","No_Glitch","Paired_Doves","Power_Line","Repeating_Blips","Scattered_Light","Scratchy","Tomte","Violin_Mode","Wandering_Line","Whistle"])
     bigTable = pd.merge(bigTable,scores)
-
 
 ###############################################################################
 ##########################                           ##########################
