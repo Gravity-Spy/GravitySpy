@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import optparse,os,string,random
+import optparse,os,string,random,pdb
 from gwpy.table.lsctables import SnglBurstTable
 from gwpy.segments import DataQualityFlag
 
@@ -176,3 +176,13 @@ for omicrontrigger in omicrontriggers:
 # by the condor job later
 filename = open("metadata/{0}_{1}.xml".format(opts.detector,opts.gpsStart),'w')
 omicrontriggers.write(fileobj=filename)
+
+summaryanduploadPage = open('summary_upload.sh','w')
+summaryanduploadPage.write('#!/bin/bash\n')
+summaryanduploadPage.write('\n')
+summaryanduploadPage.write('cat {0}/**/scores.csv > {0}/allscores.csv\n'.format(opts.outDir))
+summaryanduploadPage.write('\n')
+summaryanduploadPage.write('python {0}/makewebpage.py --outPath {1} --dataPath {2} --metadata {0}/metadata/metadata_{3}_{4}.txt --ML\n'.format(os.getcwd(),'/'.join(opts.outDir.split('/')[0:-3]),opts.outDir,opts.detector,opts.gpsStart)) 
+summaryanduploadPage.write('\n')
+summaryanduploadPage.write('python {0}/sortimages.py --dataPath {1} --detector {2}'.format(os.getcwd(),opts.outDir,opts.detector))
+summaryanduploadPage.close()

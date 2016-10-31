@@ -80,10 +80,10 @@ def parse_commandline():
     parser.add_option("--outPath", help="Where you would like the GSpy out pages to live")
     parser.add_option("--dataPath", help="Path to omega scans")
     parser.add_option("--metadata", help="Text file of metadata")
-    parser.add_option("--omicrontriggers", help="XML of omicron triggers")
     parser.add_option("--GravitySpy", action="store_true", default=False,help="Make GravitySpy output summary page")
     parser.add_option("--ML", action="store_true", default=False,help="Make Training Set summary page")
     parser.add_option("--TrainingSet", action="store_true", default=False,help="Make ML summary page")
+    parser.add_option("--O1GlitchClassification", action="store_true", default=False,help="O1 Glitch Classification Paper Summary Page")
     parser.add_option("--verbose", action="store_true", default=False,help="Run in Verbose Mode")
     opts, args = parser.parse_args()
 
@@ -110,6 +110,8 @@ elif opts.ML:
     summaryType = "O2/"
 elif opts.TrainingSet:
     summaryType = "TrainingSet/"
+elif opts.O1GlitchClassification:
+    summaryType = "O1GlitchClassification/"
 else:
     ValueError("Please supply type of summary page you want")
 
@@ -142,8 +144,8 @@ if opts.verbose:
 # Based on the directory you point to determine the classes of glitches.
 types = [ name for name in os.listdir(dataPath) if os.path.isdir(os.path.join(dataPath, name)) ]
 types = sorted(types)
-#types[10] = 'No_Glitch'
-#types[9] = 'None_of_the_Above'
+
+indexDict = {"Air_Compressor":0,"Blip":1,"Chirp":2,"Extremely_Loud":3,"Helix":4,"Koi_Fish":5,"Light_Modulation":6,"Low_Frequency_Burst":7,"Low_Frequency_Lines":8,"None_of_the_Above":9,"No_Glitch":10,"Paired_Doves":11,"Power_Line":12,"Repeating_Blips":13,"Scattered_Light":14,"Scratchy":15,"Tomte":16,"Violin_Mode":17,"Wandering_Line":18,"Whistle":19}
 
 # Open and create a home page
 # Determine type of summary page being made
@@ -153,11 +155,11 @@ elif opts.ML:
     header1 = "ML Output"
 elif opts.TrainingSet:
     header1 = "Training Set"
+elif opts.O1GlitchClassification:
+    header1 = "O1 Glitch Classification"
 else:
     ValueError("Please supply type of summary page you want")
 
-# iN is represent which Glitch we are making html pages and trigger grams for
-iN = 1
 
 # Initialize a blank ID list and a blank IDType
 IDType          = []
@@ -177,6 +179,17 @@ elif opts.ML:
     metadata = pd.DataFrame(sortedlist,columns=['snr','amplitude','peak_frequency','central_freq','duration','bandwidth','chisq','chisq_dof','GPStime','ID','channel'])
 elif opts.TrainingSet:
     metadata = pd.DataFrame(sortedlist,columns=['snr','amplitude','peak_frequency','central_freq','duration','bandwidth','chisq','chisq_dof','GPStime','ID','channel','Label'])
+elif opts.O1GlitchClassification:
+    metadata = pd.DataFrame(sortedlist,columns=['snr','amplitude','peak_frequency','central_freq','duration','bandwidth','chisq','chisq_dof','GPStime','ID','channel','Label','Pipeline'])
+
+    metadata.GPStime = metadata.GPStime.apply(float)
+    metadata.GPStime = metadata.GPStime.round(2)
+    # Function to aggregate data
+    def lister(x):
+        return list(x)
+    metadata = pd.pivot_table(metadata,index='GPStime',values=['snr', 'amplitude', 'peak_frequency', 'central_freq', 'duration','bandwidth', 'chisq', 'chisq_dof', 'GPStime','ID', 'channel','Label', 'Pipeline'],aggfunc=lister)
+    metadata.reset_index(inplace=True)
+    pdb.set_trace()
 else:
     ValueError("Please supply type of summary page you want")
 
@@ -190,6 +203,7 @@ summaryPage.close()
 
 for Type in types:
 
+    iN = indexDict[Type]
     try:
         imagePaths = []
         scoreInd   = []
@@ -233,11 +247,9 @@ for Type in types:
         title = dict(zip(imagePaths,scoreInd))
         indSummary= open('{0}/{1}.html'.format(indPages,Type),"w")
         template = env.get_template('individual.html')
-        print >>indSummary, template.render(imagePath=imagePaths,glitchType=Type,title=title)
+        print >>indSummary, template.render(imagePath=imagePaths,glitchType=Type,title=title,gpsStart=np.floor(metadata.GPStime.min()),gpsEnd=np.ceil(metadata.GPStime.max()))
         indSummary.close()
-        iN = iN + 1
     except:
-        iN = iN + 1
         print('Warning: {0} failed'.format(Type))
 
 

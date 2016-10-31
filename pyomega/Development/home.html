@@ -1,7 +1,6 @@
 <!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN'>
 <html lang="en">
 <head>
-<link media="all" href="main.css" type="text/css" rel="stylesheet" />
 <script src="https://d3js.org/d3.v3.min.js"></script>
 <link rel="stylesheet" type="text/css" href="https://ldas-jobs.ligo-la.caltech.edu/~scoughlin/O1GravitySpy/css/style.css" />
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
@@ -23,280 +22,209 @@
 <body>
     <h1>{{ header }}</h1>
 
-    <div id="tooltip_freq" style="position:absolute; visability: hidden;"></div>
-    <div id="chart_area_freq"></div>
-    <div id="glitches_freq"></div>
     <script>
-        d3.json("metadata.json", function(metadata) { 
-        
-            var filtered_metadata = metadata.map(function(glitch_metadata) { return glitch_metadata; });
-            // Add name checkboxes
-            glitches_freq = d3.select("#glitches_freq");
-            glitches_freq.selectAll("input")
-                .data(d3.map(metadata, function(d) { return d.Label }).keys())
-                .enter()
-                .append("div")
-                    .append("input")
-                        .attr("Label", "Label") // Check this line
-                        .attr("type", "checkbox")
-                        .attr("value", String)
-                        .attr("checked", true)
-                        .on("change", function() {
-                            var type = this.value;
-                            if (this.checked) { 
-                                var new_metadata = metadata.filter(function(glitch_metadata){ return glitch_metadata.Label == type;});
-                                filtered_metadata = filtered_metadata.concat(new_metadata);
-                            } else { 
-                                filtered_metadata = filtered_metadata.filter(function(glitch_metadata){ return glitch_metadata.Label != type;});
-                            }
-                            update();                            
-                        })
-                        // Get out of the input element
-                        .select(function() { return this.parentNode; })
-                    .append("span")
-                        .text(String)
+var margin = {top: 20, right: 20, bottom: 30, left: 40},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
 
-            
-            var chart_area_freq = d3.select("#chart_area_freq");
-            var frame = chart_area_freq.append("svg");
-            // Create canvas inside frame.
-            var canvas = frame.append("g");
+var xScale = d3.time.scale()
+    .domain([315961183000.0 + {{ gpsStart }} *1000, 315961183000.0 + {{ gpsEnd }} * 1000])
+    .range([0, width]);
 
-            // Set margins, width, and height.
-            var margin = {top: 110.5, right: 50.5, bottom: 50.5, left: 50.5};
-            var frame_width = 900;
-            var frame_height = 500;
-            var canvas_width = frame_width - margin.left - margin.right;
-            var canvas_height = frame_height - margin.top - margin.bottom;
+var yScale = d3.scale.log()
+    .domain([10, 2048])
+    .range([height, 0]);
 
-            // Set svg attributes width and height.
-            frame.attr("width", frame_width);
-            frame.attr("height", frame_height);
+var yScale2 = d3.scale.log()
+    .domain([7, 2000])
+    .range([height, 0]);
 
-            // Shift the chart and make it slightly smaller than the svg canvas.
-            canvas.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+var color = d3.scale.category10();
 
-            // Various scales. These domains make assumptions of data, naturally.
-            var xScale = d3.scale.linear(); // GPS_time
-            xScale.domain([{{ gpsStart }}, {{ gpsEnd }}]);
-            xScale.range([0, canvas_width]);  
+var xAxis = d3.svg.axis()
+    .scale(xScale)
+    .orient("bottom")
+    .tickFormat(d3.time.format("%I:%M"));
 
-            var yScale = d3.scale.log().domain([9, 2048]).range([canvas_height, 0]);  // peak_frequency
-            var rScale = d3.scale.log().domain([7,100]).range([1, 4]); // snr
+formatValue = d3.format(".2s");
+var yAxis = d3.svg.axis()
+    .scale(yScale)
+    .orient("left")
+    .tickFormat(function(d) { return formatValue(d)})
 
-            // Creating the x & y axes
-            var xAxis = d3.svg.axis().orient("bottom").scale(xScale);
-            var yAxis = d3.svg.axis().scale(yScale).orient("left");
+var yAxis2 = d3.svg.axis()
+    .scale(yScale2)
+    .orient("left")
+    .tickFormat(function(d) { return formatValue(d)})
 
-            // create a color scale with 20 different categories.
-            var colorScale = d3.scale.category20();
-                    
-            // Next step: push the axes into the chart
-            // Add the x-axis.
-            canvas.append("g")
-                .attr("class", "x axis")
-                .attr("transform", "translate(0," + canvas_height + ")")
-                .call(xAxis);
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-            // Add the y-axis.
-            canvas.append("g")
-                .attr("class", "y axis")
-                .call(yAxis);
+var svg2 = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-            // Add axes labels
-            canvas.append("text")
-                .attr("x", canvas_width/2)
-                .attr("y", -30)
-                .style("text-anchor", "middle")
-                .text("Peak Frequency vs Time");
-            canvas.append("text")
-                .attr("x", canvas_width/2)
-                .attr("y", canvas_height+35)
-                .style("text-anchor", "middle")
-                .text("GPS time (metric days)");
-            canvas.append("text")
-                .attr("x", -canvas_height/2)
-                .attr("y", -40)
-                .style("text-anchor", "middle")
-                .attr("transform", "rotate(-90)")
-                .text("Frequency (Hz)");
-            
-            // Add Legend // This isn't working yet...
-            legend = canvas.append("g")
-                //.attr("class","legend")
-                //.attr("transform","translate(50,30)")
-                .style("font-size","12px")
-                //.call(d3.legend)
-            legend.append("text")
-                .attr("x", canvas_width - canvas_width/2)
-                .attr("y", canvas_height - canvas_height/2)
-                .style("text-anchor", "end")
-                .text(function(d) { return d;})
+// add the tooltip area to the webpage
+var tooltip = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
 
+var tooltip2 = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
 
-            data_canvas = canvas.append("g")
-            .attr("class", "data_canvas")
+d3.json("metadata.json", function(error, data) {
+  if (error) throw error;
 
-            update();
+  data.forEach(function(d) {
+    d.GPStime = new Date(315961183000.0 + d.GPStime * 1000);;
+    d.peak_frequency = +d.peak_frequency;
+    d.snr = +d.snr
+    d.score = +d.score
+  });
 
-            function update() {
-                var dot = data_canvas.selectAll(".dot")
-                .data(filtered_metadata, function(d){return d.ID});
-        
-                var tooltip_freq = d3.select("#tooltip_freq");
+  xScale.domain(d3.extent(data, function(d) { return d.GPStime; })).nice();
+  yScale.domain(d3.extent(data, function(d) { return d.peak_frequency; })).nice();
+  yScale2.domain(d3.extent(data, function(d) { return d.snr; })).nice();
 
-                dot.enter().append("circle").attr("class","dot")
-                        .style("fill", function(d) {  return colorScale(d.Label); })
-                        .on('mouseover', function(d) {  tooltip_freq.style('visibility', 'visible')
-                                .html('ID: ' + d.ID +'<br/>'+ 'GPStime: ' + d.GPStime +'<br/>'+ 'Class: ' + d.Label +'<br/>'+ 'SNR: '+ d.snr +'<br/>'+'peak_freq: '+ d.peak_frequency +' Hz' +'<br/>'+ 'ML confidence: ' + d.score); })
-                        .on('click', function(d) {  tooltip_freq.style('visibility', 'visible')
-                                .html('<img src=' + d.linkBig +" width='900px' height='300px' />"); })
-                        .attr("cx", function(d) { return xScale(d.GPStime); })
-                        .attr("cy", function(d) { return yScale(d.peak_frequency); })
-                        .attr("r", function(d) { return rScale(d.snr); });
-                        //.attr("xlink:href", "http://en.wikipedia.org/wiki/");
-                dot.exit().remove();
-            }
-            })
-    </script>
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("x", width)
+      .attr("y", -6)
+      .style("text-anchor", "end")
+      .text("Date");
 
-    <div id="tooltip_snr" style="position:absolute; visability: hidden;"></div>
-    <div id="chart_area_snr"></div>
-    <div id="glitches_snr"></div>
+  svg2.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("x", width)
+      .attr("y", -6)
+      .style("text-anchor", "end")
+      .text("Date");
 
-    <script>
-        d3.json("metadata.json", function(metadata1) { 
-        
-            var filtered_metadata1 = metadata1.map(function(glitch_metadata1) { return glitch_metadata1; });
-            // Add name checkboxes
-            glitches_snr = d3.select("#glitches_snr");
-            glitches_snr.selectAll("input")
-                .data(d3.map(metadata1, function(d) { return d.Label }).keys())
-                .enter()
-                .append("div")
-                    .append("input")
-                        .attr("Label", "Label") // Check this line
-                        .attr("type", "checkbox")
-                        .attr("value", String)
-                        .attr("checked", true)
-                        .on("change", function() {
-                            var type = this.value;
-                            if (this.checked) { 
-                                var new_metadata1 = metadata1.filter(function(glitch_metadata1){ return glitch_metadata1.Label == type;});
-                                filtered_metadata1 = filtered_metadata1.concat(new_metadata1);
-                            } else { 
-                                filtered_metadata1 = filtered_metadata1.filter(function(glitch_metadata1){ return glitch_metadata1.Label != type;});
-                            }
-                            update1();                            
-                        })
-                        // Get out of the input element
-                        .select(function() { return this.parentNode; })
-                    .append("span")
-                        .text(String)
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Peak Frequency")
 
-            
-            var chart_area_snr = d3.select("#chart_area_snr");
-            var frame = chart_area_snr.append("svg");
+  svg2.append("g")
+      .attr("class", "y axis")
+      //.attr("transform", "translate(0 ," + height + ")")
+      .call(yAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("SNR");
 
-            // Create canvas inside frame.
-            var canvas = frame.append("g");
+  svg.selectAll(".dot")
+      .data(data)
+    .enter().append("circle")
+      .attr("class", "dot")
+      .attr("r", 3.5)
+      .attr("cx", function(d) { return xScale(d.GPStime); })
+      .attr("cy", function(d) { return yScale(d.peak_frequency); })
+      .style("fill", function(d) { return color(d.Label); })
+      .style("opacity", function(d) { return d.score; })
+      .on("mouseover", function(d) {
+          tooltip.transition()
+              .duration(200)
+              .style("opacity", .9);
+          tooltip.html('ID: ' + d.ID +'<br/>'+ 'GPStime: ' + d.GPStime +'<br/>'+ 'Class: ' + d.Label +'<br/>'+ 'SNR: '+ d.snr +'<br/>'+'peak_freq: '+ d.peak_frequency +' Hz' +'<br/>'+ 'ML confidence: ' + d.score)
+              .style("left", (d3.event.pageX + 5) + "px")
+              .style("top", margin.top + "px");
+          })
+      .on('click', function(d) {
+          tooltip.style('visibility', 'visible')
+              .html('<img src=' + d.linkBig +" width='900px' height='300px' />")
+              .style("left", 0 + "px")
+              .style("top", margin.top +  "px");
+          }) 
 
-            // Set margins, width, and height.
-            var margin = {top: 110.5, right: 50.5, bottom: 50.5, left: 50.5};
-            var frame_width = 900;
-            var frame_height = 500;
-            var canvas_width = frame_width - margin.left - margin.right;
-            var canvas_height = frame_height - margin.top - margin.bottom;
+  svg2.selectAll(".dot")
+      .data(data)
+    .enter().append("circle")
+      .attr("class", "dot")
+      .attr("r", 3.5)
+      .attr("cx", function(d) { return xScale(d.GPStime); })
+      .attr("cy", function(d) { return yScale2(d.snr); })
+      .style("fill", function(d) { return color(d.Label); })
+      .style("opacity", function(d) { return d.score; })
+      .on("mouseover", function(d) {
+          tooltip.transition()
+              .duration(200)
+              .style("opacity", .9);
+          tooltip.html('ID: ' + d.ID +'<br/>'+ 'GPStime: ' + d.GPStime +'<br/>'+ 'Class: ' + d.Label +'<br/>'+ 'SNR: '+ d.snr +'<br/>'+'peak_freq: '+ d.peak_frequency +' Hz' +'<br/>'+ 'ML confidence: ' + d.score)
+              .style("left", (d3.event.pageX + 20) + "px")
+              .style("top", 3 * margin.top + 3* margin.bottom + height +  "px");
+          })
+      .on('click', function(d) {
+          tooltip.style('visibility', 'visible')
+              .html('<img src=' + d.linkBig +" width='900px' height='300px' />")
+              .style("left", 0 + "px")
+              .style("top", 3 * margin.top + 3 * margin.bottom + height +  "px");
+          })
 
-            // Set svg attributes width and height.
-            frame.attr("width", frame_width);
-            frame.attr("height", frame_height);
+  var legend = svg.selectAll(".legend")
+      .data(color.domain())
+    .enter().append("g")
+      .attr("class", "legend")
+      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
 
-            // Shift the chart and make it slightly smaller than the svg canvas.
-            canvas.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  legend.append("rect")
+      .attr("x", width - 18)
+      .attr("width", 18)
+      .attr("height", 18)
+      .style("fill", color);
 
-            // Various scales. These domains make assumptions of data, naturally.
-            var xScale = d3.scale.linear(); // GPS_time
-            xScale.domain([{{ gpsStart }}, {{ gpsEnd }}]);
-            xScale.range([0, canvas_width]);  
+  legend.on("click", function(type) {
+        // dim all of the icons in legend
+        d3.selectAll(".legend")
+            .style("opacity", 0.1);
+        // make the one selected be un-dimmed
+        d3.select(this)
+            .style("opacity", 1);
+        // select all dots and apply 0 opacity (hide)
+        d3.selectAll(".dot")
+        // .transition()
+        // .duration(500)
+        .style("opacity", 0.0)
+        // filter out the ones we want to show and apply properties
+        .filter(function(d) {
+            return d.Label == type;
+        })
+            .style("opacity", function(d) { return d.score; }); // need this line to unhide dots
+    });
 
-            var yScale = d3.scale.log().domain([7, 1000]).range([canvas_height, 0]);  // peak_frequency
-            var rScale = d3.scale.log().domain([10,2048]).range([1, 5]); // snr
+  legend.append("text")
+      .attr("x", width - 24)
+      .attr("y", 9)
+      .attr("dy", ".35em")
+      .style("text-anchor", "end")
+      .text(function(d) { return d; });
 
-            // Creating the x & y axes
-            var xAxis = d3.svg.axis().orient("bottom").scale(xScale);
-            var yAxis = d3.svg.axis().scale(yScale).orient("left");
+});
 
-            // create a color scale with 20 different categories.
-            var colorScale = d3.scale.category20();
-                    
-            // Next step: push the axes into the chart
-            // Add the x-axis.
-            canvas.append("g")
-                .attr("class", "x axis")
-                .attr("transform", "translate(0," + canvas_height + ")")
-                .call(xAxis);
-
-            // Add the y-axis.
-            canvas.append("g")
-                .attr("class", "y axis")
-                .call(yAxis);
-            
-            // Add axes labels
-            canvas.append("text")
-                .attr("x", canvas_width/2)
-                .attr("y", -50)
-                .style("text-anchor", "middle")
-                .text("SNR vs Time");
-            canvas.append("text")
-                .attr("x", canvas_width/2)
-                .attr("y", canvas_height+35)
-                .style("text-anchor", "middle")
-                .text("GPS time (metric days)");
-            canvas.append("text")
-                .attr("x", -canvas_height/2)
-                .attr("y", -40)
-                .style("text-anchor", "middle")
-                .attr("transform", "rotate(-90)")
-                .text("SNR");
-            
-            // Add Legend // This isn't working yet...
-            legend = canvas.append("g")
-                //.attr("class","legend")
-                //.attr("transform","translate(50,30)")
-                .style("font-size","12px")
-                //.call(d3.legend)
-            legend.append("text")
-                .attr("x", canvas_width - canvas_width/2)
-                .attr("y", canvas_height - canvas_height/2)
-                .style("text-anchor", "end")
-                .text(function(d) { return d;})
-
-            data_canvas = canvas.append("g")
-            .attr("class", "data_canvas")
-
-            update1();
-            
-            function update1() {
-                var dot = data_canvas.selectAll(".dot")
-                .data(filtered_metadata1, function(d){return d.ID});
-        
-                var tooltip_snr = d3.select("#tooltip_snr");
-
-                dot.enter().append("circle").attr("class","dot")
-                        .style("fill", function(d) {  return colorScale(d.Label); })
-                        .on('mouseover', function(d) {  tooltip_snr.style('visibility', 'visible')
-                                .html('ID: ' + d.ID +'<br/>'+ 'GPStime: ' + d.GPStime +'<br/>'+ 'Class: ' + d.Label +'<br/>'+ 'SNR: '+ d.snr +'<br/>'+'peak_freq: '+ d.peak_frequency +' Hz' +'<br/>'+ 'ML confidence: ' + d.score); })
-                        .on('click', function(d) {  tooltip_snr.style('visibility', 'visible')
-                                .html('<img src=' + d.linkBig +" width='900px' height='300px' />"); }) 
-                        .attr("cx", function(d) { return xScale(d.GPStime); })
-                        .attr("cy", function(d) { return yScale(d.snr); })
-                        .attr("r", function(d) { return rScale(d.peak_frequency);
-                        });
-                        //.attr("xlink:href", "http://en.wikipedia.org/wiki/");
-                dot.exit().remove();
-            }
-        });
     </script>
 
     <textarea rows="10" cols="100">
