@@ -100,8 +100,7 @@ for Type in types:
                 print(ast.literal_eval(iX[6]))
                 ValueError('Problem with CSV file for type: {0}'.format(Type))
     except:
-        print("Fail: {0}".format(Type))
-
+        print('Problem with CSV file for type: {0}, Line: {1}'.format(Type,iX))
 
 for Type in types:
     Begin  = []
@@ -190,3 +189,4 @@ for Type in types:
                 subjectset.add(tmp)
     except:
         print("Fail: {0}".format(Type))
+"""

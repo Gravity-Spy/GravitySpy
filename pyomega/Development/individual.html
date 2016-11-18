@@ -35,12 +35,12 @@ var yScale2 = d3.scale.log()
     .domain([7, 2000])
     .range([height, 0]);
 
-var color = d3.scale.category10();
+var color = d3.scale.category20();
 
 var xAxis = d3.svg.axis()
     .scale(xScale)
     .orient("bottom")
-    .tickFormat(d3.time.format("%I:%M"));
+    .tickFormat(d3.time.format("%I:%M %a %p"));
 
 formatValue = d3.format(".2s");
 var yAxis = d3.svg.axis()
@@ -200,9 +200,12 @@ d3.json("{{ glitchType }}_metadata.json", function(error, data) {
       .style("text-anchor", "end")
       .text(function(d) { return d; });
 
+  {{ ExtraHTML }}
+
 });
 
     </script>
+    {{ ExtraHTML2 }}
 
     <p><a href="{{ glitchType }}_metadata.html" > {{ glitchType }} metadata </a></p>
     <p><a href="{{ glitchType }}_metadata.csv" > {{ glitchType }} metadata exports </a></p>
@@ -210,7 +213,7 @@ d3.json("{{ glitchType }}_metadata.json", function(error, data) {
     <div class="grid">
     <div class="grid-sizer"></div>
           {% for path in imagePath %}
-            <div class="grid-item"><img src="{{ path }}" title="{{ title[path] }}"/></div>
+            <div class="grid-item {{ Pipeline[path] }}"><img src="{{ path }}" title="{{ title[path] }}"/></div>
             {% endfor %}
     </div>
 </body>

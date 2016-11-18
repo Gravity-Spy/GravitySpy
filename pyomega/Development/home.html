@@ -23,7 +23,7 @@
     <h1>{{ header }}</h1>
 
     <script>
-var margin = {top: 20, right: 20, bottom: 30, left: 40},
+var margin = {top: 20, right: 100, bottom: 80, left: 40},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
 
@@ -39,12 +39,12 @@ var yScale2 = d3.scale.log()
     .domain([7, 2000])
     .range([height, 0]);
 
-var color = d3.scale.category10();
+var color = d3.scale.category20();
 
 var xAxis = d3.svg.axis()
     .scale(xScale)
     .orient("bottom")
-    .tickFormat(d3.time.format("%I:%M"));
+    .tickFormat(d3.time.format("%I:%M %a %p"));
 
 formatValue = d3.format(".2s");
 var yAxis = d3.svg.axis()
@@ -96,23 +96,25 @@ d3.json("metadata.json", function(error, data) {
       .attr("class", "x axis")
       .attr("transform", "translate(0," + height + ")")
       .call(xAxis)
-    .append("text")
-      .attr("class", "label")
-      .attr("x", width)
-      .attr("y", -6)
-      .style("text-anchor", "end")
-      .text("Date");
+      .selectAll("text")        
+            .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".15em")
+            .attr("transform", function(d) {
+                return "rotate(-65)" 
+                });
 
   svg2.append("g")
       .attr("class", "x axis")
       .attr("transform", "translate(0," + height + ")")
       .call(xAxis)
-    .append("text")
-      .attr("class", "label")
-      .attr("x", width)
-      .attr("y", -6)
-      .style("text-anchor", "end")
-      .text("Date");
+      .selectAll("text")        
+            .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".15em")
+            .attr("transform", function(d) {
+                return "rotate(-65)" 
+                });
 
   svg.append("g")
       .attr("class", "y axis")
@@ -128,7 +130,7 @@ d3.json("metadata.json", function(error, data) {
   svg2.append("g")
       .attr("class", "y axis")
       //.attr("transform", "translate(0 ," + height + ")")
-      .call(yAxis)
+      .call(yAxis2)
     .append("text")
       .attr("class", "label")
       .attr("transform", "rotate(-90)")
@@ -189,7 +191,7 @@ d3.json("metadata.json", function(error, data) {
       .data(color.domain())
     .enter().append("g")
       .attr("class", "legend")
-      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+      .attr("transform", function(d, i) { return "translate(100," + i * 20 + ")"; });
 
   legend.append("rect")
       .attr("x", width - 18)
@@ -223,9 +225,14 @@ d3.json("metadata.json", function(error, data) {
       .style("text-anchor", "end")
       .text(function(d) { return d; });
 
+
+  {{ ExtraHTML }}
+
 });
 
     </script>
+
+    {{ ExtraHTML2 }}
 
     <textarea rows="10" cols="100">
          All LIGO Livingston omicron triggers SNR>7.5 and 10<f<2048Hz categorized by  machine learning algorithms.

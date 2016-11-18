@@ -181,32 +181,64 @@ elif opts.TrainingSet:
     metadata = pd.DataFrame(sortedlist,columns=['snr','amplitude','peak_frequency','central_freq','duration','bandwidth','chisq','chisq_dof','GPStime','ID','channel','Label'])
 elif opts.O1GlitchClassification:
     metadata = pd.DataFrame(sortedlist,columns=['snr','amplitude','peak_frequency','central_freq','duration','bandwidth','chisq','chisq_dof','GPStime','ID','channel','Label','Pipeline'])
-
-    metadata.GPStime = metadata.GPStime.apply(float)
-    metadata.GPStime = metadata.GPStime.round(2)
-    # Function to aggregate data
-    def lister(x):
-        return list(x)
-    metadata = pd.pivot_table(metadata,index='GPStime',values=['snr', 'amplitude', 'peak_frequency', 'central_freq', 'duration','bandwidth', 'chisq', 'chisq_dof', 'GPStime','ID', 'channel','Label', 'Pipeline'],aggfunc=lister)
-    metadata.reset_index(inplace=True)
+    WDF = pd.read_csv('/home/scoughlin/O1GlitchClassifications/text/WDFL1.txt')
+    metadata['GPStimeWDF'] = metadata['GPStime'].apply(int)
     pdb.set_trace()
+    WDF.merge(metadata,left_on='GPStime',right_on='GPStimeWDF')
+    pdb.set_trace()
+
+    # apply an ID to non GravitySpy Labeled glitches
+    for iX in metadata.loc[metadata.Pipeline == 'LAL','GPStime']:
+        try:
+            metadata.loc[(metadata.GPStime == iX) & (metadata.Pipeline == 'LAL'),'ID'] = metadata.loc[(metadata.GPStime == iX) & (metadata.Pipeline != 'LAL'),'ID'].iloc[0]
+        except:
+            metadata.loc[(metadata.GPStime == iX) & (metadata.Pipeline == 'LAL'),'ID'] = False
+
+
+    metadata = metadata.loc[metadata.ID !=False]
+    metadata = metadata.loc[metadata.Label != 'None']
 else:
     ValueError("Please supply type of summary page you want")
+
+
+ExtraHTML = ''
+ExtraHTML2 = ''
+if opts.O1GlitchClassification:
+    ExtraHTML = """  d3.select("[name=Pipeline]").on("change", function(){
+    pipeline = this.value;
+    d3.selectAll(".dot")
+        // .transition()
+        // .duration(500)
+        .style("opacity", 0.0)
+        // filter out the ones we want to show and apply properties
+        .filter(function(d) {
+            return d.Pipeline == pipeline;
+        })
+            .style("opacity", function(d) { return d.score; }); // need this line to unhide dots
+    });"""
+
+    ExtraHTML2 ="""<div id="label"><b>Pipeline:</b></div>
+  <select name="Pipeline" id="PipelineID">\n"""
+    for iX in metadata.Pipeline.unique():
+        ExtraHTML2 = ExtraHTML2 + '<option value ="{0}">{0}</option>\n'.format(iX)
+    ExtraHTML2 = ExtraHTML2 + "  </select>\n"
+    ExtraHTML2 = ExtraHTML2 + "  </br></br>\n"
 
 
 metadata.GPStime = metadata.GPStime.apply(float)
 summaryPage = open('{0}/index.html'.format(outPath),"w")
 env = Environment(loader=FileSystemLoader('./'))
 template = env.get_template('home.html')
-print >>summaryPage, template.render(types=types,header=header1,gpsStart=np.floor(metadata.GPStime.min()),gpsEnd=np.ceil(metadata.GPStime.max()))
+print >>summaryPage, template.render(types=types,header=header1,gpsStart=np.floor(metadata.GPStime.min()),gpsEnd=np.ceil(metadata.GPStime.max()),ExtraHTML=ExtraHTML,ExtraHTML2=ExtraHTML2)
 summaryPage.close()
 
 for Type in types:
 
-    iN = indexDict[Type]
+    iN = indexDict[Type]+1
     try:
         imagePaths = []
         scoreInd   = []
+        Pipeline   = []
         if opts.ML:
             # Open the scores file for all the images put into that glitch category
             reader = csv.reader(open('{0}/{1}/scores.csv'.format(dataPath,Type)), delimiter=",")
@@ -229,8 +261,8 @@ for Type in types:
                 scoreInd.append(score[iN])
 
         elif opts.TrainingSet:
-            tmp = metadata[metadata.Label == Type]
-            for IDtmp in tmp.ID:
+            tmp1 = metadata[metadata.Label == Type]
+            for IDtmp in tmp1.ID:
                 IDType.append(Type)
                 ID.append(IDtmp)
                 image = glob.glob('{0}/{1}/{2}.png'.format(dataPath,Type,IDtmp))
@@ -242,12 +274,31 @@ for Type in types:
                 imagePathAllInd.append(''.join(['../'] * len(filter(None,indPages.split(tmp[-1])[1].split('/')))) + image[0].split(tmp[-1])[1])
                 imagePathAllBig.append(''.join(['../'] * (len(filter(None,indPages.split(tmp[-1])[1].split('/')))-1)) + image[0].split(tmp[-1])[1])
 
+        elif opts.O1GlitchClassification:
+            
+            tmp1 = metadata[metadata.Label == Type]
+            for (IDtmp,Pipetmp) in zip(tmp1.ID,tmp1.Pipeline):
+                IDType.append(Type)
+                ID.append(IDtmp)
+                Pipeline.append(Pipetmp)
+                image = glob.glob('{0}/*/*/{1}.png'.format(dataPath,IDtmp))
+                if not image:
+                    image = glob.glob('/home/scoughlin/public_html/O1GravitySpy/TrainingSetImages/*/{0}.png'.format(IDtmp))
+                # We have identified the path to the image. Now we need to do a comparison between outPath and dataPath to find the right relative path of this image to the individual page
+                imageTmp = filter(None, image[0].split('/'))
+                pathTmp  = filter(None, indPages.split('/'))
+                tmp = [item for item in imageTmp if item in pathTmp]
+                imagePaths.append(''.join(['../'] * len(filter(None,indPages.split(tmp[-1])[1].split('/')))) + image[0].split(tmp[-1])[1])
+                imagePathAllInd.append(''.join(['../'] * len(filter(None,indPages.split(tmp[-1])[1].split('/')))) + image[0].split(tmp[-1])[1])
+                imagePathAllBig.append(''.join(['../'] * (len(filter(None,indPages.split(tmp[-1])[1].split('/')))-1)) + image[0].split(tmp[-1])[1])
+
 
         # Open a new html page which is named after the type
         title = dict(zip(imagePaths,scoreInd))
+        pipeline = dict(zip(imagePaths,Pipeline))
         indSummary= open('{0}/{1}.html'.format(indPages,Type),"w")
         template = env.get_template('individual.html')
-        print >>indSummary, template.render(imagePath=imagePaths,glitchType=Type,title=title,gpsStart=np.floor(metadata.GPStime.min()),gpsEnd=np.ceil(metadata.GPStime.max()))
+        print >>indSummary, template.render(imagePath=imagePaths,glitchType=Type,title=title,gpsStart=np.floor(metadata.GPStime.min()),gpsEnd=np.ceil(metadata.GPStime.max()),ExtraHTML=ExtraHTML,ExtraHTML2=ExtraHTML2,Pipeline=pipeline)
         indSummary.close()
     except:
         print('Warning: {0} failed'.format(Type))
@@ -280,26 +331,27 @@ bigTable.GPStime        = bigTable.GPStime.apply(float)
 bigTable.snr            = bigTable.snr.apply(float)
 bigTable.peak_frequency = bigTable.peak_frequency.apply(float)
 
-bigTable.Air_Compressor = bigTable.Air_Compressor.apply(float)
-bigTable.Blip = bigTable.Blip.apply(float)
-bigTable.Chirp = bigTable.Chirp.apply(float)
-bigTable.Extremely_Loud = bigTable.Extremely_Loud.apply(float)
-bigTable.Helix = bigTable.Helix.apply(float)
-bigTable.Koi_Fish = bigTable.Koi_Fish.apply(float)
-bigTable.Light_Modulation = bigTable.Light_Modulation.apply(float)
-bigTable.Low_Frequency_Burst = bigTable.Low_Frequency_Burst.apply(float)
-bigTable.Low_Frequency_Lines = bigTable.Low_Frequency_Lines.apply(float)
-bigTable.None_of_the_Above = bigTable.None_of_the_Above.apply(float)
-bigTable.No_Glitch = bigTable.No_Glitch.apply(float)
-bigTable.Paired_Doves = bigTable.Paired_Doves.apply(float)
-bigTable.Power_Line = bigTable.Power_Line.apply(float)
-bigTable.Repeating_Blips = bigTable.Repeating_Blips.apply(float)
-bigTable.Scattered_Light = bigTable.Scattered_Light.apply(float)
-bigTable.Scratchy = bigTable.Scratchy.apply(float)
-bigTable.Tomte = bigTable.Tomte.apply(float)
-bigTable.Violin_Mode = bigTable.Violin_Mode.apply(float)
-bigTable.Wandering_Line = bigTable.Wandering_Line.apply(float)
-bigTable.Whistle = bigTable.Whistle.apply(float)
+if opts.ML:
+    bigTable.Air_Compressor = bigTable.Air_Compressor.apply(float)
+    bigTable.Blip = bigTable.Blip.apply(float)
+    bigTable.Chirp = bigTable.Chirp.apply(float)
+    bigTable.Extremely_Loud = bigTable.Extremely_Loud.apply(float)
+    bigTable.Helix = bigTable.Helix.apply(float)
+    bigTable.Koi_Fish = bigTable.Koi_Fish.apply(float)
+    bigTable.Light_Modulation = bigTable.Light_Modulation.apply(float)
+    bigTable.Low_Frequency_Burst = bigTable.Low_Frequency_Burst.apply(float)
+    bigTable.Low_Frequency_Lines = bigTable.Low_Frequency_Lines.apply(float)
+    bigTable.None_of_the_Above = bigTable.None_of_the_Above.apply(float)
+    bigTable.No_Glitch = bigTable.No_Glitch.apply(float)
+    bigTable.Paired_Doves = bigTable.Paired_Doves.apply(float)
+    bigTable.Power_Line = bigTable.Power_Line.apply(float)
+    bigTable.Repeating_Blips = bigTable.Repeating_Blips.apply(float)
+    bigTable.Scattered_Light = bigTable.Scattered_Light.apply(float)
+    bigTable.Scratchy = bigTable.Scratchy.apply(float)
+    bigTable.Tomte = bigTable.Tomte.apply(float)
+    bigTable.Violin_Mode = bigTable.Violin_Mode.apply(float)
+    bigTable.Wandering_Line = bigTable.Wandering_Line.apply(float)
+    bigTable.Whistle = bigTable.Whistle.apply(float)
 
 for i in xrange(len(bigTable)):
     temp_dict={}
@@ -312,7 +364,9 @@ for i in xrange(len(bigTable)):
     elif opts.ML:
         temp_dict['score'] = max(temp_df[types])   # Add maximum score
     elif opts.TrainingSet:
-        temp_dict['score'] = 0   # Add maximum score
+        temp_dict['score'] = 1   # Add maximum score
+    elif opts.O1GlitchClassification:
+        temp_dict['score'] = 1
     else:
         ValueError("Please supply type of summary page you want")
     for field in list(col_vals):
@@ -339,7 +393,9 @@ for Type in types:
         elif opts.ML:
             temp_dict['score'] = max(temp_df[types])   # Add maximum score
         elif opts.TrainingSet:
-            temp_dict['score'] = 0   # Add maximum score
+            temp_dict['score'] = 1   # Add maximum score
+        elif opts.O1GlitchClassification:
+            temp_dict['score'] = 1
         else:
             ValueError("Please supply type of summary page you want")
         for field in list(col_vals):
@@ -381,6 +437,9 @@ for Type in types:
     bigTable[bigTable.Label == Type].to_html(mHTML,classes= 'table table-striped table-bordered" id = "bigtable" width="100%" cellspacing="0',float_format=lambda x: '%10.7f' % x,escape=False)
     mHTML.write(tableFooter + '\n')
     mHTML.close()
+
+# Writing XML table
+
 
 ###############################################################################
 ##########################                           ##########################
