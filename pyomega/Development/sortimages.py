@@ -1,5 +1,6 @@
 import os,csv,ast
 import optparse
+import pandas as pd
 from panoptes_client import *
 #Hold
 import pdb
@@ -86,6 +87,10 @@ indexDict = {"Air_Compressor":0,"Blip":1,"Chirp":2,"Extremely_Loud":3,"Helix":4,
 
 tmptmptmp =[]
 
+rowSkip = pd.read_csv('/home/scoughlin/O2/GravitySpy/pyomega/Development/NumImages.csv')
+rowSkip = rowSkip.iloc[-1]
+rowSkip1 = rowSkip.iloc[-1]
+
 for Type in types:
     Begin  = []
     Appre  = []
@@ -93,14 +98,32 @@ for Type in types:
     try:
         work_subject_dict = workflow_subject_set_dict_app[Type]
         iN                = indexDict[Type]
+        numSkip = rowSkip['{0}'.format(Type)].max()
         reader = csv.reader(open('{0}/{1}/Beginner/imagemeta.csv'.format(dataPath,Type)), delimiter=",")
-        hold = sorted(reader)
-        for iX in hold:
+        for iSkip in range(numSkip):
+            reader.next()
+        iTT = 0
+        for iX in reader:
+            iTT = iTT +1
+            rowSkip['{0}'.format(Type)] = rowSkip['{0}'.format(Type)] +1
             if not len(ast.literal_eval(iX[6])) == 20:
-                print(ast.literal_eval(iX[6]))
-                ValueError('Problem with CSV file for type: {0}'.format(Type))
+                print('Problem with CSV file for type: {0}, Line: {1},{2}'.format(Type,iX,iTT))
+            if not iX[0] == '20160802':
+                print('Problem with CSV file for type: {0}, Line: {1},{2}'.format(Type,iX,iTT))
+            if not len(iX[1]) == 10:
+                print('Problem with CSV file for type: {0}, Line: {1},{2}'.format(Type,iX,iTT))
+            if not len(iX[2]) == 33:
+                print('Problem with CSV file for type: {0}, Line: {1},{2}'.format(Type,iX,iTT))
+            if not len(iX[3]) == 33:
+                print('Problem with CSV file for type: {0}, Line: {1},{2}'.format(Type,iX,iTT))
+            if not len(iX[4]) == 33:
+                print('Problem with CSV file for type: {0}, Line: {1},{2}'.format(Type,iX,iTT))
+            if not len(iX[5]) == 33:
+                print('Problem with CSV file for type: {0}, Line: {1},{2}'.format(Type,iX,iTT))
     except:
-        print('Problem with CSV file for type: {0}, Line: {1}'.format(Type,iX))
+        print('Problem with CSV file for type: {0}, Line: {1},{2}'.format(Type,iX,iTT))
+
+rowSkip.to_frame().transpose().to_csv(open('/home/scoughlin/O2/GravitySpy/pyomega/Development/NumImages.csv','a'),index=False,header=False,columns=['Air_Compressor','Blip','Chirp','Extremely_Loud','Helix','Koi_Fish','Light_Modulation','Low_Frequency_Burst','Low_Frequency_Lines','No_Glitch','None_of_the_Above','Paired_Doves','Power_Line','Repeating_Blips','Scattered_Light','Scratchy','Tomte','Violin_Mode','Wandering_Line','Whistle'])
 
 for Type in types:
     Begin  = []
@@ -109,10 +132,11 @@ for Type in types:
     try:
         work_subject_dict = workflow_subject_set_dict_app[Type]
         iN                = indexDict[Type]
+        numSkip = rowSkip1['{0}'.format(Type)].max()
         reader = csv.reader(open('{0}/{1}/Beginner/imagemeta.csv'.format(dataPath,Type)), delimiter=",")
-        hold = sorted(reader)
-
-        for iX in hold:
+        for iSkip in range(numSkip):
+            reader.next()
+        for iX in reader:
 
             for combos in work_subject_dict:
                 workflow   = combos[0]
@@ -189,4 +213,3 @@ for Type in types:
                 subjectset.add(tmp)
     except:
         print("Fail: {0}".format(Type))
-"""
