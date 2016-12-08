@@ -88,7 +88,8 @@ indexDict = {"Air_Compressor":0,"Blip":1,"Chirp":2,"Extremely_Loud":3,"Helix":4,
 tmptmptmp =[]
 
 rowSkip = pd.read_csv('/home/scoughlin/O2/GravitySpy/pyomega/Development/NumImages.csv')
-rowSkip1 = rowSkip.iloc[-1]
+rowSkip1 = pd.read_csv('/home/scoughlin/O2/GravitySpy/pyomega/Development/NumImages.csv')
+rowSkip1 = rowSkip1.iloc[-1]
 rowSkip = rowSkip.iloc[-1]
 
 for Type in types:
