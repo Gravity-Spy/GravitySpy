@@ -111,7 +111,7 @@ elif opts.ML:
 elif opts.TrainingSet:
     summaryType = "TrainingSet/"
 elif opts.O1GlitchClassification:
-    summaryType = "O1GlitchClassification/"
+    summaryType = "GlitchClassification/"
 else:
     ValueError("Please supply type of summary page you want")
 
@@ -180,23 +180,7 @@ elif opts.ML:
 elif opts.TrainingSet:
     metadata = pd.DataFrame(sortedlist,columns=['snr','amplitude','peak_frequency','central_freq','duration','bandwidth','chisq','chisq_dof','GPStime','ID','channel','Label'])
 elif opts.O1GlitchClassification:
-    metadata = pd.DataFrame(sortedlist,columns=['snr','amplitude','peak_frequency','central_freq','duration','bandwidth','chisq','chisq_dof','GPStime','ID','channel','Label','Pipeline'])
-    WDF = pd.read_csv('/home/scoughlin/O1GlitchClassifications/text/WDFL1.txt')
-    metadata['GPStimeWDF'] = metadata['GPStime'].apply(int)
-    pdb.set_trace()
-    WDF.merge(metadata,left_on='GPStime',right_on='GPStimeWDF')
-    pdb.set_trace()
-
-    # apply an ID to non GravitySpy Labeled glitches
-    for iX in metadata.loc[metadata.Pipeline == 'LAL','GPStime']:
-        try:
-            metadata.loc[(metadata.GPStime == iX) & (metadata.Pipeline == 'LAL'),'ID'] = metadata.loc[(metadata.GPStime == iX) & (metadata.Pipeline != 'LAL'),'ID'].iloc[0]
-        except:
-            metadata.loc[(metadata.GPStime == iX) & (metadata.Pipeline == 'LAL'),'ID'] = False
-
-
-    metadata = metadata.loc[metadata.ID !=False]
-    metadata = metadata.loc[metadata.Label != 'None']
+    metadata = pd.DataFrame(sortedlist,columns=['GPStime','Pipeline','Label','ID','peak_frequency','snr'])
 else:
     ValueError("Please supply type of summary page you want")
 
@@ -234,12 +218,12 @@ summaryPage.close()
 
 for Type in types:
 
-    iN = indexDict[Type]+1
     try:
         imagePaths = []
         scoreInd   = []
         Pipeline   = []
         if opts.ML:
+            iN = indexDict[Type]+1
             # Open the scores file for all the images put into that glitch category
             reader = csv.reader(open('{0}/{1}/scores.csv'.format(dataPath,Type)), delimiter=",")
             # sort it
@@ -277,13 +261,12 @@ for Type in types:
         elif opts.O1GlitchClassification:
             
             tmp1 = metadata[metadata.Label == Type]
-            for (IDtmp,Pipetmp) in zip(tmp1.ID,tmp1.Pipeline):
+            for IDtmp in tmp1.ID:
+                image = glob.glob('{0}/{1}/{2}/{2}/{2}.png'.format(dataPath,Type,IDtmp))
+                if not len(image):
+                    continue
                 IDType.append(Type)
                 ID.append(IDtmp)
-                Pipeline.append(Pipetmp)
-                image = glob.glob('{0}/*/*/{1}.png'.format(dataPath,IDtmp))
-                if not image:
-                    image = glob.glob('/home/scoughlin/public_html/O1GravitySpy/TrainingSetImages/*/{0}.png'.format(IDtmp))
                 # We have identified the path to the image. Now we need to do a comparison between outPath and dataPath to find the right relative path of this image to the individual page
                 imageTmp = filter(None, image[0].split('/'))
                 pathTmp  = filter(None, indPages.split('/'))

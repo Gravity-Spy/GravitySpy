@@ -60,6 +60,7 @@ def parse_commandline():
     parser.add_option("--plot-raw-timeseries", action="store_true", default=False,help="Plot raw timeseries")
     parser.add_option("--plot-eventgram", action="store_true", default=False,help="Plot eventgram")
     parser.add_option("--runML", action="store_true", default=False,help="Run the ML classifer on the omega scans")
+    parser.add_option("--label", help="Run the ML classifer on the omega scans")
     parser.add_option("--verbose", action="store_true", default=False,help="Run in Verbose Mode")
     opts, args = parser.parse_args()
 
@@ -2736,7 +2737,7 @@ def main():
     if opts.outDir is None:
         outDir = './scans'
     else:
-        outDir = opts.outDir + '/' + opts.ID + '/' + opts.ID
+        outDir = opts.outDir + '/' + opts.label + '/' + opts.ID + '/' + opts.ID
     outDir += '/'
 
     # report status
