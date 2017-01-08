@@ -1,8 +1,7 @@
 #!/bin/bash
 
-cd /home/scoughlin/O2/GravitySpy/pyomega/Development
-STARTTIME=$(tail -1 /home/scoughlin/O2/GravitySpy/pyomega/Development/StartTime.txt)
-ENDTIME=$(/bin/lalapps_tconvert 1 hours ago)
-echo ${ENDTIME} >>/home/scoughlin/O2/GravitySpy/pyomega/Development/StartTime.txt
-/home/scoughlin/opt/O2/GravitySpy/bin/python /home/scoughlin/O2/GravitySpy/pyomega/Development/gettriggers.py --gpsStart ${STARTTIME} --gpsEnd ${ENDTIME} --detector L1 --outDir /home/scoughlin/public_html/O2/GravitySpy/images/ML/ --uniqueID --SNR 7.5
-/bin/condor_submit_dag /home/scoughlin/O2/GravitySpy/pyomega/Development/gravityspy_${STARTTIME}_${ENDTIME}.dag 
+cd /home/scoughlin/O2/GravitySpy/pyomega/PreProcessing/
+
+/home/scoughlin/opt/O2/GravitySpy/bin/python /home/scoughlin/O2/GravitySpy/pyomega/PreProcessing/gettriggers.py --detector L1 --outDir /home/scoughlin/public_html/O2test/GravitySpy/images/ML/ --uniqueID --SNR 7.5
+
+#/bin/condor_submit_dag /home/scoughlin/O2/GravitySpy/pyomega/Development/gravityspy_${STARTTIME}_${ENDTIME}.dag

@@ -15,6 +15,7 @@ import json
 import rlcompleter
 import pdb
 
+import pandas as pd
 import numpy as np
 
 from scipy import signal
@@ -2288,6 +2289,13 @@ def wspectrogram(transforms, tiling, outDir,IDstring,startTime,
         else:
             title = "VIRGO"
 
+        if 1161907217 < startTime < 1164499217:
+            title = title + ' - ER10'
+        elif startTime > 1164499217:
+            title = title + ' - O2a'
+        else:
+            ValueError("Time outside science or engineering run or more likely code not updated to reflect new science run")
+
         axSpectrogram.set_title(title,fontsize=mylabelfontsize, color=myColor)
 
         xmin = min(time)
@@ -2360,6 +2368,13 @@ def wspectrogram(transforms, tiling, outDir,IDstring,startTime,
             title = "Livingston"
         else:
             title = "VIRGO"
+
+        if 1161907217 < startTime < 1164499217:
+            title = title + ' - ER10'
+        elif startTime > 1164499217:
+            title = title + ' - O2a'
+        else:
+            ValueError("Time outside science or engineering run or more likely code not updated to reflect new science run")
 
         xmin = min(time)
         xmax = max(time)
@@ -2615,6 +2630,14 @@ def weventgram(events, tiling, startTime, referenceTime,
                 title = "Livingston"
             else:
                 title = "VIRGO"
+
+            if 1161907217 < startTime < 1164499217:
+                title = title + ' - ER10'
+            elif startTime > 1164499217:
+                title = title + ' - O2a'
+            else:
+                ValueError("Time outside science or engineering run or more likely code not updated to reflect new science run")
+
             ax.set_title(title,fontsize=mylabelfontsize, color=myColor)
 
             # Make best fit tile bounding boxes and fill them in
@@ -2922,6 +2945,57 @@ def main():
                  plotNormalizedERange,IDstring,detectorName,outDir)
 
     if opts.runML:
+        B1 = 1610
+        B2 = 1934
+        B3 = 1935
+        A  = 2360
+        M  = 2117
+        if detectorName == 'H1':
+            workflow_subject_set_dict_app = {
+                "Air_Compressor":((A,6714,[1,0.6]),(M,6715,[0.6,0])),
+                "Blip":((B1,6717,[1,.998]),(A,6718,[.998,.85]),(M,6719,[.85,0])),
+                "Chirp":((B3,6721,[1,.7]),(A,6722,[.7,.5]),(M,6723,[.50,0])),
+                "Extremely_Loud":((A,6725,[1,.815]),(M,6726,[.815,0])),
+                "Helix":((A,6728,[1,.50]),(M,6729,[.50,0])),
+                "Koi_Fish":((B2,6731,[1,.98]),(A,6732,[.98,.621]),(M,6733,[.621,0])),
+                "Light_Modulation":((A,6752,[1,0.9]),(M,6753,[0.9,0])),
+                "Low_Frequency_Burst":((B3,6755,[1,.99995]),(A,7068,[.99995,.93]),(M,7070,[.93,0])),
+                "Low_Frequency_Lines":((A,6759,[1,.65]),(M,6760,[.65,0])),
+                "No_Glitch":((B3,6762,[1,.9901]),(A,6763,[.9901,.85]),(M,6764,[.85,0])),
+                "None_of_the_Above":((A,6766,[1,.50]),(M,6767,[.50,0])),
+                "Paired_Doves":((A,6769,[1,.5]),(M,6770,[.50,0])),
+                "Power_Line":((B2,6772,[1,.998]),(A,6773,[.998,.86]),(M,6774,[.86,0])),
+                "Repeating_Blips":((A,6776,[1,.686]),(M,6777,[.686,0])),
+                "Scattered_Light":((B3,6779,[1,.99965]),(A,6780,[.99965,.96]),(M,6781,[.96,0])),
+                "Scratchy":((A,6783,[1,.913]),(M,6784,[.913,0])),
+                "Tomte":((A,6786,[1,.7]),(M,6787,[.7,0])),
+                "Violin_Mode":((B2,6902,[1,.99]),(A,6789,[.99,.5]),(M,6790,[.50,0])),
+                "Wandering_Line":((A,6792,[1,.97]),(M,6793,[.97,0])),
+                "Whistle":((B1,6795,[1,.99]),(A,6796,[.99,.6]),(M,6797,[.6,0])),
+              }
+        elif detectorName == 'L1':
+            workflow_subject_set_dict_app = {
+                "Air_Compressor":((A,6714,[1,0.6]),(M,6715,[0.6,0])),
+                "Blip":((B1,6717,[1,.998]),(A,6718,[.998,.85]),(M,6719,[.85,0])),
+                "Chirp":((B3,6721,[1,.7]),(A,6722,[.7,.5]),(M,6723,[.50,0])),
+                "Extremely_Loud":((A,6725,[1,.815]),(M,6726,[.815,0])),
+                "Helix":((A,6728,[1,.50]),(M,6729,[.50,0])),
+                "Koi_Fish":((B2,6731,[1,.98]),(A,6732,[.98,.621]),(M,6733,[.621,0])),
+                "Light_Modulation":((A,6752,[1,0.9]),(M,6753,[0.9,0])),
+                "Low_Frequency_Burst":((B3,6755,[1,.99995]),(A,7068,[.99995,.93]),(M,7070,[.93,0])),
+                "Low_Frequency_Lines":((A,6759,[1,.65]),(M,6760,[.65,0])),
+                "No_Glitch":((B3,6762,[1,.9901]),(A,6763,[.9901,.85]),(M,6764,[.85,0])),
+                "None_of_the_Above":((A,6766,[1,.50]),(M,6767,[.50,0])),
+                "Paired_Doves":((A,6769,[1,.5]),(M,6770,[.50,0])),
+                "Power_Line":((B2,6772,[1,.998]),(A,6773,[.998,.86]),(M,6774,[.86,0])),
+                "Repeating_Blips":((A,6776,[1,.686]),(M,6777,[.686,0])),
+                "Scattered_Light":((B3,6779,[1,.99965]),(A,6780,[.99965,.96]),(M,6781,[.96,0])),
+                "Scratchy":((A,6783,[1,.913]),(M,6784,[.913,0])),
+                "Tomte":((A,6786,[1,.7]),(M,6787,[.7,0])),
+                "Violin_Mode":((B2,6902,[1,.99]),(A,6789,[.99,.5]),(M,6790,[.50,0])),
+                "Wandering_Line":((A,6792,[1,.97]),(M,6793,[.97,0])),
+                "Whistle":((B1,6795,[1,.99]),(A,6796,[.99,.6]),(M,6797,[.6,0])),
+              }
 
         lastPath = (outDir).split('/')[-2]
         make_pickle.main(outDir.replace(lastPath,"",1),outDir + '/pickleddata/',1,opts.verbose)
@@ -2929,34 +3003,44 @@ def main():
         scores,MLlabel = label_glitches.main(outDir + '/pickleddata/','ML/trained_model/',outDir + '/labeled/',opts.verbose)
 
         scores = scores.tolist()
-        classes = ["Air_Compressor","Blip","Chirp","Extremely_Loud","Helix","Koi_Fish","Light_Modulation","Low_Frequency_Burst","Low_Frequency_Lines","None_of_the_Above","No_Glitch","Paired_Doves","Power_Line","Repeating_Blips","Scattered_Light","Scratchy","Tomte","Violin_Mode","Wandering_Line","Whistle"]
+        scores = scores[1::]
+        scores = [float(iScore) for iScore in scores]
+        scores.append(opts.ID)
+        classes = ["Air_Compressor","Blip","Chirp","Extremely_Loud","Helix","Koi_Fish","Light_Modulation","Low_Frequency_Burst","Low_Frequency_Lines","None_of_the_Above","No_Glitch","Paired_Doves","Power_Line","Repeating_Blips","Scattered_Light","Scratchy","Tomte","Violin_Mode","Wandering_Line","Whistle","uniqueID","Label","workflow","subjectset","Filename1","Filename2","Filename3","Filename4","UploadFlag"]
+        scores.append(classes[MLlabel])
 
-        theClass = classes[MLlabel]
-        threshold = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-        workFlows = ['Beginner','Apprentice','Master']
-
-        if scores[int(MLlabel)]>threshold[MLlabel]:
-            workFlow = 'Beginner'
-        else:
-            workFlow = 'Apprentice'
-        finalPath = opts.outDir + theClass + '/' + workFlow
+        workFlow = 'Classified'
+        finalPath = opts.outDir + '/' + workFlow
 
         if not os.path.isdir(finalPath):
             os.makedirs(finalPath)
+
+        for iWorkflow in range(len(workflow_subject_set_dict_app[classes[MLlabel]])):
+            if max(workflow_subject_set_dict_app[classes[MLlabel]][iWorkflow][2]) >=scores[MLlabel] >=min(workflow_subject_set_dict_app[classes[MLlabel]][iWorkflow][2]):
+                 workflowNum = workflow_subject_set_dict_app[classes[MLlabel]][iWorkflow][0]
+                 subjectSetNum = workflow_subject_set_dict_app[classes[MLlabel]][iWorkflow][1]
+                 break
+
+        subject1 = '{0}/{1}_{2}_spectrogram_0.5.png'.format(finalPath,detectorName,opts.ID)
+        subject2 = '{0}/{1}_{2}_spectrogram_1.0.png'.format(finalPath,detectorName,opts.ID)
+        subject3 = '{0}/{1}_{2}_spectrogram_2.0.png'.format(finalPath,detectorName,opts.ID)
+        subject4 = '{0}/{1}_{2}_spectrogram_4.0.png'.format(finalPath,detectorName,opts.ID)
+
+        scores.append(workflowNum)
+        scores.append(subjectSetNum)
+        scores.append(subject1)
+        scores.append(subject2)
+        scores.append(subject3)
+        scores.append(subject4)
+        scores.append(0)
+
+        scoresTable = pd.DataFrame([scores],columns=classes)
+        scoresTable.to_hdf('ML_GSpy.h5','gspy_ML_classification',append=True)
+
         system_call = "mv {0}*.png {1}".format(outDir,finalPath)
         os.system(system_call)
         shutil.rmtree(outDir.replace(lastPath,"",1))
-        imagemetadata = open(finalPath + '/' + 'imagemeta.csv','a+')
-        imagemetadata.write('20160802,{0},{1},{2},{3},{4},"[{5}]"\n'.format(opts.ID,scores[0] + \
-                          '_spectrogram_0.5.png', scores[0] + '_spectrogram_1.0.png', scores[0] \
-                          + '_spectrogram_2.0.png',scores[0] + '_spectrogram_4.0.png',\
-                          ','.join(scores[1::])))
-        imagemetadata.close()
-        scorestable = open(opts.outDir + theClass + '/' + 'scores.csv','a+')
-        scorestable.write('{0},{1}\n'.format(opts.ID,','.join(scores[1::],)))
-        scorestable.close()
         print('ML finished: {0}'.format(time.time()-start))
-
 
 if __name__ == '__main__':
     main()
