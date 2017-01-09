@@ -29,6 +29,9 @@ def parse_commandline():
     parser.add_option("--freqLow", help="lower frequency bound cut off for the glitches. [Default: 10]",type=int,default=10)
     parser.add_option("--maxSNR", help="This flag gives you the option to supply a upper limit to the SNR of the glitches [Optional Input]",type=float)
     parser.add_option("--outDir", help="Outdir of omega scan and omega scan webpage (i.e. your html directory)")
+    parser.add_option("--pathToExec", help="Path to version of wscan.py you want to use")
+    parser.add_option("--pathToIni", help="Path to ini file")
+    parser.add_option("--pathToModel",default='./ML/trained_model/' help="Path to trained model")
     parser.add_option("--SNR", help="Lower bound SNR Threshold for omicron triggers, by default there is no upperbound SNR unless supplied throught the --maxSNR flag. [Default: 6]",type=float,default=6)
     parser.add_option("--uniqueID", action="store_true", default=False,help="Is this image being generated for the GravitySpy project, is so we will create a uniqueID strong to use for labeling images instead of GPS time")
 
@@ -129,9 +132,9 @@ def write_subfile():
             os.makedirs(d)
     with open('./condor/gravityspy.sub', 'w') as subfile:
         subfile.write('universe = vanilla\n')
-        subfile.write('executable = {0}/wscan.py\n'.format(os.getcwd()))
+        subfile.write('executable = {0}\n'.format(opts.pathToExec))
         subfile.write('\n')
-        subfile.write('arguments = "--inifile wini.ini --eventTime $(eventTime) --outDir {0} --uniqueID --ID $(ID) --runML"\n'.format(opts.outDir))
+        subfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
         subfile.write('getEnv=True\n')
         subfile.write('\n')
         subfile.write('accounting_group_user = scott.coughlin\n')#.format(opts.username))

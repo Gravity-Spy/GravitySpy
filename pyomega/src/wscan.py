@@ -56,6 +56,7 @@ def parse_commandline():
     parser.add_option("--outDir", help="Outdir of omega scan and omega scan webpage (i.e. your html directory)")
     parser.add_option("--NSDF", action="store_true", default=False,help="No framecache file available want to use NSDF server")
     parser.add_option("--condor", action="store_true", default=False,help="Want to run as condor job?")
+    parser.add_option("--pathToModel",default='./ML/trained_model/', help="Path to trained model")
     parser.add_option("--plot-whitened-timeseries", action="store_true", default=False,help="Plot whitened timeseries")
     parser.add_option("--plot-highpassfiltered-timeseries", action="store_true", default=False,help="Plot high pass filtered timeseries")
     parser.add_option("--plot-raw-timeseries", action="store_true", default=False,help="Plot raw timeseries")
@@ -3000,7 +3001,7 @@ def main():
         lastPath = (outDir).split('/')[-2]
         make_pickle.main(outDir.replace(lastPath,"",1),outDir + '/pickleddata/',1,opts.verbose)
 
-        scores,MLlabel = label_glitches.main(outDir + '/pickleddata/','ML/trained_model/',outDir + '/labeled/',opts.verbose)
+        scores,MLlabel = label_glitches.main(outDir + '/pickleddata/','{0}'.format(opts.pathToModel),outDir + '/labeled/',opts.verbose)
 
         scores = scores.tolist()
         scores = scores[1::]
@@ -3035,7 +3036,7 @@ def main():
         scores.append(0)
 
         scoresTable = pd.DataFrame([scores],columns=classes)
-        scoresTable.to_hdf('ML_GSpy.h5','gspy_ML_classification',append=True)
+        scoresTable.to_hdf('{0}/ML_GSpy.h5'.format(opts.outDir),'gspy_ML_classification',append=True)
 
         system_call = "mv {0}*.png {1}".format(outDir,finalPath)
         os.system(system_call)
