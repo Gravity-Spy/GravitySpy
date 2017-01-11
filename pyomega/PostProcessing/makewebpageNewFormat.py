@@ -179,7 +179,11 @@ else:
 metadata = pd.read_hdf('{0}'.format(opts.metadata))
 
 if opts.ML:
-    tmp = pd.read_hdf('{0}'.format(opts.ML_metadata))
+    files = glob.glob('{0}/*.h5'.format(opts.ML_metadata))
+    tmp = pd.read_hdf('{0}'.format(files[0]))
+    for iFile in files[1::]:
+        tmp = pd.concat([tmp,pd.read_hdf('{0}'.format(iFile))])
+    tmp.to_hdf('ML_GSpy.h5','gspy_ML_classification')
     metadata = metadata.merge(tmp)
 
 # Get types from label columns
