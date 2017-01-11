@@ -28,15 +28,14 @@ project = Project.find(slug='zooniverse/gravity-spy')
 triggers = pd.read_hdf('{0}'.format(opts.triggerFile))
 triggers = triggers.loc[triggers.UploadFlag == 0]
 
-subjectsToUpload = []
-
 labels    = triggers.Label.unique()
-workflows = triggers.workflow.unique()
 
 for iLabel in labels:
-    for iWorkflow in workflows:
-        tmp = triggers.loc[(triggers.Label == iLabel) & (triggers.workflow == iWorkflow)]
-        subjectset = SubjectSet.find(tmp.subjectset.iloc[0])
+    tmp1 = triggers.loc[(triggers.Label == iLabel)]
+    for iSubjectSet in tmp1.subjectset.unique():
+        subjectset = SubjectSet.find(iSubjectSet)
+        tmp = tmp1.loc[tmp1.subjectset == iSubjectSet]
+        subjectsToUpload = []
         for index,iSubject in tmp.iterrows():
             subject = Subject()
             subject.links.project = project
@@ -54,5 +53,5 @@ for iLabel in labels:
             subject.save()
             subjectsToUpload.append(subject)
         subjectset.add(subjectsToUpload)
-        triggers.loc[(triggers.Label == iLabel) & (triggers.workflow == iWorkflow),'uploadFlag'] = 1
+        triggers.loc[(triggers.Label == iLabel) & (triggers.subjectset == iSubjectSet),'uploadFlag'] = 1
 triggers.to_hdf('ML_GSpy_upload.h5','gspy_ML_classification')
