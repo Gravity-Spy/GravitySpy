@@ -3036,7 +3036,7 @@ def main():
         scores.append(0)
 
         scoresTable = pd.DataFrame([scores],columns=classes)
-        scoresTable.to_hdf('{0}/ML_GSpy.h5'.format(opts.outDir),'gspy_ML_classification',append=True)
+        scoresTable.to_hdf('{0}/ML_GSpy_{1}.h5'.format(opts.outDir,opts.ID),'gspy_ML_classification')
 
         system_call = "mv {0}*.png {1}".format(outDir,finalPath)
         os.system(system_call)
