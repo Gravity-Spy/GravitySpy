@@ -31,7 +31,7 @@ def parse_commandline():
     parser.add_option("--outDir", help="Outdir of omega scan and omega scan webpage (i.e. your html directory)")
     parser.add_option("--pathToExec", help="Path to version of wscan.py you want to use")
     parser.add_option("--pathToIni", help="Path to ini file")
-    parser.add_option("--pathToModel",default='./ML/trained_model/' help="Path to trained model")
+    parser.add_option("--pathToModel",default='./ML/trained_model/' ,help="Path to trained model")
     parser.add_option("--SNR", help="Lower bound SNR Threshold for omicron triggers, by default there is no upperbound SNR unless supplied throught the --maxSNR flag. [Default: 6]",type=float,default=6)
     parser.add_option("--uniqueID", action="store_true", default=False,help="Is this image being generated for the GravitySpy project, is so we will create a uniqueID strong to use for labeling images instead of GPS time")
 
@@ -112,9 +112,9 @@ def get_triggers(gpsStart,gpsEnd):
 
 def write_dagfile(x):
     with open('gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max()),'a+') as dagfile:
-        dagfile.write('JOB {0} ./condor/gravityspy.sub\n'.format(x.peak_time))
-        dagfile.write('RETRY {0} 3\n'.format(x.peak_time))
-        dagfile.write('VARS {0} jobNumber="{0}" eventTime="{1}" ID="{2}"'.format(x.peak_time,x.peakGPS,x.uniqueID))
+        dagfile.write('JOB {0}{1} ./condor/gravityspy.sub\n'.format(x.peak_time,x.peak_time_ns))
+        dagfile.write('RETRY {0}{1} 3\n'.format(x.peak_time,x.peak_time_ns))
+        dagfile.write('VARS {0}{1} jobNumber="{0}{1}" eventTime="{2}" ID="{3}"'.format(x.peak_time,x.peak_time_ns,x.peakGPS,x.uniqueID))
         dagfile.write('\n\n')
 
 
@@ -163,7 +163,7 @@ else:
     gpsStart = opts.gpsStart
 
 if not opts.gpsEnd:
-    gpsEnd = gpsStart + 86400
+    gpsEnd = gpsStart + 28800
 else:
     gpsEnd = opts.gpsEnd
 
@@ -175,6 +175,6 @@ omicrontriggers = get_triggers(gpsStart,gpsEnd)
 oTriggers = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
 oTriggers.rename(columns = {'index':'peakGPS'},inplace=True)
 oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
-oTriggers[['peak_time','peakGPS','uniqueID']].apply(write_dagfile,axis=1)
+oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID']].apply(write_dagfile,axis=1)
 oTriggers.peakGPS = oTriggers.peakGPS.apply(float)
 oTriggers.to_hdf('triggers.h5','gspy_triggers',append=True)
