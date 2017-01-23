@@ -197,11 +197,11 @@ summaryPage.close()
 ID              = []
 imagePathAllInd = []
 imagePathAllBig = []
-imagePaths = []
 scoreInd   = []
 Pipeline   = []
 
 for Type in types:
+    imagePaths = []
     tmp1 = metadata[metadata.Label == Type]
     for IDtmp in tmp1.uniqueID:
         ID.append(IDtmp)
