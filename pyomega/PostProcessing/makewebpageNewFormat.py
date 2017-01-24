@@ -187,7 +187,7 @@ if opts.ML:
     metadata = metadata.merge(tmp)
 
 # Get types from label columns
-types = metadata.Label.unique().tolist()
+types = sorted(metadata.Label.unique().tolist())
 summaryPage = open('{0}/index.html'.format(outPath),"w")
 env = Environment(loader=FileSystemLoader('./'))
 template = env.get_template('home.html')
@@ -203,6 +203,7 @@ Pipeline   = []
 for Type in types:
     imagePaths = []
     tmp1 = metadata[metadata.Label == Type]
+    tmp1 = tmp1.sort_values('{0}'.format(Type),ascending=False)
     for IDtmp in tmp1.uniqueID:
         ID.append(IDtmp)
         image = glob.glob('{0}/{1}.png'.format(dataPath,IDtmp))
@@ -220,7 +221,7 @@ for Type in types:
     pipeline = dict(zip(imagePaths,Pipeline))
     indSummary= open('{0}/{1}.html'.format(indPages,Type),"w")
     template = env.get_template('individual.html')
-    print >>indSummary, template.render(imagePath=imagePaths,glitchType=Type,title=title,gpsStart=np.floor(metadata.peakGPS.min()),gpsEnd=np.ceil(metadata.peakGPS.max()),ExtraHTML=ExtraHTML,ExtraHTML2=ExtraHTML2,Pipeline=pipeline)
+    print >>indSummary, template.render(types=types,imagePath=imagePaths,glitchType=Type,title=title,gpsStart=np.floor(metadata.peakGPS.min()),gpsEnd=np.ceil(metadata.peakGPS.max()),ExtraHTML=ExtraHTML,ExtraHTML2=ExtraHTML2,Pipeline=pipeline)
     indSummary.close()
 
 # Create pandas table with ID and type labels. This is to join all the information together for a giant data table.

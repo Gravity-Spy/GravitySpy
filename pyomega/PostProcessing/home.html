@@ -20,9 +20,47 @@
 </head>
 
 <body>
-    <h1>{{ header }}</h1>
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <!-- Brand and toggle get grouped for better mobile display -->
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">GravitySpy {{header}}</a>
+    </div>
+
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <ul class="nav navbar-nav">
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Individual Class Page <span class="caret"></span></a>
+          <ul class="dropdown-menu">
+          {% for Type in types %}
+            <p><a href="indPages/{{ Type }}.html">{{ Type }}</a></p>
+            {% endfor %}
+          </ul>
+        </li>
+        <li class="dropdown">          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Individual Class Manifest <span class="caret"></span></a>
+          <ul class="dropdown-menu">
+          {% for Type in types %}
+            <p><a href="indPages/{{ Type }}_metadata.csv">{{ Type }}</a></p>
+            {% endfor %}
+          </ul>
+        </li>
+      </ul>
+     </ul>
+    </div><!-- /.navbar-collapse -->
+  </div><!-- /.container-fluid -->
+</nav>
 
     <script>
+
+function FreqVsTime()
+{
 var margin = {top: 20, right: 100, bottom: 80, left: 40},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
@@ -82,13 +120,13 @@ d3.json("metadata.json", function(error, data) {
   if (error) throw error;
 
   data.forEach(function(d) {
-    d.GPStime = new Date(315961183000.0 + d.GPStime * 1000);;
+    d.peakGPS = new Date(315961183000.0 + d.peakGPS * 1000);;
     d.peak_frequency = +d.peak_frequency;
     d.snr = +d.snr
     d.score = +d.score
   });
 
-  xScale.domain(d3.extent(data, function(d) { return d.GPStime; })).nice();
+  xScale.domain(d3.extent(data, function(d) { return d.peakGPS; })).nice();
   yScale.domain(d3.extent(data, function(d) { return d.peak_frequency; })).nice();
   yScale2.domain(d3.extent(data, function(d) { return d.snr; })).nice();
 
@@ -144,7 +182,7 @@ d3.json("metadata.json", function(error, data) {
     .enter().append("circle")
       .attr("class", "dot")
       .attr("r", 3.5)
-      .attr("cx", function(d) { return xScale(d.GPStime); })
+      .attr("cx", function(d) { return xScale(d.peakGPS); })
       .attr("cy", function(d) { return yScale(d.peak_frequency); })
       .style("fill", function(d) { return color(d.Label); })
       .style("opacity", function(d) { return d.score; })
@@ -152,7 +190,7 @@ d3.json("metadata.json", function(error, data) {
           tooltip.transition()
               .duration(200)
               .style("opacity", .9);
-          tooltip.html('ID: ' + d.ID +'<br/>'+ 'GPStime: ' + d.GPStime +'<br/>'+ 'Class: ' + d.Label +'<br/>'+ 'SNR: '+ d.snr +'<br/>'+'peak_freq: '+ d.peak_frequency +' Hz' +'<br/>'+ 'ML confidence: ' + d.score)
+          tooltip.html('uniqueID: ' + d.uniqueID +'<br/>'+ 'peakGPS: ' + d.peakGPS +'<br/>'+ 'Class: ' + d.Label +'<br/>'+ 'SNR: '+ d.snr +'<br/>'+'peak_freq: '+ d.peak_frequency +' Hz' +'<br/>'+ 'ML confidence: ' + d.score)
               .style("left", (d3.event.pageX + 5) + "px")
               .style("top", margin.top + "px");
           })
@@ -168,7 +206,7 @@ d3.json("metadata.json", function(error, data) {
     .enter().append("circle")
       .attr("class", "dot")
       .attr("r", 3.5)
-      .attr("cx", function(d) { return xScale(d.GPStime); })
+      .attr("cx", function(d) { return xScale(d.peakGPS); })
       .attr("cy", function(d) { return yScale2(d.snr); })
       .style("fill", function(d) { return color(d.Label); })
       .style("opacity", function(d) { return d.score; })
@@ -176,7 +214,7 @@ d3.json("metadata.json", function(error, data) {
           tooltip.transition()
               .duration(200)
               .style("opacity", .9);
-          tooltip.html('ID: ' + d.ID +'<br/>'+ 'GPStime: ' + d.GPStime +'<br/>'+ 'Class: ' + d.Label +'<br/>'+ 'SNR: '+ d.snr +'<br/>'+'peak_freq: '+ d.peak_frequency +' Hz' +'<br/>'+ 'ML confidence: ' + d.score)
+          tooltip.html('uniqueID: ' + d.uniqueID +'<br/>'+ 'peakGPS: ' + d.peakGPS +'<br/>'+ 'Class: ' + d.Label +'<br/>'+ 'SNR: '+ d.snr +'<br/>'+'peak_freq: '+ d.peak_frequency +' Hz' +'<br/>'+ 'ML confidence: ' + d.score)
               .style("left", (d3.event.pageX + 20) + "px")
               .style("top", 3 * margin.top + 3* margin.bottom + height +  "px");
           })
@@ -226,13 +264,45 @@ d3.json("metadata.json", function(error, data) {
       .text(function(d) { return d; });
 
 
-  {{ ExtraHTML }}
-
 });
 
-    </script>
 
-    {{ ExtraHTML2 }}
+}
+</script>
+
+<div class="container">
+  <h2>Interactive D3JS plots</h2>
+  <p>Interactive plots that give an overview of ML classification</p>
+  <div class="panel-group">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" href="#collapse1">Freq Versus Time</a>
+        </h4>
+      </div>
+      <div id="collapse1" class="panel-collapse collapse">
+        <div class="panel-body">
+         <button onclick="FreqVsTime()">Freq V Time</button> 
+
+       </div>
+      </div>
+    </div>
+  </div>
+  <div class="panel-group">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" href="#collapse2">SNR Versus Time</a>
+        </h4>
+      </div>
+      <div id="collapse2" class="panel-collapse collapse">
+        <div class="panel-body">
+         <button onclick="FreqVsSNR()">FreqVSNR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
     <textarea rows="10" cols="100">
          All LIGO Livingston omicron triggers SNR>7.5 and 10<f<2048Hz categorized by  machine learning algorithms.
@@ -241,13 +311,5 @@ Fig 2: Time-SNR plot of the same.
 Fig 3: Breakdown of the number of triggers in each category.
 Please click the link to daily cumulative trigger plots to see Fig 1 and 2 for individual days.
     </textarea>
-    <h1>Big metadata table</h1>
-        <p><a href="metadata.html">metadata all</a></p>
-
-    <h1>Individual Glitch Class Home Pages</h1>
-
-          {% for Type in types %}
-            <p><a href="indPages/{{ Type }}.html">{{ Type }}</a></p>
-            {% endfor %}
 </body>
 </html>
