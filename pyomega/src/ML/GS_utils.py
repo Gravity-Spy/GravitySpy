@@ -141,6 +141,8 @@ def my_read_image(data_path, dataset_str):
 
     classes = os.listdir(data_path)
     classes = [c for c in classes if not c.startswith('.') ]
+    classes = sorted(classes)
+
     imgs = []
     labels = []
     names = []
@@ -174,6 +176,7 @@ def my_read_image2(data_path, dataset_str):
 
     classes = os.listdir(data_path)
     classes = [c for c in classes if not c.startswith('.')]
+    classes = sorted(classes)
 
     imgs = []
     labels = []
