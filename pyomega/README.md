@@ -1,7 +1,6 @@
-# How to run wscan.py
+# ER10/O2 Gravity Spy
 
-Before running source wscan.param must activate the detchar python
-
-. /home/detchar/opt/gwpysoft/bin/activate
-
-PyOmega follows the wscan.m code found in https://trac.ligo.caltech.edu/omega/browser/trunk
+# Livingston
+* Start Time of ER10: 1161907217
+# Hanford
+* Start Time of ER10: 1163203217
