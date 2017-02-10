@@ -1,1 +1,0 @@
-python wscan.py --inifile wini.ini --eventTime 1127700030.877928972 --outDir ./PyOmegaDev/ML/ --uniqueID --ID 123abc1234 --NSDF --runML
