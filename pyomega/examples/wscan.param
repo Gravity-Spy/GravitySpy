@@ -1,1 +1,0 @@
-python ../src/wscan.py --inifile "pathToRepo"/GravitySpy/pyomega/Production/wini.ini --eventTime 1127700030.877928972 --outDir /home/"username"/public_html/GravitySpy/Test/ --pathToModel "pathToRepo"/GravitySpy/pyomega/src/ML/trained_model/ --uniqueID --ID 123abc1234 --runML
