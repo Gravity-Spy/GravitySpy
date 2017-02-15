@@ -4,6 +4,7 @@ import optparse,os,string,random,pdb
 from gwpy.table.lsctables import SnglBurstTable
 from gwpy.segments import DataQualityFlag
 import pandas as pd
+from sqlalchemy.engine import create_engine
 
 ###############################################################################
 ##########################                             ########################
@@ -116,7 +117,7 @@ def write_dagfile(x):
     with open('gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max()),'a+') as dagfile:
         dagfile.write('JOB {0}{1}{2} ./condor/gravityspy.sub\n'.format(x.peak_time,x.peak_time_ns,x.event_id))
         dagfile.write('RETRY {0}{1}{2} 3\n'.format(x.peak_time,x.peak_time_ns,x.event_id))
-        dagfile.write('VARS {0}{1}{4} jobNumber="{0}{1}" eventTime="{2}" ID="{3}"'.format(x.peak_time,x.peak_time_ns,x.peakGPS,x.uniqueID,x.event_id))
+        dagfile.write('VARS {0}{1}{4} jobNumber="{0}{1}{4}" eventTime="{2}" ID="{3}"'.format(x.peak_time,x.peak_time_ns,x.peakGPS,x.uniqueID,x.event_id))
         dagfile.write('\n\n')
 
 
