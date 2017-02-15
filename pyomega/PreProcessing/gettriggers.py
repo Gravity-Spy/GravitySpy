@@ -137,7 +137,10 @@ def write_subfile():
         subfile.write('universe = vanilla\n')
         subfile.write('executable = {0}\n'.format(opts.pathToExec))
         subfile.write('\n')
-        subfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
+        if opts.PostgreSQL:
+            subfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML --PostgreSQL"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
+        elif opts.HDF5:
+            ubfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML --HDF5"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
         subfile.write('getEnv=True\n')
         subfile.write('\n')
         subfile.write('accounting_group_user = scott.coughlin\n')#.format(opts.username))
@@ -204,7 +207,6 @@ elif opts.PostgreSQL:
     oTriggers = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
     oTriggers.rename(columns = {'index':'peakGPS'},inplace=True)
     oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
-    pdb.set_trace()
     oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID','event_id']].apply(write_dagfile,axis=1)
     oTriggers.peakGPS = oTriggers.peakGPS.apply(float)
     oTriggers.to_sql('glitches',engine,index=False,if_exists='append')
