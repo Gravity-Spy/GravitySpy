@@ -34,6 +34,8 @@ def parse_commandline():
     parser.add_option("--pathToModel",default='./ML/trained_model/' ,help="Path to trained model")
     parser.add_option("--SNR", help="Lower bound SNR Threshold for omicron triggers, by default there is no upperbound SNR unless supplied throught the --maxSNR flag. [Default: 6]",type=float,default=6)
     parser.add_option("--uniqueID", action="store_true", default=False,help="Is this image being generated for the GravitySpy project, is so we will create a uniqueID strong to use for labeling images instead of GPS time")
+    parser.add_option("--HDF5", action="store_true", default=False,help="Store triggers in local HDF5 table format")
+    parser.add_option("--PostgreSQL", action="store_true", default=False,help="Store triggers in local PostgreSQL format")
 
     opts, args = parser.parse_args()
 
@@ -178,3 +180,28 @@ oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
 oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID']].apply(write_dagfile,axis=1)
 oTriggers.peakGPS = oTriggers.peakGPS.apply(float)
 oTriggers.to_hdf('triggers.h5','gspy_triggers',append=True)
+
+elif opts.PostgreSQL:
+    engine = create_engine('postgresql://scoughlin@localhost:5432/gravityspy')
+    if not opts.gpsStart:
+        tmp = pd.read_sql('glitches',engine)
+        gpsStart = tmp.peak_time.max()
+    else:
+        gpsStart = opts.gpsStart
+
+    if not opts.gpsEnd:
+        gpsEnd = gpsStart + 28800
+    else:
+        gpsEnd = opts.gpsEnd
+
+    # Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
+    detchannelname = opts.detector + ':' + opts.channelname
+
+    write_subfile()
+    omicrontriggers = get_triggers(gpsStart,gpsEnd)
+    oTriggers = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
+    oTriggers.rename(columns = {'index':'peakGPS'},inplace=True)
+    oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
+    oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID']].apply(write_dagfile,axis=1)
+    oTriggers.peakGPS = oTriggers.peakGPS.apply(float)
+    oTriggers.to_sql('glitches',engine,index=False,if_exists='append')
