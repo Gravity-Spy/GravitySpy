@@ -195,7 +195,7 @@ elif opts.PostgreSQL:
         gpsStart = opts.gpsStart
 
     if not opts.gpsEnd:
-        gpsEnd = gpsStart + 28800
+        gpsEnd = gpsStart + 86400
     else:
         gpsEnd = opts.gpsEnd
 
@@ -210,3 +210,4 @@ elif opts.PostgreSQL:
     oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID','event_id']].apply(write_dagfile,axis=1)
     oTriggers.peakGPS = oTriggers.peakGPS.apply(float)
     oTriggers.to_sql('glitches',engine,index=False,if_exists='append')
+    os.system('/bin/condor_submit_dag -maxjobs 10 gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max())) 
