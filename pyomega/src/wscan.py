@@ -21,6 +21,8 @@ import numpy as np
 from scipy import signal
 from scipy.interpolate import InterpolatedUnivariateSpline
 
+from sqlalchemy.engine import create_engine
+
 from matplotlib import use
 use('agg')
 from matplotlib import (pyplot as plt, cm)
@@ -63,6 +65,8 @@ def parse_commandline():
     parser.add_option("--plot-eventgram", action="store_true", default=False,help="Plot eventgram")
     parser.add_option("--runML", action="store_true", default=False,help="Run the ML classifer on the omega scans")
     parser.add_option("--verbose", action="store_true", default=False,help="Run in Verbose Mode")
+    parser.add_option("--HDF5", action="store_true", default=False,help="Store triggers in local HDF5 table format")
+    parser.add_option("--PostgreSQL", action="store_true", default=False,help="Store triggers in local PostgreSQL format")
     opts, args = parser.parse_args()
 
 
@@ -2953,6 +2957,8 @@ def main():
         M  = 2117
         if detectorName == 'H1':
             workflow_subject_set_dict_app = {
+                "1400Ripples":((A,8190,[1,0.5]),(M,8192,[0.5,0])),
+                "1080Lines":((A,8193,[1,0.5]),(M,8194,[0.5,0])),
                 "Air_Compressor":((A,6714,[1,0.6]),(M,6715,[0.6,0])),
                 "Blip":((B1,6717,[1,.998]),(A,6718,[.998,.85]),(M,6719,[.85,0])),
                 "Chirp":((B3,6721,[1,.7]),(A,6722,[.7,.5]),(M,6723,[.50,0])),
@@ -2976,6 +2982,8 @@ def main():
               }
         elif detectorName == 'L1':
             workflow_subject_set_dict_app = {
+                "1400Ripples":((A,8190,[1,0.5]),(M,8192,[0.5,0])),
+                "1080Lines":((A,8193,[1,0.5]),(M,8194,[0.5,0])),
                 "Air_Compressor":((A,6714,[1,0.6]),(M,6715,[0.6,0])),
                 "Blip":((B1,6717,[1,.998]),(A,6718,[.998,.85]),(M,6719,[.85,0])),
                 "Chirp":((B3,6721,[1,.7]),(A,6722,[.7,.5]),(M,6723,[.50,0])),
@@ -3007,7 +3015,7 @@ def main():
         scores = scores[1::]
         scores = [float(iScore) for iScore in scores]
         scores.append(opts.ID)
-        classes = ["Air_Compressor","Blip","Chirp","Extremely_Loud","Helix","Koi_Fish","Light_Modulation","Low_Frequency_Burst","Low_Frequency_Lines","None_of_the_Above","No_Glitch","Paired_Doves","Power_Line","Repeating_Blips","Scattered_Light","Scratchy","Tomte","Violin_Mode","Wandering_Line","Whistle","uniqueID","Label","workflow","subjectset","Filename1","Filename2","Filename3","Filename4","UploadFlag"]
+        classes = ["1080Lines","1400Ripples","Air_Compressor","Blip","Chirp","Extremely_Loud","Helix","Koi_Fish","Light_Modulation","Low_Frequency_Burst","Low_Frequency_Lines","No_Glitch","None_of_the_Above","Paired_Doves","Power_Line","Repeating_Blips","Scattered_Light","Scratchy","Tomte","Violin_Mode","Wandering_Line","Whistle","uniqueID","Label","workflow","subjectset","Filename1","Filename2","Filename3","Filename4","UploadFlag"]
         scores.append(classes[MLlabel])
 
         workFlow = 'Classified'
@@ -3036,7 +3044,19 @@ def main():
         scores.append(0)
 
         scoresTable = pd.DataFrame([scores],columns=classes)
-        scoresTable.to_hdf('{0}/ML_GSpy_{1}.h5'.format(opts.outDir,opts.ID),'gspy_ML_classification')
+        if opts.PostgreSQL:
+            engine = create_engine('postgresql://scoughlin@localhost:5432/gravityspy')
+            columnDict = scoresTable.to_dict(orient='records')[0]
+            SQLCommand = 'UPDATE glitches SET '
+            for Column in columnDict:
+                if isinstance(columnDict[Column],basestring):
+                    SQLCommand = SQLCommand + '''\"{0}\" = \'{1}\', '''.format(Column,columnDict[Column])
+                else:
+                    SQLCommand = SQLCommand + '''\"{0}\" = {1}, '''.format(Column,columnDict[Column])
+            SQLCommand = SQLCommand[:-2] + ' WHERE \"uniqueID\" = \'' + scoresTable.uniqueID.iloc[0] + "'"
+            engine.execute(SQLCommand)
+        elif opts.HDF5:
+            scoresTable.to_hdf('{0}/ML_GSpy_{1}.h5'.format(opts.outDir,opts.ID),'gspy_ML_classification')
 
         system_call = "mv {0}*.png {1}".format(outDir,finalPath)
         os.system(system_call)
