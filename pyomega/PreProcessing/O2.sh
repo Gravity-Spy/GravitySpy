@@ -1,13 +1,5 @@
 #!/bin/bash
 
-export SQL_USER="gspy_remote"
-export SQL_PASS="da09c7c6f49b2dd3d0431e0ebc59f212"
-export PANOPTES_PROJECT="1104"
-#export PANOPTES_USERNAME="sbc538"
-#export PANOPTES_PASSWORD="Manlove6969"
-export PANOPTES_CLIENT_ID="b0cb64855d0066ffe3c5be458c8b79cbfcb02bd4edb825ef9b313ec2061a252e"
-export PANOPTES_CLIENT_SECRET="a93fbafd9e9fc500fd2ac357de5da88582bb139354705d552391f380ac53d4b2"
-
 PATH=/home/scoughlin/opt/postgres/bin:$PATH
 export PATH
 LD_LIBRARY_PATH=/home/scoughlin/opt/postgres/lib
