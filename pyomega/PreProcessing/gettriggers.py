@@ -134,7 +134,7 @@ def write_subfile():
         if not os.path.isdir(d):
             os.makedirs(d)
     with open('./condor/gravityspy.sub', 'w') as subfile:
-        subfile.write('universe = vanilla\n')
+        subfile.write('universe = local\n')
         subfile.write('executable = {0}\n'.format(opts.pathToExec))
         subfile.write('\n')
         if opts.PostgreSQL:
