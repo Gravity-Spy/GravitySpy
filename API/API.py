@@ -16,12 +16,14 @@ import operator
 
 pathToFiles = '/home/scoughlin/O2/Test/GravitySpy/API/'
 
+# This function translates the string answer to an integer value.
 def extract_choiceINT(x):
     try:
         return label_dict[x]
     except:
         return -1
 
+# This is the current version of the integer to string dict
 label_dict = {
 '50HZ':0,'RCMPRSSR50HZ':0,'AIRCOMPRESSOR50HZ':0,
 'BLP':1,'BLIP':1,
@@ -61,7 +63,7 @@ def flatten(d, parent_key='', sep='_'):
 # Load lastID that was parsed
 lastID = pd.read_hdf('{0}/GravitySpy.h5'.format(pathToFiles),columns=['id']).max().iloc[0]
 
-
+print(lastID)
 # Connect to panoptes and query all classifications done on project 1104 (i.e. GravitySpy)
 Panoptes.connect()
 
@@ -102,12 +104,15 @@ classifications.metadata_finished_at = pd.to_datetime(classifications.metadata_f
 classifications['annotations_value_choiceINT'] = classifications['annotations_value_choice'].apply(extract_choiceINT)
 classifications = classifications.select_dtypes(exclude=['object'])
 classifications = classifications[['created_at','id','links_project','links_subjects','links_user','links_workflow','metadata_finished_at','metadata_started_at','metadata_workflow_version','annotations_value_choiceINT']]
-classifications.to_hdf('GravitySpy.h5','classifications',mode='a',format='table',append=True,data_columns=['id','links_subjects','links_user','links_workflow','annotations_value_choiceINT'])
+classifications.loc[classifications.links_user.isnull(),'links_user'] = 0
+classifications.links_user = classifications.links_user.astype(int)
+classifications.to_hdf('{0}/GravitySpy.h5'.format(pathToFiles),'classifications',mode='a',format='table',append=True,data_columns=['id','links_subjects','links_user','links_workflow','annotations_value_choiceINT'])
 
+"""
 # Load subjects info in case this is an image that has been previously labeled and getting the metadata information is superfluous
 imagestmp = pd.read_hdf('{0}/images.h5'.format(pathToFiles)) 
 
-# Load images
+# Only get new subjects because otherwise we have all the image info we need.
 newSubjects = []
 for iSubject in classifications.loc[~classifications['links_subjects'].isin(imagestmp.links_subjects.tolist()),'links_subjects'].unique(): 
     tmpSubject = Subject.find(iSubject)
@@ -127,35 +132,43 @@ def determine_type(x):
     else:
         return 1
 
+# The label on the gold are in lowercase so need to make them uppercase
 def determine_label(x):
     return label_dict[str(x).upper().translate(None,'AEIOUY ()')]
 
+# If metadata_#Type is not a field then all images are testing
 try:
     images['metadata_Type'] = images['metadata_#Type'].apply(determine_type)
 except:
     images['metadata_Type'] = 1
 
+# Again if there is not field for metadata_#Label then all are testing and no gold images
 try:
     images.loc[images['metadata_#Label'].isnull(),'metadata_#Label'] = -1
 except:
     images['metadata_#Label'] = -1
 
+# For all images that have a label determine what that label is in terms of its integer.
 images.loc[images['metadata_#Label'] != -1,'metadata_#Label'] = images.loc[images['metadata_#Label'] != -1,'metadata_#Label'].apply(determine_label)
 
+# For those that are testing images, take their unicode string make it a string and attempt to determine the max value from the vector (which is equivalent to the ML label)
 images.loc[images['metadata_#Label'] == -1,'metadata_#ML_Posterior'] = images.loc[images['metadata_#Label'] == -1,'metadata_#ML_Posterior'].apply(str)
 def check_ML(x):
     try:
         return np.argmax(ast.literal_eval(x))
     except:
         return -1
-
 images.loc[images['metadata_#Label'] == -1,'metadata_#ML_Posterior'] = images.loc[images['metadata_#Label'] == -1,'metadata_#ML_Posterior'].apply(check_ML)
+# For those that are golden images mark them as having no #ML_Posterior
 images.loc[images['metadata_#Label'] != -1,'metadata_#ML_Posterior'] = -1
 
+# Make all floats and ints into floats and ints
 images = images.convert_objects(convert_numeric=True)
 images.rename(columns={'id':'links_subjects'},inplace=True)
 images = images[['links_subjects','links_collections','links_project','links_subject_sets','metadata_#Label','metadata_#ML_Posterior','metadata_date','metadata_Type','metadata_subject_id']]
+# Turna  unicode into a string
 images.metadata_subject_id = images.metadata_subject_id.apply(str)
+#append this to the image h5 table (This file has mostly ints and flaots making it very space and search efficient.
 images.to_hdf('{0}/images.h5'.format(pathToFiles),'classifications',mode='a',format='table',append=True,data_columns=['links_subjects','metadata_Type'])
 
 images = pd.read_hdf('{0}/images.h5'.format(pathToFiles))
@@ -199,3 +212,4 @@ image_and_classification = image_and_classification.sort_values('created_at')
 image_and_classification.loc[image_and_classification.metadata_Type == 2,['links_user','metadata_#Label','annotations_value_choiceINT','id']].apply(update_conf_matrix,axis=1)
 for iWorkflow in range(1,6):
     print('Level {0}: {1}'.format(iWorkflow,len(confusion_matrices.loc[confusion_matrices.currentworkflow == iWorkflow])))
+"""
