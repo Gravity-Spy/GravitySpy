@@ -4,6 +4,7 @@ import optparse,os,string,random,pdb
 from gwpy.table.lsctables import SnglBurstTable
 from gwpy.segments import DataQualityFlag
 import pandas as pd
+from sqlalchemy.engine import create_engine
 
 ###############################################################################
 ##########################                             ########################
@@ -34,6 +35,8 @@ def parse_commandline():
     parser.add_option("--pathToModel",default='./ML/trained_model/' ,help="Path to trained model")
     parser.add_option("--SNR", help="Lower bound SNR Threshold for omicron triggers, by default there is no upperbound SNR unless supplied throught the --maxSNR flag. [Default: 6]",type=float,default=6)
     parser.add_option("--uniqueID", action="store_true", default=False,help="Is this image being generated for the GravitySpy project, is so we will create a uniqueID strong to use for labeling images instead of GPS time")
+    parser.add_option("--HDF5", action="store_true", default=False,help="Store triggers in local HDF5 table format")
+    parser.add_option("--PostgreSQL", action="store_true", default=False,help="Store triggers in local PostgreSQL format")
 
     opts, args = parser.parse_args()
 
@@ -112,9 +115,9 @@ def get_triggers(gpsStart,gpsEnd):
 
 def write_dagfile(x):
     with open('gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max()),'a+') as dagfile:
-        dagfile.write('JOB {0}{1} ./condor/gravityspy.sub\n'.format(x.peak_time,x.peak_time_ns))
-        dagfile.write('RETRY {0}{1} 3\n'.format(x.peak_time,x.peak_time_ns))
-        dagfile.write('VARS {0}{1} jobNumber="{0}{1}" eventTime="{2}" ID="{3}"'.format(x.peak_time,x.peak_time_ns,x.peakGPS,x.uniqueID))
+        dagfile.write('JOB {0}{1}{2} ./condor/gravityspy.sub\n'.format(x.peak_time,x.peak_time_ns,x.event_id))
+        dagfile.write('RETRY {0}{1}{2} 3\n'.format(x.peak_time,x.peak_time_ns,x.event_id))
+        dagfile.write('VARS {0}{1}{4} jobNumber="{0}{1}{4}" eventTime="{2}" ID="{3}"'.format(x.peak_time,x.peak_time_ns,x.peakGPS,x.uniqueID,x.event_id))
         dagfile.write('\n\n')
 
 
@@ -131,10 +134,13 @@ def write_subfile():
         if not os.path.isdir(d):
             os.makedirs(d)
     with open('./condor/gravityspy.sub', 'w') as subfile:
-        subfile.write('universe = vanilla\n')
+        subfile.write('universe = local\n')
         subfile.write('executable = {0}\n'.format(opts.pathToExec))
         subfile.write('\n')
-        subfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
+        if opts.PostgreSQL:
+            subfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML --PostgreSQL"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
+        elif opts.HDF5:
+            ubfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML --HDF5"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
         subfile.write('getEnv=True\n')
         subfile.write('\n')
         subfile.write('accounting_group_user = scott.coughlin\n')#.format(opts.username))
@@ -155,26 +161,53 @@ def write_subfile():
 # Parse commandline arguments
 opts = parse_commandline()
 
-# Determine start and stop time of trigger query.
-if not opts.gpsStart:
-    tmp = pd.read_hdf('triggers.h5')
-    gpsStart = tmp.peak_time.max()
-else:
-    gpsStart = opts.gpsStart
+if opts.HDF5:
+    # Determine start and stop time of trigger query.
+    if not opts.gpsStart:
+        tmp = pd.read_hdf('triggers.h5')
+        gpsStart = tmp.peak_time.max()
+    else:
+        gpsStart = opts.gpsStart
 
-if not opts.gpsEnd:
-    gpsEnd = gpsStart + 28800
-else:
-    gpsEnd = opts.gpsEnd
+    if not opts.gpsEnd:
+        gpsEnd = gpsStart + 28800
+    else:
+        gpsEnd = opts.gpsEnd
 
-# Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
-detchannelname = opts.detector + ':' + opts.channelname
+    # Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
+    detchannelname = opts.detector + ':' + opts.channelname
 
-write_subfile()
-omicrontriggers = get_triggers(gpsStart,gpsEnd)
-oTriggers = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
-oTriggers.rename(columns = {'index':'peakGPS'},inplace=True)
-oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
-oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID']].apply(write_dagfile,axis=1)
-oTriggers.peakGPS = oTriggers.peakGPS.apply(float)
-oTriggers.to_hdf('triggers.h5','gspy_triggers',append=True)
+    write_subfile()
+    omicrontriggers = get_triggers(gpsStart,gpsEnd)
+    oTriggers = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
+    oTriggers.rename(columns = {'index':'peakGPS'},inplace=True)
+    oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
+    oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID','event_id']].apply(write_dagfile,axis=1)
+    oTriggers.peakGPS = oTriggers.peakGPS.apply(float)
+    oTriggers.to_hdf('triggers.h5','gspy_triggers',append=True)
+
+elif opts.PostgreSQL:
+    engine = create_engine('postgresql://scoughlin@localhost:5432/gravityspy')
+    if not opts.gpsStart:
+        tmp = pd.read_sql('glitches',engine)
+        gpsStart = tmp.peak_time.max()
+    else:
+        gpsStart = opts.gpsStart
+
+    if not opts.gpsEnd:
+        gpsEnd = gpsStart + 86400
+    else:
+        gpsEnd = opts.gpsEnd
+
+    # Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
+    detchannelname = opts.detector + ':' + opts.channelname
+
+    write_subfile()
+    omicrontriggers = get_triggers(gpsStart,gpsEnd)
+    oTriggers = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
+    oTriggers.rename(columns = {'index':'peakGPS'},inplace=True)
+    oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
+    oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID','event_id']].apply(write_dagfile,axis=1)
+    oTriggers.peakGPS = oTriggers.peakGPS.apply(float)
+    oTriggers.to_sql('glitches',engine,index=False,if_exists='append')
+    os.system('/bin/condor_submit_dag -maxjobs 10 gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max())) 
