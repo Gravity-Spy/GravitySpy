@@ -12,8 +12,7 @@ import optparse
 from operator import itemgetter
 import difflib
 
-from gwpy.table.lsctables import SnglBurstTable
-from gwpy.segments import SegmentList, Segment
+from sqlalchemy.engine import create_engine
 
 from matplotlib import use
 use('agg')
@@ -176,18 +175,12 @@ elif opts.O1GlitchClassification:
 else:
     ValueError("Please supply type of summary page you want")
 
-metadata = pd.read_hdf('{0}'.format(opts.metadata))
-
-if opts.ML:
-    files = glob.glob('{0}/*.h5'.format(opts.ML_metadata))
-    tmp = pd.read_hdf('{0}'.format(files[0]))
-    for iFile in files[1::]:
-        tmp = pd.concat([tmp,pd.read_hdf('{0}'.format(iFile))])
-    tmp.to_hdf('ML_GSpy.h5','gspy_ML_classification')
-    metadata = metadata.merge(tmp)
+engine = create_engine('postgresql://scott.coughlin@localhost:5432/gravityspy')
+metadata = pd.read_sql('glitches',engine)
 
 # Get types from label columns
 types = sorted(metadata.Label.unique().tolist())
+types = [x for x in types if x is not None]
 summaryPage = open('{0}/index.html'.format(outPath),"w")
 env = Environment(loader=FileSystemLoader('./'))
 template = env.get_template('home.html')
@@ -197,16 +190,18 @@ summaryPage.close()
 ID              = []
 imagePathAllInd = []
 imagePathAllBig = []
-scoreInd   = []
 Pipeline   = []
 
 for Type in types:
     imagePaths = []
+    scoreInd   = []
     tmp1 = metadata[metadata.Label == Type]
     tmp1 = tmp1.sort_values('{0}'.format(Type),ascending=False)
     for IDtmp in tmp1.uniqueID:
-        ID.append(IDtmp)
         image = glob.glob('{0}/{1}.png'.format(dataPath,IDtmp))
+        if not len(image):
+            continue
+        ID.append(IDtmp)
         # We have identified the path to the image. Now we need to do a comparison between outPath and dataPath to find the right relative path of this image to the individual page
         imageTmp = filter(None, image[0].split('/'))
         pathTmp  = filter(None, indPages.split('/'))

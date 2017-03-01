@@ -31,7 +31,7 @@ opts = parse_commandline()
 Panoptes.connect()
 project = Project.find(slug='zooniverse/gravity-spy')
 
-engine = create_engine('postgresql://scoughlin@localhost:5432/gravityspy')
+engine = create_engine('postgresql://{0}@localhost:5432/gravityspy'.format(os.environ['USER']))
 triggers = pd.read_sql('glitches',engine)
 triggers = triggers.loc[triggers.UploadFlag == 0]
 

@@ -187,7 +187,7 @@ if opts.HDF5:
     oTriggers.to_hdf('triggers.h5','gspy_triggers',append=True)
 
 elif opts.PostgreSQL:
-    engine = create_engine('postgresql://scoughlin@localhost:5432/gravityspy')
+    engine = create_engine('postgresql://{0}@localhost:5432/gravityspy'.format(os.environ['USER']))
     if not opts.gpsStart:
         tmp = pd.read_sql('glitches',engine)
         gpsStart = tmp.peak_time.max()
