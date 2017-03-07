@@ -140,7 +140,7 @@ def write_subfile():
         if opts.PostgreSQL:
             subfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML --PostgreSQL"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
         elif opts.HDF5:
-            ubfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML --HDF5"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
+            subfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML --HDF5"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
         subfile.write('getEnv=True\n')
         subfile.write('\n')
         subfile.write('accounting_group_user = scott.coughlin\n')#.format(opts.username))
@@ -187,7 +187,7 @@ if opts.HDF5:
     oTriggers.to_hdf('triggers.h5','gspy_triggers',append=True)
 
 elif opts.PostgreSQL:
-    engine = create_engine('postgresql://scoughlin@localhost:5432/gravityspy')
+    engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
     if not opts.gpsStart:
         tmp = pd.read_sql('glitches',engine)
         gpsStart = tmp.peak_time.max()
