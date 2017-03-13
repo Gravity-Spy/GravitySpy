@@ -31,12 +31,14 @@ def parse_commandline():
     parser.add_option("--maxSNR", help="This flag gives you the option to supply a upper limit to the SNR of the glitches [Optional Input]",type=float)
     parser.add_option("--outDir", help="Outdir of omega scan and omega scan webpage (i.e. your html directory)")
     parser.add_option("--pathToExec", help="Path to version of wscan.py you want to use")
+    parser.add_option("--pathToExecUpload", help="Path to version of wscan.py you want to use")
     parser.add_option("--pathToIni", help="Path to ini file")
     parser.add_option("--pathToModel",default='./ML/trained_model/' ,help="Path to trained model")
     parser.add_option("--SNR", help="Lower bound SNR Threshold for omicron triggers, by default there is no upperbound SNR unless supplied throught the --maxSNR flag. [Default: 6]",type=float,default=6)
     parser.add_option("--uniqueID", action="store_true", default=False,help="Is this image being generated for the GravitySpy project, is so we will create a uniqueID strong to use for labeling images instead of GPS time")
     parser.add_option("--HDF5", action="store_true", default=False,help="Store triggers in local HDF5 table format")
     parser.add_option("--PostgreSQL", action="store_true", default=False,help="Store triggers in local PostgreSQL format")
+    parser.add_option("--upload", action="store_true", default=False,help="You plan on uploading to the gravityspywebsite")
 
     opts, args = parser.parse_args()
 
@@ -116,9 +118,31 @@ def get_triggers(gpsStart,gpsEnd):
 def write_dagfile(x):
     with open('gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max()),'a+') as dagfile:
         dagfile.write('JOB {0}{1}{2} ./condor/gravityspy.sub\n'.format(x.peak_time,x.peak_time_ns,x.event_id))
-        dagfile.write('RETRY {0}{1}{2} 3\n'.format(x.peak_time,x.peak_time_ns,x.event_id))
+        dagfile.write('RETRY {0}{1}{2} 10\n'.format(x.peak_time,x.peak_time_ns,x.event_id))
         dagfile.write('VARS {0}{1}{4} jobNumber="{0}{1}{4}" eventTime="{2}" ID="{3}"'.format(x.peak_time,x.peak_time_ns,x.peakGPS,x.uniqueID,x.event_id))
+        if opts.upload:
+            listOfParentJobs.append('{0}{1}{2}'.format(x.peak_time,x.peak_time_ns,x.event_id))
         dagfile.write('\n\n')
+
+###############################################################################
+##########################                                #####################
+##########################   Func: write_dagfile_upload   #####################
+##########################                                #####################
+###############################################################################
+
+# Write dag_file file for the condor job
+
+def write_dagfile_upload():
+    with open('gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max()),'a+') as dagfile:
+        iT=0
+        listOfChildJobs = []
+        for iLabel in ["1080Lines","1400Ripples","Air_Compressor","Blip","Chirp","Extremely_Loud","Helix","Koi_Fish","Light_Modulation","Low_Frequency_Burst","Low_Frequency_Lines","No_Glitch","None_of_the_Above","Paired_Doves","Power_Line","Repeating_Blips","Scattered_Light","Scratchy","Tomte","Violin_Mode","Wandering_Line","Whistle"]:
+            iT= iT +1
+            dagfile.write('JOB {0} ./condor/upload.sub\n'.format(iT))
+            dagfile.write('VARS {0} jobNumber="{0}" Label="{1}"\n'.format(iT,iLabel))
+            listOfChildJobs.append(str(iT))
+            dagfile.write('\n\n')
+        dagfile.write('PARENT {0} CHILD {1}'.format(' '.join(listOfParentJobs),' '.join(listOfChildJobs)))
 
 
 ###############################################################################
@@ -134,7 +158,7 @@ def write_subfile():
         if not os.path.isdir(d):
             os.makedirs(d)
     with open('./condor/gravityspy.sub', 'w') as subfile:
-        subfile.write('universe = local\n')
+        subfile.write('universe = vanilla\n')
         subfile.write('executable = {0}\n'.format(opts.pathToExec))
         subfile.write('\n')
         if opts.PostgreSQL:
@@ -153,6 +177,38 @@ def write_subfile():
         subfile.write('output = logs/gravityspy-$(jobNumber).out\n')
         subfile.write('notification = never\n')
         subfile.write('queue 1')
+        subfile.close()
+
+###############################################################################
+##########################                            #########################
+##########################   Func: write_subfile     #########################
+##########################                            #########################
+###############################################################################
+
+# Write submission file for the condor job
+
+def write_subfile_upload():
+    for d in ['logs_upload', 'condor']:
+        if not os.path.isdir(d):
+            os.makedirs(d)
+    with open('./condor/upload.sub', 'w') as subfile:
+        subfile.write('universe = local\n')
+        subfile.write('executable = {0}\n'.format(opts.pathToExecUpload))
+        subfile.write('\n')
+        subfile.write('arguments = "--Label $(Label) --detector {0}"\n'.format(opts.detector))
+        subfile.write('getEnv=True\n')
+        subfile.write('\n')
+        subfile.write('accounting_group_user = scott.coughlin\n')#.format(opts.username))
+        subfile.write('accounting_group = ligo.dev.o1.detchar.ch_categorization.glitchzoo\n')
+        subfile.write('\n')
+        subfile.write('priority = 0\n')
+        subfile.write('request_memory = 1000\n')
+        subfile.write('\n')
+        subfile.write('error = logs_upload/gravityspy-$(jobNumber).err\n')
+        subfile.write('output = logs_upload/gravityspy-$(jobNumber).out\n')
+        subfile.write('notification = never\n')
+        subfile.write('queue 1')
+        subfile.close()
 
 ############################################################################
 ###############          MAIN        #######################################
@@ -190,12 +246,12 @@ elif opts.PostgreSQL:
     engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
     if not opts.gpsStart:
         tmp = pd.read_sql('glitches',engine)
-        gpsStart = tmp.peak_time.max()
+        gpsStart = tmp.loc[tmp.ifo == opts.detector,'peak_time'].max()
     else:
         gpsStart = opts.gpsStart
 
     if not opts.gpsEnd:
-        gpsEnd = gpsStart + 86400
+        gpsEnd = gpsStart + 604800
     else:
         gpsEnd = opts.gpsEnd
 
@@ -203,11 +259,18 @@ elif opts.PostgreSQL:
     detchannelname = opts.detector + ':' + opts.channelname
 
     write_subfile()
+    if opts.upload:
+        write_subfile_upload()
+        listOfParentJobs = []
     omicrontriggers = get_triggers(gpsStart,gpsEnd)
+
     oTriggers = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
+    oTriggers.sort_values('peak_time',ascending=False,inplace=True)
     oTriggers.rename(columns = {'index':'peakGPS'},inplace=True)
     oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
     oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID','event_id']].apply(write_dagfile,axis=1)
+    if opts.upload:
+        write_dagfile_upload()
     oTriggers.peakGPS = oTriggers.peakGPS.apply(float)
     oTriggers.to_sql('glitches',engine,index=False,if_exists='append')
-    os.system('/bin/condor_submit_dag -maxjobs 10 gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max())) 
+    os.system('/bin/condor_submit_dag gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max())) 
