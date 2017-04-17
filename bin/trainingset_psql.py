@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (C) 2013 Michael Coughlin
+# Copyright (C) 2017 Michael Coughlin
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -22,10 +22,11 @@ import numpy as np
 import optparse
 from sqlalchemy.engine import create_engine
 import pandas as pd
+import pdb
 
 __author__ = "Michael Coughlin <michael.coughlin@ligo.org>"
 __version__ = 1.0
-__date__    = "9/22/2013"
+__date__    = "4/17/2017"
 
 # =============================================================================
 #
@@ -38,7 +39,6 @@ def parse_commandline():
     """
     parser = optparse.OptionParser(usage=__doc__,version=__version__)
 
-    parser.add_option("-d", "--detector", help="What IFO am I running from?",default ="H1")
     parser.add_option("-b", "--database", help="Database (O1GlitchClassification,classification,glitches).", default="glitches")
     parser.add_option("-o", "--outdir", help="Output directory.",default ="./TrainingSet")
 
@@ -61,31 +61,9 @@ def parse_commandline():
 
     return opts
 
-def cp_file(Filename,ifo,ThisTrainingFolder):
-    if Filename == None: return
-
-    FilenamePNG = Filename.split("/")[-1]
-    outfile = os.path.join(ThisTrainingFolder,FilenamePNG)
-    if os.path.isfile(outfile): return
-
-    if ifo == "H1":
-        hostpath = "ldas-pcdev2.ligo-wa.caltech.edu"
-    elif ifo == "L1":
-        hostpath = "ldas-pcdev2.ligo-la.caltech.edu"
-
-    filepath = "%s:%s"%(hostpath,Filename)
-    outfilepath = "%s/%s"%(ThisTrainingFolder,FilenamePNG)
-
-    if currentifo == ifo:
-        cp_command = "cp %s %s"%(Filename,outfilepath)
-    else:
-        cp_command = "gsiscp %s %s"%(filepath,outfilepath)
-    os.system(cp_command)
-
 # Parse command line
 opts = parse_commandline()
 
-currentifo = opts.detector
 TrainingFolder = opts.outdir
 if not os.path.isdir(TrainingFolder):
     os.mkdir(TrainingFolder) 
@@ -94,17 +72,26 @@ database = opts.database
 engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
 tmp = pd.read_sql(database,engine)
 
+tmp = tmp.loc[~(tmp.Filename1 == None) & (tmp.ImageStatus == 'Training')]
+
 for label in tmp.Label.unique():
     ThisTrainingFolder = os.path.join(TrainingFolder,label)
     if not os.path.isdir(ThisTrainingFolder):
         os.mkdir(ThisTrainingFolder)
-
+    os.chdir(ThisTrainingFolder)
     tmp2 = tmp.loc[tmp.Label == label]
-    tmp2 = tmp.loc[tmp.ImageStatus == "Training"]
-    for index,row in tmp2.iterrows():
+    for ifo in tmp2.ifo.unique():
+        if ifo == "H1":
+            hostpath = "ldas-pcdev2.ligo-wa.caltech.edu"
+            userpath = "/home/scott.coughlin/"
+        elif ifo == "L1":
+            hostpath = "ldas-pcdev2.ligo-la.caltech.edu"
+            userpath = "/home/scoughlin"
 
-        cp_file(row.Filename1,row.ifo,ThisTrainingFolder)
-        cp_file(row.Filename2,row.ifo,ThisTrainingFolder)
-        cp_file(row.Filename3,row.ifo,ThisTrainingFolder)
-        cp_file(row.Filename4,row.ifo,ThisTrainingFolder)
-
+        pd.DataFrame(tmp2.loc[(tmp.ifo == ifo),['Filename1','Filename2','Filename3','Filename4']].as_matrix().flatten()).to_csv(open('filenames.txt','w'),index=False,header=False)
+        os.system("gsiscp filenames.txt {0}:{1}".format(hostpath,userpath))
+        os.system("gsissh {0} 'tar -cz --file={1}_{2}.tar.gz --files-from=filenames.txt'".format(hostpath,ifo,label))
+        os.system("gsiscp {0}:{1}/{2}_{3}.tar.gz .".format(hostpath,userpath,ifo,label))
+        os.system("tar -xzf {0}_{1}.tar.gz".format(ifo,label))
+    os.system("find home/ -name '*.png' -exec mv {} . \;")
+    
