@@ -40,6 +40,8 @@ def parse_commandline():
     parser = optparse.OptionParser(usage=__doc__,version=__version__)
 
     parser.add_option("-b", "--database", help="Database (O1GlitchClassification,classification,glitches).", default="glitches")
+    parser.add_option("-w", "--userhome-H1", help="Path to your user directory on Hanford", default="/home/scott.coughlin/")
+    parser.add_option("-l", "--userhome-L1", help="Path to your user directory on Livingston", default="/home/scoughlin/")
     parser.add_option("-o", "--outdir", help="Output directory.",default ="./TrainingSet")
 
     parser.add_option("-v", "--verbose", action="store_true", default=False,
@@ -74,6 +76,7 @@ tmp = pd.read_sql(database,engine)
 
 tmp = tmp.loc[~(tmp.Filename1 == None) & (tmp.ImageStatus == 'Training')]
 
+pdb.set_trace()
 for label in tmp.Label.unique():
     ThisTrainingFolder = os.path.join(TrainingFolder,label)
     if not os.path.isdir(ThisTrainingFolder):
@@ -83,10 +86,10 @@ for label in tmp.Label.unique():
     for ifo in tmp2.ifo.unique():
         if ifo == "H1":
             hostpath = "ldas-pcdev2.ligo-wa.caltech.edu"
-            userpath = "/home/scott.coughlin/"
+            userpath = "{0}".format(opts.userhome_H1)
         elif ifo == "L1":
             hostpath = "ldas-pcdev2.ligo-la.caltech.edu"
-            userpath = "/home/scoughlin"
+            userpath = "{0}".format(opts.userhome_L1)
 
         pd.DataFrame(tmp2.loc[(tmp.ifo == ifo),['Filename1','Filename2','Filename3','Filename4']].as_matrix().flatten()).to_csv(open('filenames.txt','w'),index=False,header=False)
         os.system("gsiscp filenames.txt {0}:{1}".format(hostpath,userpath))
