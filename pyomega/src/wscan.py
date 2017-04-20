@@ -324,7 +324,7 @@ def main():
 
         scoresTable = pd.DataFrame([scores],columns=classes)
         if opts.PostgreSQL:
-            engine = create_engine('postgresql://scoughlin@localhost:5432/gravityspy')
+            engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
             columnDict = scoresTable.to_dict(orient='records')[0]
             SQLCommand = 'UPDATE glitches SET '
             for Column in columnDict:

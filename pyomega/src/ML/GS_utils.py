@@ -22,9 +22,11 @@ import numpy
 import gzip
 import pickle
 
+from keras import backend as K
+K.set_image_dim_ordering('th')
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.layers import Convolution2D, MaxPooling2D
+from keras.layers import Convolution2D, MaxPooling2D, Conv2D
 
 
 def listdir_nohidden(path):
@@ -101,9 +103,9 @@ def my_save_dataset_test(save_adress, imgs, labels, names, str_name):
 def my_save_dataset(save_adress, new_ind, imgs, labels, names, str_name ):
     data_size = imgs.shape[0]
     "Partitioning into train, validation and test sets"
-    trainNumber = data_size * 0.75
-    validNumber = data_size * 0.125
-    testNumber = data_size * 0.125
+    trainNumber = int(data_size * 0.75)
+    validNumber = int(data_size * 0.125)
+    testNumber = int(data_size * 0.125)
 
     trainset, valisdet, testset = numpy.split(new_ind, [trainNumber + 1, trainNumber + validNumber + 1])
 
@@ -226,7 +228,11 @@ def load_data(dataset):
 def build_cnn(img_rows, img_cols):
     model = Sequential()
     #model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
-    model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
+    #model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
+    #                        init='glorot_uniform', activation='linear',
+    #                        border_mode='valid',
+    #                        input_shape=(1, img_rows, img_cols)))
+    model.add(Conv2D(nb_filter=100, nb_row=5, nb_col=5,
                             init='glorot_uniform', activation='linear',
                             border_mode='valid',
                             input_shape=(1, img_rows, img_cols)))
@@ -235,7 +241,10 @@ def build_cnn(img_rows, img_cols):
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
     #model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
-    model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
+    #model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
+    #                        init='glorot_uniform', activation='linear',
+    #                        border_mode='valid'))
+    model.add(Conv2D(nb_filter=100, nb_row=5, nb_col=5,
                             init='glorot_uniform', activation='linear',
                             border_mode='valid'))
     model.add(Activation('relu'))
@@ -253,7 +262,11 @@ def build_cnn(img_rows, img_cols):
 def build_partial_cnn1(img_rows, img_cols):
     model = Sequential()
     #model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
-    model.add(Convolution2D(nb_filter=10, nb_row=2, nb_col=2,
+    #model.add(Convolution2D(nb_filter=10, nb_row=2, nb_col=2,
+    #                        init='glorot_uniform', activation='linear',
+    #                        border_mode='valid',
+    #                        input_shape=(1, img_rows, img_cols)))
+    model.add(Conv2D(nb_filter=10, nb_row=2, nb_col=2,
                             init='glorot_uniform', activation='linear',
                             border_mode='valid',
                             input_shape=(1, img_rows, img_cols)))
@@ -279,7 +292,11 @@ def build_partial_cnn1(img_rows, img_cols):
 
 def build_cnn_volume(img_rows, img_cols, n):
     model = Sequential()
-    model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
+    #model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
+    #                        init='glorot_uniform', activation='linear',
+    #                        border_mode='valid',
+    #                        input_shape=(n, img_rows, img_cols)))
+    model.add(Conv2D(nb_filter=100, nb_row=5, nb_col=5,
                             init='glorot_uniform', activation='linear',
                             border_mode='valid',
                             input_shape=(n, img_rows, img_cols)))
@@ -287,7 +304,10 @@ def build_cnn_volume(img_rows, img_cols, n):
 
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
+    #model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
+    #                        init='glorot_uniform', activation='linear',
+    #                        border_mode='valid'))
+    model.add(Conv2D(nb_filter=100, nb_row=5, nb_col=5,
                             init='glorot_uniform', activation='linear',
                             border_mode='valid'))
     model.add(Activation('relu'))

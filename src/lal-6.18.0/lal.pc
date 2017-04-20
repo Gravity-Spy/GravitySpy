@@ -1,0 +1,17 @@
+PACKAGE_TARNAME=lal
+prefix=/Users/ram/git/lalsuite/_inst
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+datarootdir=${prefix}/share
+docdir=${datarootdir}/doc/${PACKAGE_TARNAME}
+htmldir=${docdir}
+LAL_OCTAVE_PATH=${prefix}/lib/octave/4.2.0/site/oct/x86_64-apple-darwin16.4.0
+LAL_PYTHON_PATH=${exec_prefix}/lib/python2.7/site-packages
+
+Name: LAL
+Description: LSC Algorithm Library
+Version: 6.18.0
+Requires: gsl, fftw3, fftw3f
+Libs: -L${libdir} -llal   
+Cflags: -I${includedir}   -D_THREAD_SAFE -pthread

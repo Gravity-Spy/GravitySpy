@@ -6,6 +6,7 @@ import os,csv,ast
 import optparse
 import pandas as pd
 from panoptes_client import *
+import numpy as np
 #Hold
 import pdb
 from sqlalchemy.engine import create_engine
@@ -17,6 +18,7 @@ def parse_commandline():
     """
     parser = optparse.OptionParser()
     parser.add_option("--Label", help="Class of glitch you want to upload images for")
+    parser.add_option("--detector", help="Class of glitch you want to upload images for")
     opts, args = parser.parse_args()
 
     return opts
@@ -31,15 +33,19 @@ opts = parse_commandline()
 Panoptes.connect()
 project = Project.find(slug='zooniverse/gravity-spy')
 
-engine = create_engine('postgresql://{0}@localhost:5432/gravityspy'.format(os.environ['USER']))
+
+engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
+
 triggers = pd.read_sql('glitches',engine)
-triggers = triggers.loc[triggers.UploadFlag == 0]
+triggers = triggers.loc[(triggers.UploadFlag == 0) & (triggers.ifo == opts.detector)]
+triggers = triggers.iloc[np.where(triggers.Filename1.apply(os.path.isfile )==True)]
 
 labels = [opts.Label]
 
 startTime = time.time()
 for iLabel in labels:
     tmp1 = triggers.loc[(triggers.Label == iLabel)]
+    print('{0} has {1} trigger not uploaded'.format(opts.Label,len(tmp1)))
     for iSubjectSet in tmp1.subjectset.unique():
         subjectset = SubjectSet.find(int(iSubjectSet))
         tmp = tmp1.loc[tmp1.subjectset == iSubjectSet]
@@ -64,7 +70,7 @@ for iLabel in labels:
             subject.save()
             subjectsToUpload.append(subject)
             iT = iT + 1
-            if iT == 100:
+            if iT == 200:
                 break
         subjectset.add(subjectsToUpload)
         for iID in IDlist:

@@ -175,7 +175,8 @@ elif opts.O1GlitchClassification:
 else:
     ValueError("Please supply type of summary page you want")
 
-engine = create_engine('postgresql://scott.coughlin@localhost:5432/gravityspy')
+
+engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
 metadata = pd.read_sql('glitches',engine)
 
 # Get types from label columns

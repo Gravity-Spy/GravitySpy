@@ -1,0 +1,292 @@
+/* src/config.h.in.  Generated from configure.ac by autoheader.  */
+
+/* Define if building universal (internal helper macro) */
+#undef AC_APPLE_UNIVERSAL_BUILD
+
+/* Define to 1 to use GSL C99 inline code */
+#undef GSL_C99_INLINE
+
+/* Define to 1 to turn GSL range checking off */
+#undef GSL_RANGE_CHECK_OFF
+
+/* Define to 1 if compiler supports AVX2 SIMD extensions */
+#undef HAVE_AVX2_COMPILER
+
+/* Define to 1 if compiler supports AVX SIMD extensions */
+#undef HAVE_AVX_COMPILER
+
+/* Define to 1 if you have the `backtrace' function. */
+#undef HAVE_BACKTRACE
+
+/* Define to 1 if you have the <boinc/boinc_api.h> header file. */
+#undef HAVE_BOINC_BOINC_API_H
+
+/* Define to 1 if you have the `clock_gettime' function. */
+#undef HAVE_CLOCK_GETTIME
+
+/* Define to 1 if you have the <cpuid.h> header file. */
+#undef HAVE_CPUID_H
+
+/* Define to 1 if you have the declaration of `TIOCGWINSZ', and to 0 if you
+   don't. */
+#undef HAVE_DECL_TIOCGWINSZ
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
+/* Define to 1 if you have the <execinfo.h> header file. */
+#undef HAVE_EXECINFO_H
+
+/* Define to 1 if you have the <fftw3.h> header file. */
+#undef HAVE_FFTW3_H
+
+/* Define to 1 if you have the `fileno' function. */
+#undef HAVE_FILENO
+
+/* Define if gethostname prototype is in unistd.h */
+#undef HAVE_GETHOSTNAME_PROTOTYPE
+
+/* Define to 1 if you have the <glob.h> header file. */
+#undef HAVE_GLOB_H
+
+/* Define to 1 if you have the `gmtime_r' function. */
+#undef HAVE_GMTIME_R
+
+/* Define to 1 if you have the <gsl/gsl_errno.h> header file. */
+#undef HAVE_GSL_GSL_ERRNO_H
+
+/* Defined if you have HDF5 support */
+#undef HAVE_HDF5
+
+/* Define to 1 to use inline code */
+#undef HAVE_INLINE
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `ioctl' function. */
+#undef HAVE_IOCTL
+
+/* Define to 1 if you have the `isatty' function. */
+#undef HAVE_ISATTY
+
+/* Define to 1 if you have the `fftw3' library (-lfftw3). */
+#undef HAVE_LIBFFTW3
+
+/* Define to 1 if you have the `fftw3f' library (-lfftw3f). */
+#undef HAVE_LIBFFTW3F
+
+/* Define to 1 if you have the `gsl' library (-lgsl). */
+#undef HAVE_LIBGSL
+
+/* Define to 1 if you have the `gslcblas' library (-lgslcblas). */
+#undef HAVE_LIBGSLCBLAS
+
+/* Define to 1 if you have the `m' library (-lm). */
+#undef HAVE_LIBM
+
+/* Define to 1 if you have the `mkl_rt' library (-lmkl_rt). */
+#undef HAVE_LIBMKL_RT
+
+/* Define to 1 if you have the `pthread' library (-lpthread). */
+#undef HAVE_LIBPTHREAD
+
+/* Define to 1 if you have the `sunmath' library (-lsunmath). */
+#undef HAVE_LIBSUNMATH
+
+/* Define to 1 if you have the `localtime_r' function. */
+#undef HAVE_LOCALTIME_R
+
+/* Define to 1 if you have the <malloc.h> header file. */
+#undef HAVE_MALLOC_H
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the <mkl_dfti.h> header file. */
+#undef HAVE_MKL_DFTI_H
+
+/* Define to 1 if you have the `pclose' function. */
+#undef HAVE_PCLOSE
+
+/* Define to 1 if you have the `popen' function. */
+#undef HAVE_POPEN
+
+/* Define to 1 if you have the `posix_memalign' function. */
+#undef HAVE_POSIX_MEMALIGN
+
+/* Define to 1 if you have the <pthread.h> header file. */
+#undef HAVE_PTHREAD_H
+
+/* Have PTHREAD_PRIO_INHERIT. */
+#undef HAVE_PTHREAD_PRIO_INHERIT
+
+/* Define to 1 if you have the `putenv' function. */
+#undef HAVE_PUTENV
+
+/* Define to 1 if you have the <regex.h> header file. */
+#undef HAVE_REGEX_H
+
+/* Define to a string listing all the SIMD extensions supported by the C
+   compiler */
+#undef HAVE_SIMD_COMPILER
+
+/* Define to 1 if compiler supports SSE2 SIMD extensions */
+#undef HAVE_SSE2_COMPILER
+
+/* Define to 1 if compiler supports SSE3 SIMD extensions */
+#undef HAVE_SSE3_COMPILER
+
+/* Define to 1 if compiler supports SSE4.1 SIMD extensions */
+#undef HAVE_SSE4_1_COMPILER
+
+/* Define to 1 if compiler supports SSE4.2 SIMD extensions */
+#undef HAVE_SSE4_2_COMPILER
+
+/* Define to 1 if compiler supports SSE SIMD extensions */
+#undef HAVE_SSE_COMPILER
+
+/* Define to 1 if compiler supports SSSE3 SIMD extensions */
+#undef HAVE_SSSE3_COMPILER
+
+/* Define to 1 if you have the `stat' function. */
+#undef HAVE_STAT
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if cpp supports the ANSI # stringizing operator. */
+#undef HAVE_STRINGIZE
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if `ws_col' is a member of `struct winsize'. */
+#undef HAVE_STRUCT_WINSIZE_WS_COL
+
+/* Define to 1 if you have the <sunmath.h> header file. */
+#undef HAVE_SUNMATH_H
+
+/* Define to 1 if you have the <sys/ioctl.h> header file. */
+#undef HAVE_SYS_IOCTL_H
+
+/* Define to 1 if you have the <sys/resource.h> header file. */
+#undef HAVE_SYS_RESOURCE_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/time.h> header file. */
+#undef HAVE_SYS_TIME_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Use fake qthread library for MKL Condor compatibility */
+#undef LALQTHREAD
+
+/* Define if using boinc library */
+#undef LAL_BOINC_ENABLED
+
+/* Define if using cuda library */
+#undef LAL_CUDA_ENABLED
+
+/* Set default value of lalDebugLevel */
+#undef LAL_DEFAULT_DEBUG_LEVEL
+
+/* Define if using fftw3 library */
+#undef LAL_FFTW3_ENABLED
+
+/* Define if using fftw3 library */
+#undef LAL_FFTW3_MEMALIGN_ENABLED
+
+/* Define if using HDF5 library */
+#undef LAL_HDF5_ENABLED
+
+/* Use pthread mutex lock for threadsafety */
+#undef LAL_PTHREAD_LOCK
+
+/* LAL Version */
+#undef LAL_VERSION
+
+/* LAL Version Devel Number */
+#undef LAL_VERSION_DEVEL
+
+/* LAL Version Major Number */
+#undef LAL_VERSION_MAJOR
+
+/* LAL Version Micro Number */
+#undef LAL_VERSION_MICRO
+
+/* LAL Version Minor Number */
+#undef LAL_VERSION_MINOR
+
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
+#undef LT_OBJDIR
+
+/* Use functions rather than macros */
+#undef NOLALMACROS
+
+/* Name of package */
+#undef PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* Define to necessary symbol if this constant uses a non-standard name on
+   your system. */
+#undef PTHREAD_CREATE_JOINABLE
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
+#undef TIME_WITH_SYS_TIME
+
+/* Version number of package */
+#undef VERSION
+
+/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
+   significant byte first (like Motorola and SPARC, unlike Intel). */
+#if defined AC_APPLE_UNIVERSAL_BUILD
+# if defined __BIG_ENDIAN__
+#  define WORDS_BIGENDIAN 1
+# endif
+#else
+# ifndef WORDS_BIGENDIAN
+#  undef WORDS_BIGENDIAN
+# endif
+#endif
+
+/* Define to empty if `const' does not conform to ANSI C. */
+#undef const
+
+/* Define to `unsigned int' if <sys/types.h> does not define. */
+#undef size_t
+
+/* Define to `int' if <sys/types.h> does not define. */
+#undef ssize_t
