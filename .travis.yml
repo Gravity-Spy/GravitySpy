@@ -47,6 +47,7 @@ before_script:
 - pip list installed
 
 script:
+- pip install ${PRE} unittest2 coveralls "pytest>=2.8"
 - . .travis/run-tests.sh
 
 after_success:
