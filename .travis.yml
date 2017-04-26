@@ -40,12 +40,14 @@ before_install:
 - pip install ${PRE} -r requirements.txt
 - .travis/build-lal.sh
 
-install:
-- pip install --editable .
+#install:
+#- pip install --editable .
+
+before_script:
+- pip list installed
 
 script:
-- pip install ${PRE} unittest2 coveralls "pytest>=2.8"
-- coverage run ./setup.py test
+- . .travis/run-tests.sh
 
 after_success:
 - coveralls
