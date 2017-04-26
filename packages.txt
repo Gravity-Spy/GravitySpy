@@ -1,3 +1,4 @@
+panoptes-client
 cython
 six
 numpy
