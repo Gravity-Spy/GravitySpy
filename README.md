@@ -16,3 +16,4 @@ vi install.sh (Changing "scoughlin" to your username and making the necessary di
 add . /home/"username"/opt/O2/GravitySpy/bin/activate to you .bash_profile
 
 [![Build Status](https://travis-ci.org/scottcoughlin2014/GravitySpy.svg?branch=master)](https://travis-ci.org/scottcoughlin2014/GravitySpy)
+[![Coverage Status](https://coveralls.io/repos/github/scottcoughlin2014/GravitySpy/badge.svg?branch=master)](https://coveralls.io/github/scottcoughlin2014/GravitySpy?branch=master)
