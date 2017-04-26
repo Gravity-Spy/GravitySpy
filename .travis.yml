@@ -1,0 +1,102 @@
+language: python
+
+addons:
+  apt:
+    sources:
+      - sourceline: deb http://software.ligo.org/lscsoft/debian wheezy contrib
+        key_url: http://software.ligo.org/keys/deb/lscsoft.key
+      - sourceline: deb-src http://software.ligo.org/lscsoft/debian wheezy contrib
+        key_url: http://software.ligo.org/keys/deb/lscsoft.key
+    packages:
+      # generic packages
+      - gcc
+      - gfortran
+      - libblas-dev
+      - liblapack-dev
+      # lal dependencies
+      - pkg-config
+      - zlib1g-dev
+      - libgsl0-dev
+      - swig
+      - bc
+      - libfftw3-dev
+      - libframe-dev
+      # nds2 dependencies
+      - libsasl2-2
+      # misc python dependencies
+      - texlive-latex-extra
+      - texlive-fonts-recommended
+      - dvipng
+      - libhdf5-serial-dev
+
+python:
+  - '2.7'
+  - '3.5'
+  - 'nightly'
+
+env:
+  # minimal build, normal tests
+  - PIP_FLAGS="--quiet" MINIMAL=true PYTEST_FLAGS="-v -r s"
+  # normal build, normal tests
+  - PIP_FLAGS="--quiet" MINIMAL=false PYTEST_FLAGS="-v -r s"
+  # normal build, pedantic tests
+  - PIP_FLAGS="--quiet" MINIMAL=false PYTEST_FLAGS="-v -r s --strict"
+  # pre-release build, pedantic tests
+  - PIP_FLAGS="--quiet --pre" MINIMAL=false PYTEST_FLAGS="-v -r s --strict"
+
+matrix:
+  allow_failures:
+    - python: '2.7'
+      env: PIP_FLAGS="--quiet --pre" MINIMAL=false PYTEST_FLAGS="-v -r s --strict"
+    - python: '3.5'
+    - python: 'nightly'
+  fast_finish: true
+
+before_install:
+  # update pip
+  - pip install ${PIP_FLAGS} --upgrade pip
+
+  # build and install numpy first
+  - pip install ${PIP_FLAGS} "numpy>=1.7"
+
+  # build src packages and set 'latest' package versions (if required)
+  - source .travis/build-src-dependencies.sh
+
+  # install cython to speed up scipy build
+  - travis_retry pip install ${PIP_FLAGS} --install-option="--no-cython-compile" Cython
+
+  # install testing dependencies
+  - pip install ${PIP_FLAGS} coveralls "pytest>=2.8" unittest2
+
+install:
+  # install dependencies (using version-dependent requirements if needed)
+  - . .travis/install-requirements.sh
+  # add extra dependencies for testing
+  - pip install ${PIP_FLAGS} -r requirements-extra.txt
+  # build
+  - python setup.py build
+
+script:
+  - . .travis/run-tests.sh
+  - pip install . -vvv
+
+after_success:
+  - coveralls
+
+notifications:
+  slack:
+    secure: jQdoSpwNbUnq0Eo7o6Ko7vuhu58LQdfy8jFKxLUnUjv/GLezK/PPAQCU9SgmyDPh1yD8sb5Xa8UtbNfGtpYdwBAGwZxPHz3oQQAflivFwcF6UP7/NlAB9muSOOnL0QfQyX1I4sIKOkX+gkl+TBciX4v58B8NUU02dDkwDqTLUqQ=
+
+cache:
+  apt: true
+  pip: true
+  ccache: true
+  directories:
+    - ./python-${TRAVIS_PYTHON_VERSION}-lal/
+    - ./python-${TRAVIS_PYTHON_VERSION}-lalframe/
+    - ./python-${TRAVIS_PYTHON_VERSION}-nds2-client/
+before_cache:
+  - rm -f $HOME/.cache/pip/log/debug.log
+  - rm -f ./python-${TRAVIS_PYTHON_VERSION}-lal/config.log
+  - rm -f ./python-${TRAVIS_PYTHON_VERSION}-lalframe/config.log
+  - rm -f ./python-${TRAVIS_PYTHON_VERSION}-nds2-client/config.log
