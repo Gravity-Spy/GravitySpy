@@ -21,7 +21,7 @@
 
 import datetime
 
-from compat import unittest
+import unittest2
 
 from astropy.units import (UnitConversionError, Quantity)
 
@@ -33,7 +33,7 @@ GPS = 630720013
 __author__ = 'Duncan Macleod <duncan.macleod@ligo.org>'
 
 
-class TimeTests(unittest.TestCase):
+class TimeTests(unittest2.TestCase):
     """`TestCase` for the time module
     """
     def test_to_gps(self):
@@ -82,4 +82,4 @@ class TimeTests(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest2.main()
