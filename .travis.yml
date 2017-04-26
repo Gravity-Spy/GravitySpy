@@ -7,77 +7,49 @@ addons:
         key_url: http://software.ligo.org/keys/deb/lscsoft.key
       - sourceline: deb-src http://software.ligo.org/lscsoft/debian wheezy contrib
         key_url: http://software.ligo.org/keys/deb/lscsoft.key
-      - ubuntu-toolchain-r-test
     packages:
-      # generic packages
-      - gcc
-      - gfortran
-      - libblas-dev
-      - liblapack-dev
-      # lal dependencies
-      - pkg-config
-      - zlib1g-dev
-      - libgsl0-dev
-      - swig
-      - bc
-      - libfftw3-dev
-      # lalframe dependencies
-      - libframe-dev
-      # framecpp dependencies
-      - g++-4.7
-      # nds2 dependencies
-      - libsasl2-2
-      # misc python dependencies
-      - texlive-latex-extra
-      - texlive-fonts-recommended
-      - dvipng
-      - libhdf5-serial-dev
+      - gfortran  # scipy
+      - libblas-dev  # scipy
+      - liblapack-dev  # scipy
+      - swig  # m2crypto
+      - pkg-config  # lal
+      - zlib1g-dev  # lal
+      - libgsl0-dev  # lal
+      - swig  # lal
+      - bc  # lal
+      - libfftw3-dev  # lal
 
 python:
   - '2.7'
   - '3.5'
 
 env:
-  # minimal build, normal tests
-  - PIP_FLAGS="--upgrade" MINIMAL=true PYTEST_FLAGS="-v -r s"
-  # normal build, normal tests
-  - PIP_FLAGS="--upgrade" MINIMAL=false PYTEST_FLAGS="-v -r s"
-  # normal build, pedantic tests
-  - PIP_FLAGS="--upgrade" MINIMAL=false PYTEST_FLAGS="-v -r s --strict"
-  # pre-release build, pedantic tests
-  - PIP_FLAGS="--upgrade --pre" MINIMAL=false PYTEST_FLAGS="-v -r s --strict"
+  global:
+    - LAL_VERSION="6.18.0"
+  matrix:
+    - PIP_FLAGS="--quiet"
+    - PIP_FLAGS="--quiet --pre"
 
 matrix:
   allow_failures:
-    - python: '2.7'
-      env: PIP_FLAGS="--upgrade --pre" MINIMAL=false PYTEST_FLAGS="-v -r s --strict"
     - python: '3.5'
   fast_finish: true
 
 before_install:
-  # update pip
-  - pip install ${PIP_FLAGS} --upgrade pip
-
-  # build and install numpy first (for SWIG bindings)
-  - pip install ${PIP_FLAGS} "numpy>=1.10"
-
-  # build src packages and set 'latest' package versions (if required)
-  - source .travis/build-src-dependencies.sh
-
-  # install cython to speed up scipy build
-  - travis_retry pip install ${PIP_FLAGS} --install-option="--no-cython-compile" Cython
-
-  # install dependencies
-  - pip install ${PIP_FLAGS} -r requirements.txt
+  - pip install -q --upgrade pip
+  - pip install ${PRE} -r requirements.txt
+  - .travis/build-lal.sh
 
 install:
-  - pip install .
-
-before_script:
-  - pip list installed
+  # note: need --editable for coverage with `which ...` to work
+  - pip install --editable .
 
 script:
-  - . .travis/run-tests.sh
+  - pip install ${PRE} unittest2 coveralls "pytest>=2.8"
+  - coverage run ./setup.py test
+  - coverage run --append `which hveto` --help
+  - coverage run --append `which hveto-cache-events` --help
+  - coverage run --append `which hveto-trace` --help
 
 after_success:
   - coveralls
@@ -85,17 +57,5 @@ after_success:
 cache:
   apt: true
   pip: true
-  ccache: true
   directories:
-    - ./python-${TRAVIS_PYTHON_VERSION}-lal/
-    - ./python-${TRAVIS_PYTHON_VERSION}-framecpp/
-    - ./python-${TRAVIS_PYTHON_VERSION}-ldas-tools-al/
-    - ./python-${TRAVIS_PYTHON_VERSION}-lalframe/
-    - ./python-${TRAVIS_PYTHON_VERSION}-nds2-client/
-before_cache:
-  - rm -f $HOME/.cache/pip/log/debug.log
-  - rm -f ./python-${TRAVIS_PYTHON_VERSION}-lal/config.log
-  - rm -f ./python-${TRAVIS_PYTHON_VERSION}-ldas-tools-al/config.log
-  - rm -f ./python-${TRAVIS_PYTHON_VERSION}-framecpp/config.log
-  - rm -f ./python-${TRAVIS_PYTHON_VERSION}-lalframe/config.log
-  - rm -f ./python-${TRAVIS_PYTHON_VERSION}-nds2-client/CMakeFiles/CMakeError.log ./python-${TRAVIS_PYTHON_VERSION}-nds2-client/CMakeFiles/CMakeOutput.log
+    - lal-${LAL_VERSION}
