@@ -89,12 +89,7 @@ def parse_commandline():
 ##########################                     ################################
 ###############################################################################
 
-def main():
-    # Parse commandline arguments
-
-    import time
-    start = time.time()
-    opts = parse_commandline()
+def main(inifile,eventTime,ID,outDir,pathToModel='./ML/trained_model/',uniqueID=True,NSDF=False,runML=False,HDF5=False,PostgreSQL=False,verbose=False):
 
     ###########################################################################
     #                                   Parse Ini File                        #
@@ -102,7 +97,7 @@ def main():
 
     # ---- Create configuration-file-parser object and read parameters file.
     cp = ConfigParser.ConfigParser()
-    cp.read(opts.inifile)
+    cp.read(inifile)
 
     # ---- Read needed variables from [parameters] and [channels] sections.
     alwaysPlotFlag = cp.getint('parameters', 'alwaysPlotFlag')
@@ -127,19 +122,19 @@ def main():
     ###########################################################################
 
     # if outputDirectory not specified, make one based on center time
-    if opts.outDir is None:
-        outDir = './scans'
+    if outDir is None:
+        outDirtmp = './scans'
     else:
-        outDir = opts.outDir + '/' + opts.ID + '/' + opts.ID
-    outDir += '/'
+        outDirtmp = outDir + '/' + ID + '/' + ID
+    outDirtmp += '/'
 
     # report status
-    if not os.path.isdir(outDir):
-        if opts.verbose:
+    if not os.path.isdir(outDirtmp):
+        if verbose:
             print 'creating event directory'
-        os.makedirs(outDir)
-    if opts.verbose:
-        print 'outputDirectory:  {0}'.format(outDir)
+        os.makedirs(outDirtmp)
+    if verbose:
+        print 'outputDirectory:  {0}'.format(outDirtmp)
 
     ########################################################################
     #     Determine if this is a normal omega scan or a Gravityspy         #
@@ -147,18 +142,18 @@ def main():
     #    files and what not must be generated                              #
     ########################################################################
 
-    if opts.uniqueID:
-        IDstring = opts.ID
+    if uniqueID:
+        IDstring = ID
     else:
-        IDstring = "{0:.2f}".format(opts.eventTime)
+        IDstring = "{0:.2f}".format(eventTime)
 
     ###########################################################################
     #               Process Channel Data                                      #
     ###########################################################################
 
     # find closest sample time to event time
-    centerTime = np.floor(opts.eventTime) + \
-               np.round((opts.eventTime - np.floor(opts.eventTime)) * \
+    centerTime = np.floor(eventTime) + \
+               np.round((eventTime - np.floor(eventTime)) * \
                      sampleFrequency) / sampleFrequency
 
     # determine segment start and stop times
@@ -166,7 +161,7 @@ def main():
     stopTime = startTime + blockTime
 
     # Read in the data
-    if opts.NSDF:
+    if NSDF:
         data = TimeSeries.fetch(channelName, startTime, stopTime)
     else:
         connection = datafind.GWDataFindHTTPConnection()
@@ -229,7 +224,7 @@ def main():
         plot.add_colorbar(cmap='viridis', label='Normalized energy',
                           clim=plotNormalizedERange, pad="3%", width="5%")
         dur = float(plotTimeRanges[i])
-        plot.save(outDir + detectorName + '_' + IDstring + '_spectrogram_' + str(dur) +'.png')
+        plot.save(outDirtmp + detectorName + '_' + IDstring + '_spectrogram_' + str(dur) +'.png')
 
     testFig = Plot(figsize=(27,6))
     for i, iAx in enumerate(superFig.axes):
@@ -247,13 +242,12 @@ def main():
     superFig.add_colorbar(cmap='viridis', label='Normalized energy',
                           clim=plotNormalizedERange, pad="3%", width="5%")
     superFig.suptitle(title,fontsize=mylabelfontsize, color=myColor,x=0.51)
-    superFig.save(outDir + IDstring + '.png',bbox_inches='tight')
-    pdb.set_trace()
+    superFig.save(outDirtmp + IDstring + '.png',bbox_inches='tight')
 
-    if opts.runML:
+    if runML:
         # Create directory called "Classified" were images that were successfully classified go.
         workFlow = 'Classified'
-        finalPath = opts.outDir + '/' + workFlow
+        finalPath = outDir + '/' + workFlow
 
         if not os.path.isdir(finalPath):
             os.makedirs(finalPath)
@@ -270,13 +264,13 @@ def main():
         classes.extend(["uniqueID","Label","workflow","subjectset","Filename1","Filename2","Filename3","Filename4","UploadFlag"])
 
         # First label the image
-        lastPath = (outDir).split('/')[-2]
-        make_pickle.main(outDir.replace(lastPath, "", 1),
-                         outDir + '/pickleddata/', 1, opts.verbose)
-        scores, MLlabel = label_glitches.main(outDir + '/pickleddata/',
-                                              '{0}'.format(opts.pathToModel),
-                                              outDir + '/labeled/',
-                                              opts.verbose)
+        lastPath = (outDirtmp).split('/')[-2]
+        make_pickle.main(outDirtmp.replace(lastPath, "", 1),
+                         outDirtmp + '/pickleddata/', 1, verbose)
+        scores, MLlabel = label_glitches.main(outDirtmp + '/pickleddata/',
+                                              '{0}'.format(pathToModel),
+                                              outDirtmp + '/labeled/',
+                                              verbose)
         # Determine label
         Label = classes[MLlabel]
 
@@ -285,7 +279,7 @@ def main():
         scores = scores[1::]
         scores = [float(iScore) for iScore in scores]
         # Append uniqueID to list so when we update sql we will know which entry to update
-        scores.append(opts.ID)
+        scores.append(ID)
         # Append label
         scores.append(Label)
 
@@ -297,10 +291,10 @@ def main():
                      subjectSetNum = workflowDictSubjectSets[iWorkflow][Label][1]
                      break
 
-        subject1 = '{0}/{1}_{2}_spectrogram_0.5.png'.format(finalPath,detectorName,opts.ID)
-        subject2 = '{0}/{1}_{2}_spectrogram_1.0.png'.format(finalPath,detectorName,opts.ID)
-        subject3 = '{0}/{1}_{2}_spectrogram_2.0.png'.format(finalPath,detectorName,opts.ID)
-        subject4 = '{0}/{1}_{2}_spectrogram_4.0.png'.format(finalPath,detectorName,opts.ID)
+        subject1 = '{0}/{1}_{2}_spectrogram_0.5.png'.format(finalPath,detectorName,ID)
+        subject2 = '{0}/{1}_{2}_spectrogram_1.0.png'.format(finalPath,detectorName,ID)
+        subject3 = '{0}/{1}_{2}_spectrogram_2.0.png'.format(finalPath,detectorName,ID)
+        subject4 = '{0}/{1}_{2}_spectrogram_4.0.png'.format(finalPath,detectorName,ID)
 
         scores.append(workflowNum)
         scores.append(subjectSetNum)
@@ -313,7 +307,7 @@ def main():
 
         scoresTable = pd.DataFrame([scores],columns=classes)
 
-        if opts.PostgreSQL:
+        if PostgreSQL:
             engine = create_engine(
                                    'postgresql://{0}:{1}'\
                                    .format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD'])\
@@ -327,13 +321,13 @@ def main():
                     SQLCommand = SQLCommand + '''\"{0}\" = {1}, '''.format(Column,columnDict[Column])
             SQLCommand = SQLCommand[:-2] + ' WHERE \"uniqueID\" = \'' + scoresTable.uniqueID.iloc[0] + "'"
             engine.execute(SQLCommand)
-        elif opts.HDF5:
-            scoresTable.to_hdf('{0}/ML_GSpy_{1}.h5'.format(opts.outDir,opts.ID),'gspy_ML_classification')
+        elif HDF5:
+            scoresTable.to_hdf('{0}/ML_GSpy_{1}.h5'.format(outDir,ID),'gspy_ML_classification')
 
-        system_call = "mv {0}*.png {1}".format(outDir,finalPath)
+        system_call = "mv {0}*.png {1}".format(outDirtmp,finalPath)
         os.system(system_call)
-        shutil.rmtree(outDir.replace(lastPath, "", 1))
-        print 'ML finished: {0}'.format(time.time()-start)
+        shutil.rmtree(outDirtmp.replace(lastPath, "", 1))
 
 if __name__ == '__main__':
-    main()
+    opts = parse_commandline()
+    main(opts.inifile,opts.eventTime,opts.ID,opts.outDir,opts.pathToModel,opts.uniqueID,opts.NSDF,opts.runML,opts.HDF5,opts.PostgreSQL,opts.verbose)
