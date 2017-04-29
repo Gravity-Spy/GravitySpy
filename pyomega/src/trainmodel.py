@@ -29,7 +29,7 @@ def parse_commandline():
 
 # example script
 
-#THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python trainmodel.py --path-to-golden /home/scoughlin/public_html/GravitySpy/TrainingSet2/ --path-to-pickle ./pickleddata/ --path-to-trained-model ./model --number-of-classes 20
+#THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python trainmodel.py --path-to-golden /home/scoughlin/public_html/GravitySpy/TrainingSet2/H1L1/ --path-to-pickle ./pickleddata/ --path-to-trained-model ./model --number-of-classes 22 --batchsize 500
 opts = parse_commandline()
 make_pickle.main(opts.path_to_golden,opts.path_to_pickle,0,opts.verbose)
 train_classifier.main(opts.batch_size,opts.nb_epoch,opts.train_flag,opts.path_to_pickle,opts.path_to_trained_model,opts.number_of_classes,opts.verbose)

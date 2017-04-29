@@ -163,7 +163,7 @@ def my_read_image(data_path, dataset_str):
                 test = test[66:532, 105:671, :]
                # plt.imshow(test)
                 test = rgb2gray(test)
-                test = rescale(test, [0.1, 0.1])
+                test = rescale(test, [0.1, 0.1], mode='constant')
                 # test = resize(test, (50, 50))
                 #num_feature = test.shape
                 dim = numpy.int(reduce(lambda x, y: x * y, test.shape))
@@ -177,7 +177,7 @@ def my_read_image(data_path, dataset_str):
 def my_read_image2(data_path, dataset_str):
 
     classes = os.listdir(data_path)
-    classes = [c for c in classes if not c.startswith('.')]
+    classes = [c for c in classes if os.path.isdir(data_path + c)]
     classes = sorted(classes)
 
     imgs = []
@@ -199,7 +199,7 @@ def my_read_image2(data_path, dataset_str):
                     test = test[66:532, 105:671, :]
                     # plt.imshow(test)
                     test = rgb2gray(test)
-                    test = rescale(test, [0.1, 0.1])
+                    test = rescale(test, [0.1, 0.1], mode='constant')
                     # test = resize(test, (50, 50))
                     # num_feature = test.shape
                     dim = numpy.int(reduce(lambda x, y: x * y, test.shape))

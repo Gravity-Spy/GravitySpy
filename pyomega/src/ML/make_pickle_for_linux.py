@@ -79,9 +79,9 @@ def main(dataset_path,save_address,test_flag,verbose):
             file2 = rgb2gray(file2)
             file4 = rgb2gray(file4)
 
-            file5 = rescale(file5, [0.1, 0.1])
-            file2 = rescale(file2, [0.1, 0.1])
-            file4 = rescale(file4, [0.1, 0.1])
+            file5 = rescale(file5, [0.1, 0.1], mode='constant')
+            file2 = rescale(file2, [0.1, 0.1], mode='constant')
+            file4 = rescale(file4, [0.1, 0.1], mode='constant')
 
 
             dim = np.int(reduce(lambda x, y: x * y, file5.shape))
