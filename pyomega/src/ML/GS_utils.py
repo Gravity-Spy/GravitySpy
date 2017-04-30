@@ -232,9 +232,10 @@ def build_cnn(img_rows, img_cols):
     #                        init='glorot_uniform', activation='linear',
     #                        border_mode='valid',
     #                        input_shape=(1, img_rows, img_cols)))
-    model.add(Conv2D(nb_filter=100, nb_row=5, nb_col=5,
-                            init='glorot_uniform', activation='linear',
-                            border_mode='valid',
+    model.add(Conv2D(filters=100, kernel_size=(5, 5),
+                            kernel_initializer='glorot_uniform', 
+                            activation='linear',
+                            padding='valid',
                             input_shape=(1, img_rows, img_cols)))
     model.add(Activation('relu'))
 
@@ -244,9 +245,10 @@ def build_cnn(img_rows, img_cols):
     #model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
     #                        init='glorot_uniform', activation='linear',
     #                        border_mode='valid'))
-    model.add(Conv2D(nb_filter=100, nb_row=5, nb_col=5,
-                            init='glorot_uniform', activation='linear',
-                            border_mode='valid'))
+    model.add(Conv2D(filters=100, kernel_size=(5, 5),
+                            kernel_initializer='glorot_uniform', 
+                            activation='linear',
+                            padding='valid'))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     #model.add(Dropout(0.25))
