@@ -155,7 +155,7 @@ def main(batch_size,nb_epoch,train_flag,pickle_adr,save_address,number_of_classe
         print(concat_test.shape[0], 'test samples')
 
         final_model.fit(concat_train, cat_train_set_y_1,
-                            batch_size=batch_size, nb_epoch=nb_epoch, verbose=1,
+                            batch_size=batch_size, epochs=nb_epoch, verbose=1,
                             validation_data=(concat_valid, cat_valid_set_y_1), callbacks=[acc_checker])
 
         final_model.load_weights(model_adr + "/best_weights.h5")
@@ -173,7 +173,7 @@ def main(batch_size,nb_epoch,train_flag,pickle_adr,save_address,number_of_classe
 
         print('Number of training samples:', all_data_for_train.shape[0])
         final_model.fit(all_data_for_train, all_label_for_train,
-                    batch_size=batch_size, nb_epoch=nb_epoch, verbose=1,
+                    batch_size=batch_size, epochs=nb_epoch, verbose=1,
                     validation_data=(concat_valid, cat_valid_set_y_1), callbacks=[acc_checker])
         final_model.load_weights(model_adr + "/best_weights.h5")
 
