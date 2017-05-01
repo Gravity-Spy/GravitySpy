@@ -172,6 +172,7 @@ def main(inifile,eventTime,ID,outDir,pathToModel='./ML/trained_model/',uniqueID=
     if data.sample_rate.decompose().value != sampleFrequency:
         data = data.resample(sampleFrequency)
 
+
     qScan = data.q_transform(qrange=(4, 64), frange=(10, 2048),
                              gps=centerTime, search=0.5, tres=0.001,
                              fres=0.5, outseg=None, whiten=True)
@@ -206,9 +207,10 @@ def main(inifile,eventTime,ID,outDir,pathToModel='./ML/trained_model/',uniqueID=
     # Create one image containing all spectogram grams
     superFig = Plot(figsize=(27,6))
     for i, spec in enumerate(specsgrams):
+        indFig = Plot(figsize=[8, 6])
         superFig.add_spectrogram(spec,newax=True)
-        plot = spec.plot(figsize=[8, 6])
-        ax = plot.gca()
+        indFig.add_spectrogram(spec)
+        ax = indFig.gca()
         ax.set_position([0.125, 0.1, 0.775, 0.8])
         ax.set_epoch(centerTime)
         ax.set_yscale('log', basey=2)
@@ -221,10 +223,10 @@ def main(inifile,eventTime,ID,outDir,pathToModel='./ML/trained_model/',uniqueID=
             axis.set_major_formatter(ScalarFormatter())
         plt.tick_params(axis='both', which='major', labelsize=myfontsize)
         ax.grid(False)
-        plot.add_colorbar(cmap='viridis', label='Normalized energy',
+        indFig.add_colorbar(cmap='viridis', label='Normalized energy',
                           clim=plotNormalizedERange, pad="3%", width="5%")
         dur = float(plotTimeRanges[i])
-        plot.save(outDirtmp + detectorName + '_' + IDstring + '_spectrogram_' + str(dur) +'.png')
+        indFig.save(outDirtmp + detectorName + '_' + IDstring + '_spectrogram_' + str(dur) +'.png')
 
     testFig = Plot(figsize=(27,6))
     for i, iAx in enumerate(superFig.axes):
