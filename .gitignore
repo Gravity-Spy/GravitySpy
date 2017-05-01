@@ -1,2 +1,19 @@
+# unwanted file-types
 *.pyc
+/*.patch
 *.ipynb_checkpoints
+
+# build products
+/gravityspy/version.py
+/build/
+/dist/
+/gravityspy.egg-info
+/.eggs/
+
+# documentation products
+/docs/_build/
+/docs/api/
+
+# test products
+/.cache/
+/.coverage
