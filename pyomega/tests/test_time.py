@@ -8,6 +8,7 @@ import ML.make_pickle_for_linux as make_pickle
 import ML.labelling_test_glitches as label_glitches
 TEST_IMAGES_PATH = os.path.join(os.path.split(__file__)[0], 'data',
 'images')
+print(TEST_IMAGES_PATH)
 
 Score = 0.964064
 
