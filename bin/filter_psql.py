@@ -21,6 +21,7 @@ import numpy as np
 import optparse
 from sqlalchemy.engine import create_engine
 import pandas as pd
+import glue.segments
 
 __author__ = "Michael Coughlin <michael.coughlin@ligo.org>"
 __version__ = 1.0
@@ -41,7 +42,10 @@ def parse_commandline():
     parser.add_option("-b", "--database", help="Database (O1GlitchClassification,classification,glitches).", default="O1GlitchClassification")
     parser.add_option("-l", "--label", help="Label.",default ="Blip")
     parser.add_option("-o", "--outfile", help="Output file.",default ="test.csv")
-
+    parser.add_option("-f", "--segfile", help="segment file.",default ="test.dat")
+    parser.add_option("-p", "--padding", help="segment file padding.",type=int,default=1)
+    parser.add_option("-s", "--gpsStart", help="Start GPS Time.",type=int,default=1120000000)
+    parser.add_option("-e", "--gpsEnd", help="End GPS Time.",type=int,default=1140000000)
     parser.add_option("-v", "--verbose", action="store_true", default=False,
                       help="Run verbosely. (Default: False)")
 
@@ -68,12 +72,30 @@ detector = opts.detector
 database = opts.database
 label = opts.label
 outfile = opts.outfile
+segfile = opts.segfile
+padding = opts.padding
+gpsStart = opts.gpsStart
+gpsEnd = opts.gpsEnd
 
 engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
 tmp = pd.read_sql(database,engine)
 tmp = tmp.loc[tmp.ifo == detector]
 tmp = tmp.loc[tmp.Label == label]
+tmp = tmp.loc[tmp.peakGPS >= gpsStart]
+tmp = tmp.loc[tmp.peakGPS <= gpsEnd]
 columns=["peakGPS","peak_frequency", "snr"]
 tmp.to_csv(outfile,columns=columns,index=False,header=True)
+
+segmentlist = glue.segments.segmentlist()
+for index, row in tmp.iterrows():
+    gps_floor = np.floor(row["peakGPS"]-padding)
+    gps_ceil = np.ceil(row["peakGPS"]+padding)
+    segmentlist.append(glue.segments.segment(gps_floor,gps_ceil))
+segmentlist.coalesce()
+
+fid = open(segfile,"w")
+for segment in segmentlist:
+    fid.write("%d %d\n"%(segment[0],segment[1]))
+fid.close()
 
 print "GPS: %.0f - %.0f"%(tmp["peakGPS"].min(),tmp["peakGPS"].max())
