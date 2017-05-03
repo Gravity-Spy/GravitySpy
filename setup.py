@@ -64,26 +64,26 @@ setup_requires = [
 ]
 install_requires = []
 requires = [
-    'panoptes-client'
-    'SQLAlchemy'
-    'cython'
-    'six'
-    'numpy'
-    'scipy'
-    'astropy'
-    'matplotlib'
-    'gitpython'
-    'h5py'
-    'jinja2'
-    'M2Crypto'
-    'pykerberos'
-    'python-cjson'
-    'pyRXP'
-    'scikit-image'
-    'Theano'
-    'keras'
-    'pandas'
-    'gwpy'
+    'panoptes-client',
+    'SQLAlchemy',
+    'cython',
+    'six',
+    'numpy',
+    'scipy',
+    'astropy',
+    'matplotlib',
+    'gitpython',
+    'h5py',
+    'jinja2',
+    'M2Crypto',
+    'pykerberos',
+    'python-cjson',
+    'pyRXP',
+    'scikit-image',
+    'Theano',
+    'keras',
+    'pandas',
+    'gwpy',
     'lscsoft-glue'
 ]
 tests_require = [
