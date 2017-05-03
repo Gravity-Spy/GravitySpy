@@ -8,3 +8,4 @@ else
 fi
 
 coverage run -m py.test -v -r s ${_strict} pyomega/
+coverage run --append `which wscan` --help
