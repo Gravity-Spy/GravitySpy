@@ -64,14 +64,27 @@ setup_requires = [
 ]
 install_requires = []
 requires = [
-    'numpy',
-    'matplotlib',
-    'scipy',
-    'glue',
-    'dqsegdb',
-    'gwpy',
-    'lxml',
-    'gwdetchar',  # for omega scans only
+    'panoptes-client'
+    'SQLAlchemy'
+    'cython'
+    'six'
+    'numpy'
+    'scipy'
+    'astropy'
+    'matplotlib'
+    'gitpython'
+    'h5py'
+    'jinja2'
+    'M2Crypto'
+    'pykerberos'
+    'python-cjson'
+    'pyRXP'
+    'scikit-image'
+    'Theano'
+    'keras'
+    'pandas'
+    'gwpy'
+    'lscsoft-glue'
 ]
 tests_require = [
     'pytest'
