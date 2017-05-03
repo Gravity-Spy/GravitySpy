@@ -1,10 +1,10 @@
 panoptes-client
 SQLAlchemy
 cython
-six
-numpy
-scipy
-astropy
+six >= 1.5
+numpy >= 1.10
+scipy >= 0.16
+astropy >= 1.2.1
 matplotlib
 gitpython
 h5py
