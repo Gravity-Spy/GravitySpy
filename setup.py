@@ -76,15 +76,15 @@ requires = [
     'jinja2',
     'M2Crypto',
     'pykerberos',
-    'python-cjson',
+    'python_cjson',
     'pyRXP',
-    'scikit-image',
+    'scikit_image',
     'Theano',
     'keras',
     'pandas',
     'gwpy',
-    'lscsoft-glue',
-    'panoptes-client',
+    'lscsoft_glue',
+    'panoptes_client',
 ]
 tests_require = [
     'pytest'
