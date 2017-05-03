@@ -16,8 +16,6 @@ import numpy as np
 import gzip
 import time
 
-import matplotlib.pyplot as plt
-
 import numpy
 import gzip
 import pickle

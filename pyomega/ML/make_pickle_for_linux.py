@@ -5,8 +5,6 @@ import getopt, sys, os
 from skimage import io
 from skimage.color import rgb2gray
 from skimage.transform import rescale
-import matplotlib.pyplot as plt
-
 
 '''
 By Sara Bahaadini and Neda Rohani, IVPL, Northwestern University.

@@ -37,7 +37,6 @@ def main(pickle_adr,model_adr,save_adr,verbose):
     np.random.seed(1986)  # for reproducibility
 
     img_rows, img_cols = 47, 57
-    nb_classes = 20
 
     # load a model and weights
     if verbose:
@@ -60,7 +59,6 @@ def main(pickle_adr,model_adr,save_adr,verbose):
     unlabelled_pickles = ['img_1.0*', 'img_2.0*', 'img_4.0*', 'img_5.0*']  # adding option to do in in alphabetical order
 
     # read duration 1 second
-
     dataset_test_unlabelled_1 = load_dataset_unlabelled_glitches(glob.glob(pickle_adr + unlabelled_pickles[0])[0],verbose)
     [test_set_unlabelled_x_1, test_set_unlabelled_y_1, test_set_unlabelled_name_1] = dataset_test_unlabelled_1
     test_set_unlabelled_x_1 = test_set_unlabelled_x_1.reshape(-1, 1, img_rows, img_cols)

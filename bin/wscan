@@ -10,7 +10,7 @@ import random
 import string
 import shutil
 import ConfigParser
-import optparse
+import argparse
 import json
 import rlcompleter
 import pdb
@@ -42,9 +42,10 @@ from glue import datafind
 from gwpy.timeseries import TimeSeries
 from gwpy.plotter import Plot
 
-import ML.make_pickle_for_linux as make_pickle
-import ML.labelling_test_glitches as label_glitches
-import API.projectStructure as Structure
+from pyomega import __version__
+import pyomega.ML.make_pickle_for_linux as make_pickle
+import pyomega.ML.labelling_test_glitches as label_glitches
+import pyomega.API.projectStructure as Structure
 
 pdb.Pdb.complete = rlcompleter.Completer(locals()).complete
 
@@ -56,32 +57,33 @@ pdb.Pdb.complete = rlcompleter.Completer(locals()).complete
 # Definite Command line arguments here
 
 def parse_commandline():
-    """Parse the options given on the command-line.
+    """Parse the arguments given on the command-line.
     """
-    parser = optparse.OptionParser()
-    parser.add_option("--inifile", help="Name of ini file of params")
-    parser.add_option("--eventTime", type=float, help="Trigger time of the glitch")
-    parser.add_option("--uniqueID", action="store_true", default=True,
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-V', '--version', action='version', version=__version__)
+    parser.add_argument("--inifile", help="Name of ini file of params", required=True)
+    parser.add_argument("--eventTime", type=float, help="Trigger time of the glitch", required=True)
+    parser.add_argument("--uniqueID", action="store_true", default=True,
                       help="Is this image being generated for the GravitySpy project,\
                       if so you must assign a uniqueID string to label the images instead of \
                       GPS time")
-    parser.add_option("--ID", help="The uniqueID string to be supplied with --uniqueID")
-    parser.add_option("--outDir", help="Outdir for images")
-    parser.add_option("--NSDF", action="store_true", default=False,
+    parser.add_argument("--ID", help="The uniqueID string to be supplied with --uniqueID")
+    parser.add_argument("--outDir", help="Outdir for images")
+    parser.add_argument("--NSDF", action="store_true", default=False,
                       help="If not on LIGO custers you will want to use NSDF server")
-    parser.add_option("--pathToModel", default='./ML/trained_model/',
+    parser.add_argument("--pathToModel", default='/home/machinelearning/GravitySpy/pyomega/ML/trained_model/',
                       help="Path to folder containing trained model")
-    parser.add_option("--runML", action="store_true", default=False,
+    parser.add_argument("--runML", action="store_true", default=False,
                       help="Run the ML classifer on the omega scans")
-    parser.add_option("--verbose", action="store_true", default=False, help="Run in Verbose Mode")
-    parser.add_option("--HDF5", action="store_true", default=False,
+    parser.add_argument("--verbose", action="store_true", default=False, help="Run in Verbose Mode")
+    parser.add_argument("--HDF5", action="store_true", default=False,
                       help="Store triggers in local HDF5 table format")
-    parser.add_option("--PostgreSQL", action="store_true", default=False,
+    parser.add_argument("--PostgreSQL", action="store_true", default=False,
                       help="Store triggers in a remote PostgreSQL DB")
-    opts, args = parser.parse_args()
+    args = parser.parse_args()
 
 
-    return opts
+    return args
 
 ###############################################################################
 ##########################                     ################################
@@ -89,7 +91,10 @@ def parse_commandline():
 ##########################                     ################################
 ###############################################################################
 
-def main(inifile,eventTime,ID,outDir,pathToModel='./ML/trained_model/',uniqueID=True,NSDF=False,runML=False,HDF5=False,PostgreSQL=False,verbose=False):
+def main(inifile,eventTime,ID,outDir,pathToModel='/home/machinelearning/GravitySpy/pyomega/ML/trained_model/',uniqueID=True,NSDF=False,runML=False,HDF5=False,PostgreSQL=False,verbose=False):
+
+    if (runML == True) and (HDF5==False) and (PostgreSQL==False):
+        raise ValueError('If you wish to run ML must select file format to save with. Most cases HDF5=True is what you want')
 
     ###########################################################################
     #                                   Parse Ini File                        #
@@ -200,7 +205,7 @@ def main(inifile,eventTime,ID,outDir,pathToModel='./ML/trained_model/',uniqueID=
     elif 1126400000 < startTime < 1137250000:
 	title = title + ' - O1'
     else:
-	ValueError("Time outside science or engineering run\
+	raise ValueError("Time outside science or engineering run\
 		   or more likely code not updated to reflect\
 		   new science run")
 
@@ -331,5 +336,5 @@ def main(inifile,eventTime,ID,outDir,pathToModel='./ML/trained_model/',uniqueID=
         shutil.rmtree(outDirtmp.replace(lastPath, "", 1))
 
 if __name__ == '__main__':
-    opts = parse_commandline()
-    main(opts.inifile,opts.eventTime,opts.ID,opts.outDir,opts.pathToModel,opts.uniqueID,opts.NSDF,opts.runML,opts.HDF5,opts.PostgreSQL,opts.verbose)
+    args = parse_commandline()
+    main(args.inifile,args.eventTime,args.ID,args.outDir,args.pathToModel,args.uniqueID,args.NSDF,args.runML,args.HDF5,args.PostgreSQL,args.verbose)

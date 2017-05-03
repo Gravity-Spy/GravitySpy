@@ -8,10 +8,6 @@ from functions_fusion import square_early_concatenate_feature
 import sys, getopt
 import gzip, os
 import cPickle
-from matplotlib import use
-use('agg')
-from matplotlib import (pyplot as plt, cm)
-
 
 '''
 By Sara Bahaadini and Neda Rohani, IVPL, Northwestern University.
