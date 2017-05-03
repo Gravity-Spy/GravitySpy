@@ -64,7 +64,6 @@ setup_requires = [
 ]
 install_requires = []
 requires = [
-    'panoptes-client',
     'SQLAlchemy',
     'cython',
     'six',
@@ -85,6 +84,7 @@ requires = [
     'pandas',
     'gwpy',
     'lscsoft-glue',
+    'panoptes-client',
 ]
 tests_require = [
     'pytest'
