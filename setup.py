@@ -84,7 +84,7 @@ requires = [
     'keras',
     'pandas',
     'gwpy',
-    'lscsoft-glue'
+    'lscsoft-glue',
 ]
 tests_require = [
     'pytest'
