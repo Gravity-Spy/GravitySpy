@@ -42,9 +42,9 @@ cmdclass = {}
 
 # -- versioning ---------------------------------------------------------------
 
-#import versioneer
-#__version__ = versioneer.get_version()
-#cmdclass.update(versioneer.get_cmdclass())
+import versioneer
+__version__ = versioneer.get_version()
+cmdclass.update(versioneer.get_cmdclass())
 
 # -- documentation ------------------------------------------------------------
 
@@ -95,7 +95,7 @@ scripts = glob.glob(os.path.join('bin', '*'))
 
 setup(name=DISTNAME,
       provides=[PACKAGENAME],
-      #version=__version__,
+      version=__version__,
       description=None,
       long_description=None,
       author=AUTHOR,
@@ -114,7 +114,7 @@ setup(name=DISTNAME,
           'http://software.ligo.org/lscsoft/source/glue-1.49.1.tar.gz',
           'http://software.ligo.org/lscsoft/source/dqsegdb-1.2.2.tar.gz',
       ],
-      test_suite='hveto.tests',
+      test_suite='pyomega.tests',
       use_2to3=True,
       classifiers=[
           'Programming Language :: Python',
