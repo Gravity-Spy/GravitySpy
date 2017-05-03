@@ -4,6 +4,7 @@
 __author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 
 import os
+import unittest2
 import pyomega.ML.make_pickle_for_linux as make_pickle
 import pyomega.ML.labelling_test_glitches as label_glitches
 TEST_IMAGES_PATH = os.path.join(os.path.split(__file__)[0], 'data',
