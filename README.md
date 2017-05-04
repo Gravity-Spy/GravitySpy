@@ -5,16 +5,6 @@ The gravityspy project contains three components. The code to produce the images
 
 ## Installing Gravity Spy on Clusters
 
-git checkout O2GravitySpy
-
-cd setup
-
-vi install.sh (Changing "scoughlin" to your username and making the necessary directories mkdir -p /home/scoughlin/src/O2/ and mkdir -p /home/scoughlin/opt/O2/ (yes this should be a part of the install.sh script)
-
-./install.sh
-
-add . /home/"username"/opt/O2/GravitySpy/bin/activate to you .bash_profile
-
 # ER10/O2 Gravity Spy
 
 # Livingston
@@ -24,5 +14,6 @@ add . /home/"username"/opt/O2/GravitySpy/bin/activate to you .bash_profile
 * Start Time of ER10: 1163203217
 * O1: Start time = 1126400000 September 15, 2015 -- End time = 1137250000 January 18, 2016
 
-[![Build Status](https://travis-ci.org/scottcoughlin2014/GravitySpy.svg?branch=master)](https://travis-ci.org/scottcoughlin2014/GravitySpy)
-[![Coverage Status](https://coveralls.io/repos/github/scottcoughlin2014/GravitySpy/badge.svg?branch=master)](https://coveralls.io/github/scottcoughlin2014/GravitySpy?branch=master)
+
+[![Build Status](https://travis-ci.org/Gravity-Spy/GravitySpy.svg?branch=master)](https://travis-ci.org/Gravity-Spy/GravitySpy)
+[![Coverage Status](https://coveralls.io/repos/github/Gravity-Spy/GravitySpy/badge.svg?branch=master)](https://coveralls.io/github/Gravity-Spy/GravitySpy?branch=master)
