@@ -5,7 +5,8 @@ six >= 1.5
 numpy >= 1.10
 scipy >= 0.16
 astropy >= 1.2.1
-matplotlib
+matplotlib>=1.4.1
+lscsoft-glue>=1.55.2
 gitpython
 h5py
 jinja2
@@ -18,4 +19,3 @@ Theano
 keras
 pandas
 gwpy
-lscsoft-glue
