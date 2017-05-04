@@ -3,17 +3,16 @@ This repo contains code for the GravitySpy Citizen Science project.
 
 The gravityspy project contains three components. The code to produce the images of the glitches that users will evalutate. The code that will evaluate user performance and image retireability colloquially known as the Crowd Sourcing code. Fianlly, the code that determines the Machine Learning labelling of an image, speifically a set of values indicating the classifiers confidence that it belongs in a given category.
 
-# Installing Gravity Spy on Clusters
+# Installing Gravity Spy on LIGO Data Grid (LDG) Clusters
 ## Create virtualEnv
-export KERAS_BACKEND=theano
-./GravitySpy-init $ENVDIR requirements.txt
-pip install git+https://github.com/scottcoughlin2014/GravitySpy.git
+* export KERAS_BACKEND=theano
+* ./GravitySpy-init $ENVDIR requirements.txt
+* pip install git+https://github.com/scottcoughlin2014/GravitySpy.git
 
 ## Running Example
-. $ENVDIR/bin/activate
-which wscan
-in examples directory run the commands in wscan.param
-The resulting label should score should be 0.964064
+* . $ENVDIR/bin/activate
+* which wscan
+* in examples directory run the commands in wscan.param. The resulting label should score should be 0.964064
 
 # ER10/O2 Gravity Spy
 
