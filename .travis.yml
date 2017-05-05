@@ -42,7 +42,7 @@ before_install:
 - .travis/build-lal.sh
 
 install:
-- pip install git+https://github.com/scottcoughlin2014/GravitySpy.git
+- pip install --editable . 
 
 before_script:
 - pip list installed
