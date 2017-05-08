@@ -1,0 +1,21 @@
+panoptes-client
+SQLAlchemy
+cython
+six >= 1.5
+numpy >= 1.10
+scipy >= 0.16
+astropy >= 1.2.1
+matplotlib>=1.4.1
+lscsoft-glue>=1.55.2
+gitpython
+h5py
+jinja2
+M2Crypto
+pykerberos
+python-cjson
+pyRXP
+scikit-image
+Theano
+keras
+pandas
+gwpy

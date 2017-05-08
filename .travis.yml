@@ -1,0 +1,69 @@
+language: python
+
+addons:
+  apt:
+    sources:
+    - sourceline: deb http://software.ligo.org/lscsoft/debian wheezy contrib
+      key_url: http://software.ligo.org/keys/deb/lscsoft.key
+    - sourceline: deb-src http://software.ligo.org/lscsoft/debian wheezy contrib
+      key_url: http://software.ligo.org/keys/deb/lscsoft.key
+    packages:
+    - gfortran
+    - libblas-dev
+    - liblapack-dev
+    - swig
+    - pkg-config
+    - zlib1g-dev
+    - libgsl0-dev
+    - swig
+    - bc
+    - libfftw3-dev
+
+python:
+- '2.7'
+- '3.5'
+
+env:
+  global:
+  - LAL_VERSION="6.18.0"
+  - KERAS_BACKEND=theano
+  matrix:
+  - PIP_FLAGS="--quiet"
+  - PIP_FLAGS="--quiet --pre"
+
+matrix:
+  allow_failures:
+  - python: '3.5'
+  fast_finish: true
+
+before_install:
+- pip install -q --upgrade pip
+- pip install ${PRE} -r requirements.txt
+- .travis/build-lal.sh
+
+install:
+- pip install --editable . 
+
+before_script:
+- pip list installed
+
+script:
+- pip install ${PRE} unittest2 coveralls "pytest>=2.8"
+- python -c "import keras.backend"
+  # set up keras backend
+- sed -i -e 's/"backend":[[:space:]]*"[^"]*/"backend":\ "'$KERAS_BACKEND'/g' ~/.keras/keras.json;
+- echo -e "Running tests with the following config:\n$(cat ~/.keras/keras.json)"
+- . .travis/run-tests.sh
+
+after_success:
+- coveralls
+
+cache:
+  apt: true
+  pip: true
+  directories:
+  - lal-${LAL_VERSION}
+
+notifications:
+  slack:
+    secure: bpQXCgDGTkylXJ3Oe7bpIPnKu/F+nkdUx3Xo9ff41D7x479KId+FnTB4A72pQZB9fMPTJSRbAQOJ7xgRDy6/6vEIAtMElzhkbT1qQChNTQDm/N2GaOTmtiVPIfs/63YwgR3Mc+ek6dwPAiU8sY3hO6Zihn+rfAJH/DjrPDNnOZBQxjRfu/3ND8lwGpmbWvVRo9OnuToTNzZROqGDs4TdABn46jZkiqFu5dmV77dv4aLIbxBrK7GCBlWQnqamgidWuVc4qcS2McGHamvI6403KTStyPCTyngYCaxiH0EeVJlnwnX0Gb7h/6ekrgBpX4rovspHJY9ojTUzTgGWIcu6Ssy8qZWgVNLXZDzTJFfsnoAivU8LB3y/Lb7rdyHkemhKW6ibQ08sktM38NYdDoo7oaHrWg0H2Lgx7rPW/EKgSvEdgG85zFGpWnYy834iUnUx1ZDB73AMnijHNv7YDUrkq1D9Ddeyng3/FGkRIailoqsRPJvNtNkBp94KnBJRqqOnWf4WorXUn7fPMcgEKQj+wCRAy7gUcuSVY1BKoXmTQ60FUOJpoY+KPMMnU/EM2zZ29xkg2c+/3yPDpVX5ABcI/La0gDoArywAeWpS1c8Qq6pQr/8XW8vspCaCm8MuNjQLVB8yCr8D6dBWE/rf50fzzGZD1unOdNLF73uLR5BqQ2g=

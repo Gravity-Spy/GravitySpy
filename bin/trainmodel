@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+
+import ConfigParser
+import optparse
+
+from matplotlib import use
+use('agg')
+from matplotlib import (pyplot as plt, cm)
+
+import ML.make_pickle_for_linux as make_pickle
+import ML.train_classifier as train_classifier
+
+# Definite Command line arguments here
+
+def parse_commandline():
+    """Parse the options given on the command-line.
+    """
+    parser = optparse.OptionParser()
+    parser.add_option("--path-to-golden", help="folder where labeled images live")
+    parser.add_option("--path-to-pickle", help="folder where pickled files will live")
+    parser.add_option("--path-to-trained-model", help="folder where the training model will live.")
+    parser.add_option("--batch-size", type=int, default=30,help="defines the batch size, 30 is a reasonable size")
+    parser.add_option("--nb-epoch", type=int, default=130,help="defines the number of iterations, 130 is reasonable. You can set it to 100 or below, if you have time concern for training.")
+    parser.add_option("--train-flag", type=int, default=0,help="a flag that shows all the golden set should be used for training the ML classifier, if 1, use training, validation and test set from golden set (ML experiments)")
+    parser.add_option("--number-of-classes", type=int, help="")
+    parser.add_option("--verbose", action="store_true", default=False,help="Run in Verbose Mode")
+    opts, args = parser.parse_args()
+
+
+    return opts
+
+# example script
+
+#THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python trainmodel.py --path-to-golden /home/scoughlin/public_html/GravitySpy/TrainingSet2/H1L1/ --path-to-pickle ./pickleddata/ --path-to-trained-model ./model --number-of-classes 22 --batch-size 500
+opts = parse_commandline()
+make_pickle.main(opts.path_to_golden,opts.path_to_pickle,0,opts.verbose)
+train_classifier.main(opts.batch_size,opts.nb_epoch,opts.train_flag,opts.path_to_pickle,opts.path_to_trained_model,opts.number_of_classes,opts.verbose)
