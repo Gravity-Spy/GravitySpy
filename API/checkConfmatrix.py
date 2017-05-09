@@ -10,6 +10,10 @@ import datetime
 import collections
 import operator
 
+from sqlalchemy.engine import create_engine
+
+engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
+
 pathToFiles = '/home/scoughlin/O2/Test/GravitySpy/API/'
 
 label_dict = {
@@ -34,7 +38,7 @@ label_dict = {
 'WNDRNGLN':18,'WANDERINGLINE':18,
 'WHSTL':19,'WHISTLE':19
 }
-worktolevel = {1610:1,1934:2,1935:3,2360:4,2117:5,3063:2360}
+worktolevel = {1610:1,1934:2,1935:3,2360:4,2117:5,3063:4}
 leveltoworkflow = {1:1610,2:1934,3:1935,4:2360,5:2117}
 def workflowtolevel(x):
     return worktolevel[x]
@@ -43,11 +47,10 @@ def leveltowork(x):
     return leveltoworkflow[x]
 
 
-classifications = pd.read_hdf('{0}/GravitySpy.h5'.format(pathToFiles))
+classifications = pd.read_sql('classifications',engine) 
 images = pd.read_hdf('{0}/images.h5'.format(pathToFiles))
-classifications = classifications.loc[classifications.links_user!= 0]
-classifications = classifications.loc[classifications.links_workflow!= 1479]
-classifications = classifications.loc[classifications.links_workflow!= 1936]
+classifications = classifications.loc[classifications.links_workflow.isin([1610,1934,1935,2360,3063])]
+
 classifications['Level'] = classifications.links_workflow.apply(workflowtolevel)
 # Merge classificaitons and images
 image_and_classification = classifications.merge(images)

@@ -10,9 +10,13 @@ import datetime
 import collections
 import operator
 
+from sqlalchemy.engine import create_engine
+
 ########################
 ####### Functions ######
 #########################
+
+engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
 
 pathToFiles = '/home/scoughlin/O2/Test/GravitySpy/API/'
 
@@ -42,9 +46,11 @@ label_dict = {
 'SCTTRDLGHT':14,'SCATTEREDLIGHT':14,
 'SCRTCH':15,'SCRATCHY':15,
 'TMT':16,'TOMTE':16,
-'VLNHRMNC500HZ':17,'VLNMDHRMNC500HZ':17, 'HRMNCS':17,'VIOLINMODEHARMONIC500HZ':17,
+'VLNHRMNC500HZ':17,'VLNMDHRMNC500HZ':17, 'HRMNCS':17,'VIOLINMODEHARMONIC500HZ':17,'VIOLINMODEHARMONIC':17,
 'WNDRNGLN':18,'WANDERINGLINE':18,
 'WHSTL':19,'WHISTLE':19
+#'1080Line':20,
+#'1400Ripple':21
 }
 
 #This function generically flatten a dict
@@ -61,7 +67,9 @@ def flatten(d, parent_key='', sep='_'):
     return dict(items)
 
 # Load lastID that was parsed
-lastID = pd.read_hdf('{0}/GravitySpy.h5'.format(pathToFiles),columns=['id']).max().iloc[0]
+
+#lastID = "16822410"
+lastID = pd.read_sql("select max(id) from classifications",engine).iloc[0].iloc[0]
 
 print(lastID)
 # Connect to panoptes and query all classifications done on project 1104 (i.e. GravitySpy)
@@ -106,7 +114,7 @@ classifications = classifications.select_dtypes(exclude=['object'])
 classifications = classifications[['created_at','id','links_project','links_subjects','links_user','links_workflow','metadata_finished_at','metadata_started_at','metadata_workflow_version','annotations_value_choiceINT']]
 classifications.loc[classifications.links_user.isnull(),'links_user'] = 0
 classifications.links_user = classifications.links_user.astype(int)
-classifications.to_hdf('{0}/GravitySpy.h5'.format(pathToFiles),'classifications',mode='a',format='table',append=True,data_columns=['id','links_subjects','links_user','links_workflow','annotations_value_choiceINT'])
+classifications.to_sql('classifications',engine,index=False,if_exists='append',chunksize=100)
 
 """
 # Load subjects info in case this is an image that has been previously labeled and getting the metadata information is superfluous
