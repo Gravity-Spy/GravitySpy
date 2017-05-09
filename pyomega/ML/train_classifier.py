@@ -26,7 +26,8 @@ def main(batch_size,nb_epoch,train_flag,pickle_adr,save_address,number_of_classe
 
     if verbose:
         print 'save adress', save_address
-        print 'test flag', test_flag
+        print 'train flag', train_flag
+
     if not os.path.exists(save_address):
         if verbose:
             print ('making... ' + save_address)
@@ -53,10 +54,6 @@ def main(batch_size,nb_epoch,train_flag,pickle_adr,save_address,number_of_classe
     print 'pickle_3: ', ad3
     print 'pickle_4: ', ad4
     print 'saving the trained model in: ', save_address
-
-   # if not os.path.exists(save_address):
-    #    print ('making... ' + save_address)
-    #    os.makedirs(save_address)
 
     datasets1 = my_load_dataset(ad1)
     test_set_x_1, test_set_y_1, test_set_name_1 = datasets1[2]
