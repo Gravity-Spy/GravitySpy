@@ -22,16 +22,36 @@ def getAnswers(ProjectID):
     tmp = Project.find(ProjectID)
     project_flat = flatten(tmp.raw)
     order = project_flat['configuration_workflow_order']
+
     # Determine workflow order
     workflows = [int(str(iWorkflow)) for iWorkflow in order]
+
     # Determine possible answers to the workflows
     for iWorkflow in workflows:
         workflow = Workflow.find(iWorkflow)
         if workflow.raw['tasks']['T1']['questionsMap']:
             workflowDictAnswers[iWorkflow] = workflow.raw['tasks']['T1']['questionsMap']
+
+            # Find Answers with follow ups
+            followupAns = [k for k, v in workflow.raw['tasks']['T1']['questionsMap'].iteritems() if v != []]
+
+            # Loop over follow answers which have follow ups to them.
+            for iFollow in followupAns:
+                questionsAndAnswersDict = {}
+
+                # Loop over questions
+                for iQuestion in workflowDictAnswers[iWorkflow][iFollow]:
+                    if iQuestion in workflow.raw['tasks']['T1']['questions'].keys():
+                        questionsAndAnswersDict[iQuestion] = workflow.raw['tasks']['T1']['questions'][iQuestion]['answersOrder']
+
+            workflowDictAnswers[iWorkflow][iFollow] = questionsAndAnswersDict
+
         else:
+
             answerDict = {}
+
             for iAnswer in workflow.raw['tasks']['T1']['choicesOrder']:
                 answerDict[iAnswer] = []
             workflowDictAnswers[iWorkflow] = answerDict
+
     return workflowDictAnswers
