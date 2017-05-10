@@ -19,3 +19,4 @@ Theano
 keras
 pandas
 gwpy
+psycopg2
