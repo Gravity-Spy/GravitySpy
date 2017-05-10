@@ -16,7 +16,7 @@ def flatten(d, parent_key='', sep='_'):
             items.append((new_key, v))
     return dict(items)
 
-def main(ProjectID):
+def getAnswers(ProjectID):
     # now determine infrastructure of workflows so we know what workflow this image belongs in
     workflowDictAnswers = {}
     tmp = Project.find(ProjectID)
@@ -30,8 +30,8 @@ def main(ProjectID):
         if workflow.raw['tasks']['T1']['questionsMap']:
             workflowDictAnswers[iWorkflow] = workflow.raw['tasks']['T1']['questionsMap']
         else:
-            workflowDictAnswers[iWorkflow] = workflow.raw['tasks']['T1']['choicesOrder']
+            answerDict = {}
+            for iAnswer in workflow.raw['tasks']['T1']['choicesOrder']:
+                answerDict[iAnswer] = []
+            workflowDictAnswers[iWorkflow] = answerDict
     return workflowDictAnswers
-
-if __name__ == "__main__":
-   main(ProjectID)
