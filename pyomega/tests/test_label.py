@@ -29,9 +29,27 @@ class GravitSpyTests(unittest2.TestCase):
         self.assertEqual(float(scores[MLlabel + 1]), Score)
 
     def test_model(self):
+        # Take test image and make pickle
+        make_pickle.main(TEST_IMAGES_PATH + '/folder1/',
+                         TEST_IMAGES_PATH + '/folder1/folder2/pickleddata/', 1, 1)
+        # Pickle Test Training Set
         make_pickle.main(TEST_IMAGES_PATH + '/TrainingSet/',
-                         TEST_IMAGES_PATH + '/pickleddata/', 1, 1)
+                         TEST_IMAGES_PATH + '/pickleddata/', 0, 1)
+        # Make model using all images
+        train_classifier.main(10, 10, 0, TEST_IMAGES_PATH + '/pickleddata/', TEST_IMAGES_PATH + '/model/', 2, 1)
+        scores, MLlabel = label_glitches.main(TEST_IMAGES_PATH + '/folder1/folder2/pickleddata/',
+                                              TEST_IMAGES_PATH + '/model/',
+                                              TEST_IMAGES_PATH + '/folder1/folder2/labeled/',
+                                              0)
+        print scores
+
+        # Make model using validation, test and train samples
         train_classifier.main(10, 10, 1, TEST_IMAGES_PATH + '/pickleddata/', TEST_IMAGES_PATH + '/model/', 2, 1)
+        scores, MLlabel = label_glitches.main(TEST_IMAGES_PATH + '/folder1/folder2/pickleddata/',
+                                              TEST_IMAGES_PATH + '/model/',
+                                              TEST_IMAGES_PATH + '/folder1/folder2/labeled/',
+                                              0)
+        print scores
 
 if __name__ == '__main__':
     unittest2.main()

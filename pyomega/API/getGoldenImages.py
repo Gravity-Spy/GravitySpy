@@ -16,9 +16,9 @@ def flatten(d, parent_key='', sep='_'):
             items.append((new_key, v))
     return dict(items)
 
-def main(ProjectID,IDfilter=''):
+def getGoldenSubjectSets(ProjectID):
     # now determine infrastructure of workflows so we know what workflow this image belongs in
-    workflowDictSubjectSets = {}
+    workflowGoldenSetDict = {}
     tmp = Project.find(ProjectID)
     project_flat = flatten(tmp.raw)
     order = project_flat['configuration_workflow_order']
@@ -28,6 +28,29 @@ def main(ProjectID,IDfilter=''):
     for iWorkflow in workflows:
         tmp1 = Workflow.find(iWorkflow)
         tmp1 = flatten(tmp1.raw)
+        try:
+            workflowGoldenSetDict[iWorkflow] = tmp1['configuration_gold_standard_sets']
+        except:
+            workflowGoldenSetDict[iWorkflow] = []
 
-if __name__ == "__main__":
-   main(ProjectID,IDfilter='')
+    return workflowGoldenSetDict
+
+def getGoldenImages(workflowGoldenSetDict):
+    workflowGoldenSetImagesDict = {}
+
+    for iWorkflow in workflowGoldenSetDict.keys():
+        goldenImages = []
+
+        for iGoldenSubjectSet in workflowGoldenSetDict[iWorkflow]:
+            tmp = SubjectSet.find(iGoldenSubjectSet)
+            tmpSubjects = tmp.subjects()
+
+            while True:
+                try:
+                    goldenImages.append(str(tmpSubjects.next().id))
+                except:
+                    break
+
+        workflowGoldenSetImagesDict[iWorkflow] = goldenImages
+
+    return workflowGoldenSetImagesDict
