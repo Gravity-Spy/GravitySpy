@@ -3,26 +3,32 @@
 # ---- Import standard modules to the python path.
 
 import os,csv,ast
+import pickle
 import optparse
 import pandas as pd
 from panoptes_client import *
 import numpy as np
-#Hold
 import pdb
 from sqlalchemy.engine import create_engine
 import time
+
+from pyomega.API import getGoldenImages
 
 def parse_commandline():
     """
     Parse the options given on the command-line.
     """
     parser = optparse.OptionParser()
-    parser.add_option("--SubjectSet", help="Zooniverse subject set.",type=int,default=6584)
-    parser.add_option("--SubjectID", help="Zooniverse subject id.",type=int,default=3775127)
+    parser.add_option("-b", "--database", help="Database (O1GlitchClassification,classification,glitches).", default="glitches")
+    parser.add_option("-i", "--IDtype", help="ID Type (Zooniverse, GravitySpy).", default="Zooniverse")
+    parser.add_option("-z","--ZooniverseID", help="Zooniverse subject set.",type=int,default=3778902)
+    parser.add_option("-s","--GravitySpyID", help="Gravity Spy id.",default="EB5JAh2yOM")
     parser.add_option("--doAdd", action="store_true", default=False,
           help="Add SubjectID to SubjectSet. (Default: False)")
     parser.add_option("--doRemove", action="store_true", default=False,
           help="Remove SubjectID from SubjectSet. (Default: False)")
+    parser.add_option("--doDatabase", action="store_true", default=False,
+          help="Check database for SubjectID from SubjectSet. (Default: False)")
 
     opts, args = parser.parse_args()
 
@@ -38,33 +44,124 @@ opts = parse_commandline()
 Panoptes.connect()
 project = Project.find(slug='zooniverse/gravity-spy')
 
+database = opts.database
+engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
+tmp = pd.read_sql(database,engine)
+
+workflowGoldenSetDict = getGoldenImages.getGoldenSubjectSets('1104')
+workflowGoldSubjectsDict = getGoldenImages.getGoldenImages(workflowGoldenSetDict)
+#pickle.dump(workflowGoldSubjectsDict, open( "workflowGoldSubjectsDict.pickle", "wb" ) )
+#workflowGoldSubjectsDict = pickle.load(open( "workflowGoldSubjectsDict.pickle", "rb" ) )
+
+if opts.IDtype == "Zooniverse":
+    print "Analyzing Zooniverse ID %d."%opts.ZooniverseID
+    subject = Subject.find(opts.ZooniverseID)
+    SubjectSetID = str(subject.raw['links']['subject_sets'][0])
+    print "Contained in Subject Set %s."%SubjectSetID
+ 
+    uniqueID = []
+    trainingImage = False
+    for LevelID in workflowGoldSubjectsDict.iterkeys():
+        for SubjectID in workflowGoldSubjectsDict[LevelID].iterkeys():
+            if SubjectID == str(opts.ZooniverseID):
+                uniqueID = workflowGoldSubjectsDict[LevelID][SubjectID][0]
+                glitchClass = workflowGoldSubjectsDict[LevelID][SubjectID][1]
+    if uniqueID:
+        print "Associated with GravitySpy ID %s."%uniqueID
+        tmp = tmp.loc[tmp.uniqueID == uniqueID]
+        if tmp.empty:
+            print "No trigger with uniqueID %s in database..."%uniqueID
+        else:
+            imageStatus = tmp.iloc[0]["ImageStatus"]
+            if imageStatus == "Training":
+                trainingImage = True
+                print "This image is a Training image."
+    if trainingImage and uniqueID and not opts.doRemove:   
+        print "If you want to remove from golden set and training set, add --doRemove flag"
+    else:
+        subjectset=SubjectSet.find(SubjectSetID)
+        #subjectset.remove(opts.ZooniverseID)
+        print "Removed from golden set."
+        #tmp.ImageStatus = "Retired"
+        print "Removed from training set."
+            
+elif opts.IDtype == "GravitySpy":
+    uniqueID = opts.GravitySpyID
+    print "Analyzing GravitySpy ID %s."%uniqueID
+    tmp = tmp.loc[tmp.uniqueID == uniqueID]
+    if tmp.empty:
+        print "No trigger with uniqueID %s in database..."%uniqueID
+    else:
+        imageStatus = tmp.iloc[0]["ImageStatus"]
+        if imageStatus == "Training":
+            trainingImage = True
+            print "This image is a Training image."
+
+    ZooniverseID = []
+    trainingImage = False
+    for LevelID in workflowGoldSubjectsDict.iterkeys():
+        for SubjectID in workflowGoldSubjectsDict[LevelID].iterkeys():
+            if uniqueID == workflowGoldSubjectsDict[LevelID][SubjectID][0]:
+                ZooniverseID = int(SubjectID)
+                glitchClass = workflowGoldSubjectsDict[LevelID][SubjectID][1]
+    if ZooniverseID:
+        print "Associated with Zooniverse ID %d."%ZooniverseID
+        subject = Subject.find(ZooniverseID)
+        SubjectSetID = str(subject.raw['links']['subject_sets'][0])
+        print "Contained in Subject Set %s."%SubjectSetID
+
+    if trainingImage and ZooniverseID and not opts.doRemove:
+        print "If you want to remove from golden set and training set, add --doRemove flag"
+    else:
+        subjectset=SubjectSet.find(SubjectSetID)
+        #subjectset.remove(ZoonverseID)
+        print "Removed from golden set."
+        #tmp.ImageStatus = "Retired"
+        print "Removed from training set."
+
 # Remember to set
 # export PANOPTES_USERNAME
 # export PANOPTES_PASSWORD
 
-subjectset=SubjectSet.find(opts.SubjectSet)
-iSubject = Subject.find(opts.SubjectID)
-iSubjectMeta = iSubject.raw["metadata"]
+#subjectset=SubjectSet.find(opts.SubjectSet)
+#iSubject = Subject.find(opts.SubjectID)
+#iSubjectMeta = iSubject.raw["metadata"]
 
-subject = Subject()
-subject.links.project = project
-#subject.add_location(iSubjectMeta['Filename1'])
-#subject.add_location(iSubjectMeta['Filename2'])
-#subject.add_location(iSubjectMeta['Filename3'])
-#subject.add_location(iSubjectMeta['Filename4'])
-subject.metadata['date']          = iSubjectMeta['date']
-subject.metadata['subject_id']    = iSubjectMeta['subject_id']
-subject.metadata['Filename1']     = iSubjectMeta['Filename1'].split('/')[-1]
-subject.metadata['Filename2']     = iSubjectMeta['Filename2'].split('/')[-1]
-subject.metadata['Filename3']     = iSubjectMeta['Filename3'].split('/')[-1].split('/')[-1]
-subject.metadata['Filename4']     = iSubjectMeta['Filename4'].split('/')[-1].split('/')[-1]
-subject.save()
+#subject = Subject()
+#subject.links.project = project
+##subject.add_location(iSubjectMeta['Filename1'])
+##subject.add_location(iSubjectMeta['Filename2'])
+##subject.add_location(iSubjectMeta['Filename3'])
+##subject.add_location(iSubjectMeta['Filename4'])
+#subject.metadata['date']          = iSubjectMeta['date']
+#subject.metadata['subject_id']    = iSubjectMeta['subject_id']
+#subject.metadata['Filename1']     = iSubjectMeta['Filename1'].split('/')[-1]
+#subject.metadata['Filename2']     = iSubjectMeta['Filename2'].split('/')[-1]
+#subject.metadata['Filename3']     = iSubjectMeta['Filename3'].split('/')[-1].split('/')[-1]
+#subject.metadata['Filename4']     = iSubjectMeta['Filename4'].split('/')[-1].split('/')[-1]
+#subject.save()
 
-if opts.doAdd:
-    subjectset.add(subject)
+#if opts.doAdd:
+#    subjectset.add(subject)
+#
+#if opts.doRemove:
+#    subjectSubjectSet = str(tmp.raw['links']['subject_sets'][0])
+#    subjectset=SubjectSet.find(subjectSubjectSet)
 
-if opts.doRemove:
-    for iSubject in subjectset.subjects():
-        if iSubject.raw["metadata"]['Filename1'] == subject.metadata['Filename1']:
-            subject_id = iSubject.id 
-            subjectset.remove(subject_id)
+#    for iSubject in subjectset.subjects():
+#        if iSubject.raw["metadata"]['Filename1'] == subject.metadata['Filename1']:
+#            subject_id = iSubject.id 
+#            #subjectset.remove(subject_id)
+#            print 
+
+#if opts.doDatabase:
+#    database = opts.database
+#    engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
+#    tmp = pd.read_sql(database,engine)
+#    tmp = tmp.loc[tmp.uniqueID == iSubjectMeta['subject_id']]
+
+#    if tmp.empty:
+#        print "No trigger with uniqueID %s in database..."%iSubjectMeta['subject_id']
+#    else:
+#        print tmp
+
