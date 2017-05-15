@@ -39,7 +39,7 @@ def getGoldenImages(workflowGoldenSetDict):
     workflowGoldenSetImagesDict = {}
 
     for iWorkflow in workflowGoldenSetDict.keys():
-        goldenImages = []
+        goldenImages = {}
 
         for iGoldenSubjectSet in workflowGoldenSetDict[iWorkflow]:
             tmp = SubjectSet.find(iGoldenSubjectSet)
@@ -47,7 +47,8 @@ def getGoldenImages(workflowGoldenSetDict):
 
             while True:
                 try:
-                    goldenImages.append(str(tmpSubjects.next().id))
+                    nextSubject = tmpSubjects.next()
+                    goldenImages[str(nextSubject.id)] = [str(nextSubject.raw['metadata']['subject_id']), str(nextSubject.raw['metadata']['#Label'])]
                 except:
                     break
 
