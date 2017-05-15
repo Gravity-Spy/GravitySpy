@@ -46,9 +46,11 @@ project = Project.find(slug='zooniverse/gravity-spy')
 
 database = opts.database
 engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
+print 'Loading {0} from gravityspy.ciera.northwestern.edu'.format(database)
 tmp = pd.read_sql(database,engine)
 
 workflowGoldenSetDict = getGoldenImages.getGoldenSubjectSets('1104')
+print 'Retrieving Golden Images from Zooniverse API'
 workflowGoldSubjectsDict = getGoldenImages.getGoldenImages(workflowGoldenSetDict)
 #pickle.dump(workflowGoldSubjectsDict, open( "workflowGoldSubjectsDict.pickle", "wb" ) )
 #workflowGoldSubjectsDict = pickle.load(open( "workflowGoldSubjectsDict.pickle", "rb" ) )
