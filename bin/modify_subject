@@ -17,12 +17,15 @@ def parse_commandline():
     Parse the options given on the command-line.
     """
     parser = optparse.OptionParser()
+    parser.add_option("-b", "--database", help="Database (O1GlitchClassification,classification,glitches).", default="glitches")
     parser.add_option("--SubjectSet", help="Zooniverse subject set.",type=int,default=6584)
     parser.add_option("--SubjectID", help="Zooniverse subject id.",type=int,default=3775127)
     parser.add_option("--doAdd", action="store_true", default=False,
           help="Add SubjectID to SubjectSet. (Default: False)")
     parser.add_option("--doRemove", action="store_true", default=False,
           help="Remove SubjectID from SubjectSet. (Default: False)")
+    parser.add_option("--doDatabase", action="store_true", default=False,
+          help="Check database for SubjectID from SubjectSet. (Default: False)")
 
     opts, args = parser.parse_args()
 
@@ -68,3 +71,15 @@ if opts.doRemove:
         if iSubject.raw["metadata"]['Filename1'] == subject.metadata['Filename1']:
             subject_id = iSubject.id 
             subjectset.remove(subject_id)
+
+if opts.doDatabase:
+    database = opts.database
+    engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
+    tmp = pd.read_sql(database,engine)
+    tmp = tmp.loc[tmp.uniqueID == iSubjectMeta['subject_id']]
+
+    if tmp.empty:
+        print "No trigger with uniqueID %s in database..."%iSubjectMeta['subject_id']
+    else:
+        print tmp
+
