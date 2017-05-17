@@ -15,18 +15,31 @@ from pyomega.API.getLabelDict import getAnswers
 from pyomega.API import getGoldenImages
 from scipy.sparse import coo_matrix
 
+def levelDict(x):
+    return workflowLevelDict[x]
+
 engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
 
+# Load clasificaitons and current user Status from DB
 classifications = pd.read_sql('classifications',engine) 
+userStatus = pd.read_sql('userStatus', engine)
 
 workflowGoldenSetDict = getGoldenImages.getGoldenSubjectSets('1104')
+workflowOrder = [int(str(i)) for i in Project.find('1104').raw['configuration']['workflow_order']]
+levelWorkflowDict = dict(enumerate(workflowOrder))
+workflowLevelDict = dict((v, k + 1) for k,v in levelWorkflowDict.iteritems())
 print 'Retrieving Golden Images from Zooniverse API'
 goldenDF = getGoldenImages.getGoldenImagesAsInts(workflowGoldenSetDict)
 
 # Filter classifications
-classifications = classifications.loc[classifications.links_workflow.isin([1610,1934,1935,2360,3063])]
+classifications.loc[classifications.links_workflow == 3063, 'links_workflow'] = 2360
+classifications = classifications.loc[classifications.links_workflow.isin(workflowOrder)]
+classifications['Level'] = classifications.links_workflow.apply(levelDict)
 classifications = classifications.loc[classifications.annotations_value_choiceINT != -1]
 classifications = classifications.loc[classifications.links_user != 0]
+
+# Initialize empty user DB
+userStatusInit = pd.DataFrame({'userID' : classifications.groupby('links_user').Level.max().index.tolist(), 'workflow' : classifications.groupby('links_user').Level.max().tolist()})
 
 # Retrieve Answers
 answers = getAnswers('1104')
@@ -46,52 +59,48 @@ promotion_Level2 = [answersDict[iAnswer] for iAnswer in answers[1934].keys() if 
 promotion_Level3 = [answersDict[iAnswer] for iAnswer in answers[1935].keys() if iAnswer not in['NONEOFTHEABOVE']]
 promotion_Level4 = [answersDict[iAnswer] for iAnswer in answers[2360].keys() if iAnswer not in['NONEOFTHEABOVE']]
 
+alpha = .7*np.ones(numClasses)
+
 for iUser in test.groupby('links_user'):
     columns = iUser[1].annotations_value_choiceINT        
     rows = iUser[1]['GoldLabel']
     entry = iUser[1]['links_subjects']
     tmp = coo_matrix((entry,(rows,columns)),shape=(numClasses, numClasses))
     conf_divided,a1,a2,a3 = np.linalg.lstsq(np.diagflat(tmp.sum(axis=1)), tmp.todense())
-    print tmp.sum(axis=0)
-    print tmp.sum(axis=1)
-    # print np.diag(conf_divided)[promotion_Level4]
+    alphaTmp = np.diag(conf_divided)
+    userCurrentLevel = userStatusInit.loc[userStatusInit.userID == iUser[0], 'currentworkflow']
+    if (alphaTmp[promotion_Level1] > alpha[promotion_Level1]) and (userCurrentLevel < 2):
+        userStatusInit.loc[userStatusInit.userID == iUser[0], 'currentworkflow'] = 2
+
+    if (alphaTmp[promotion_Level2] > alpha[promotion_Level2]) and (userCurrentLevel < 3):
+        userStatusInit.loc[userStatusInit.userID == iUser[0], 'currentworkflow'] = 3
+
+    if (alphaTmp[promotion_Level3] > alpha[promotion_Level3]) and (userCurrentLevel < 4):
+        userStatusInit.loc[userStatusInit.userID == iUser[0], 'currentworkflow'] = 4
+
+    if (alphaTmp[promotion_Level4] > alpha[promotion_Level4]) and (userCurrentLevel < 5):
+        userStatusInit.loc[userStatusInit.userID == iUser[0], 'currentworkflow'] = 5
 
 
-alpha = .7*np.ones(c)
+tmp = userStatusInit.merge(userStatus,how='outer')
+tmp = tmp.fillna(0)
+tmp = tmp.astype(int)
+updates = tmp.loc[tmp.workflow > tmp.currentworkflow]
+tmp.loc[tmp.workflow > tmp.currentworkflow, 'currentworkflow'] = tmp.loc[tmp.workflow > tmp.currentworkflow, 'workflow']
+userStatus = tmp[['userID', 'currentworkflow']]
+
+# Now update user settings
 Panoptes.connect()
 project = Project.find(slug='zooniverse/gravity-spy')
 
-def update_conf_matrix(x):
-    # Define what classes belongt o what levels
-    promotion_1 = [1,19]
-    promotion_2 = [17, 12, 5, 1, 19]
-    promotion_3 = [5, 7, 10, 12, 14, 2,  1, 19, 17]
-    promotion_4 = [ 13, 16,  3,  7,  6, 15,  4,  1,  5, 18, 11,  8, 14, 12,  0, 10,19, 17,  2]
-    # Increase the matrix at [true_label,userlabel]
-    confusion_matrices.loc[confusion_matrices.userID == x.links_user,'confusion_matrices'].iloc[0][x['metadata_#Label'],x['annotations_value_choiceINT']] += 1
-    for iWorkflow in range(1,5):
-        if (confusion_matrices.loc[confusion_matrices.userID == x.links_user,'currentworkflow'].iloc[0] == iWorkflow) and np.diag(confusion_matrices.loc[confusion_matrices.userID == x.links_user,'confusion_matrices'].iloc[0])[locals()['promotion_' + str(iWorkflow)]].all():
-            # Take normalized diagonal.
-            conf_divided,a1,a2,a3 = np.linalg.lstsq(np.diag(np.sum(confusion_matrices.loc[confusion_matrices.userID == x.links_user,'confusion_matrices'].iloc[0],axis=1)),confusion_matrices.loc[confusion_matrices.userID == x.links_user,'confusion_matrices'].iloc[0])
-            alphaTmp = np.diag(conf_divided)
-            if (confusion_matrices.loc[confusion_matrices.userID == x.links_user,'currentworkflow'].iloc[0] == iWorkflow) and ((alphaTmp[locals()['promotion_' + str(iWorkflow)]] >= alpha[locals()['promotion_' + str(iWorkflow)]]).all()):
-                confusion_matrices.loc[confusion_matrices.userID == x.links_user,'currentworkflow'] = iWorkflow + 1
-                confusion_matrices.loc[confusion_matrices.userID == x.links_user,'Level{0}'.format(iWorkflow +1)] = x['id']
-                user = User.find(x.links_user)
-                new_settings = {"workflow_id": "{0}".format(leveltoworkflow[iWorkflow + 1])}
-                print(user)
-                print(new_settings)
-                ProjectPreferences.save_settings(project=project, user=user, settings=new_settings)
+def updateSettings(x):
+    user = User.find(x.userID)
+    new_settings = {"workflow_id": "{0}".format(levelWorkflowDict[x.workflow - 1])}
+    print(user)
+    print(new_settings)
+    ProjectPreferences.save_settings(project=project, user=user, settings=new_settings) 
 
-image_and_classification = image_and_classification.sort_values('created_at')
-lastID = pd.read_csv('{0}/lastIDPromotion.csv'.format(pathToFiles))['lastID'].iloc[0]
-newlastID = image_and_classification['id'].max()
-print('lastID of Promotion ' + str(lastID))
-image_and_classification = image_and_classification.loc[image_and_classification['id']>lastID]
-image_and_classification.loc[image_and_classification.metadata_Type == 2,['links_user','metadata_#Label','annotations_value_choiceINT','id']].apply(update_conf_matrix,axis=1)
-for iWorkflow in range(1,6):
-    print('Level {0}: {1}'.format(iWorkflow,len(confusion_matrices.loc[confusion_matrices.currentworkflow == iWorkflow])))
+updates.apply(updateSettings,axis=1)
 
-confusion_matrices.to_pickle('{0}/confusion_matrices.pkl'.format(pathToFiles))
-pd.DataFrame({'lastID':newlastID},index=[0]).to_csv(open('{0}/lastIDPromotion.csv'.format(pathToFiles),'w'),index=False)
-print('New lastID of Promotion ' + str(newlastID))
+# save new user Status
+userStatus[['userID', 'currentworkflow']].to_sql('userStatus', engine, index=False, if_exists='append', chunksize=100)

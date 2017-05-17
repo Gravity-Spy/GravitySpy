@@ -21,10 +21,7 @@ engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5
 
 # This function translates the string answer to an integer value.
 def extract_choiceINT(x):
-    try:
-        return answersDict[x]
-    except:
-        return -1
+    return answersDict[x]
 
 #This function generically flatten a dict
 def flatten(d, parent_key='', sep='_'):
@@ -56,10 +53,12 @@ Panoptes.connect()
 classificationsList = []
 
 # Query the last 100 classificaitons made (this is the max allowable)
-allClassifications = Classification.where(scope='project',project_id='1104',last_id='{0}'.format(lastID),page_size='100')
+allClassifications = Classification.where(scope='project', project_id='1104', last_id='{0}'.format(lastID), page_size='100')
+allClassifications = Classification.where(scope='project', project_id='1104')
 
 # Loop until no more classifications
-for iN in range(0,allClassifications.object_count):
+#for iN in range(0,allClassifications.object_count):
+while True:
     try:
         classification = allClassifications.next()
     except:
