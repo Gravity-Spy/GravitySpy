@@ -11,70 +11,51 @@ import collections
 import operator
 
 from sqlalchemy.engine import create_engine
+from pyomega.API.getLabelDict import getAnswers
+from pyomega.API import getGoldenImages
+from scipy.sparse import coo_matrix
 
 engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
 
-pathToFiles = '/home/scoughlin/O2/Test/GravitySpy/API/'
-
-label_dict = {
-'50HZ':0,'RCMPRSSR50HZ':0,'AIRCOMPRESSOR50HZ':0,
-'BLP':1,'BLIP':1,
-'CHRP':2,'CHIRP':2,
-'XTRMLLD':3,'EXTREMELYLOUD':3,
-'HLX':4,'HELIX':4,
-'KFSH':5,'KOIFISH':5,
-'45MHZLGHTMDLTN':6,'LGHTMDLTN':6,'LIGHTMODULATION':6,
-'LWFRQNCBRST':7,'LOWFREQUENCYBURST':7,
-'LWFRQNCLN':8,'LOWFREQUENCYLINE':8,
-'NNFTHBV':9,'NONEOFTHEABOVE':9,
-'NGLTCH':10,'DNTSGLTCH':10,'NOGLITCH':10,
-'PRDDVS':11,'PAIREDDOVES':11,
-'60HZPWRLN':12,'60HZPWRMNS':12,'PWRLN60HZ':12,'POWERLINE60HZ':12,
-'RPTNGBLPS':13,'REPEATINGBLIPS':13,
-'SCTTRDLGHT':14,'SCATTEREDLIGHT':14,
-'SCRTCH':15,'SCRATCHY':15,
-'TMT':16,'TOMTE':16,
-'VLNHRMNC500HZ':17,'VLNMDHRMNC500HZ':17, 'HRMNCS':17,'VIOLINMODEHARMONIC500HZ':17,
-'WNDRNGLN':18,'WANDERINGLINE':18,
-'WHSTL':19,'WHISTLE':19
-}
-worktolevel = {1610:1,1934:2,1935:3,2360:4,2117:5,3063:4}
-leveltoworkflow = {1:1610,2:1934,3:1935,4:2360,5:2117}
-def workflowtolevel(x):
-    return worktolevel[x]
-
-def leveltowork(x):
-    return leveltoworkflow[x]
-
-
 classifications = pd.read_sql('classifications',engine) 
-images = pd.read_hdf('{0}/images.h5'.format(pathToFiles))
+
+workflowGoldenSetDict = getGoldenImages.getGoldenSubjectSets('1104')
+print 'Retrieving Golden Images from Zooniverse API'
+goldenDF = getGoldenImages.getGoldenImagesAsInts(workflowGoldenSetDict)
+
+# Filter classifications
 classifications = classifications.loc[classifications.links_workflow.isin([1610,1934,1935,2360,3063])]
+classifications = classifications.loc[classifications.annotations_value_choiceINT != -1]
+classifications = classifications.loc[classifications.links_user != 0]
 
-classifications['Level'] = classifications.links_workflow.apply(workflowtolevel)
+# Retrieve Answers
+answers = getAnswers('1104')
+answersDictRev =  dict(enumerate(sorted(answers[2360].keys())))
+answersDict = dict((str(v),k) for k,v in answersDictRev.iteritems())
+
+numClasses = max(answersDict.iteritems(), key=operator.itemgetter(1))[1] + 1
+
+image_and_classification = classifications.merge(goldenDF)
+
 # Merge classificaitons and images
-image_and_classification = classifications.merge(images)
-confusion_matrices = pd.read_pickle('{0}/confusion_matrices.pkl'.format(pathToFiles))
-print('old user list ' +str(len(confusion_matrices)))
-c =  max(label_dict.iteritems(), key=operator.itemgetter(1))[1] + 1
+test = image_and_classification.groupby(['links_user','annotations_value_choiceINT','GoldLabel'])
+test = test.count().links_subjects.to_frame().reset_index()
 
-#def make_conf_matrices(x):
-#    return np.zeros((c,c))
+promotion_Level1 = [answersDict[iAnswer] for iAnswer in answers[1610].keys() if iAnswer not in['NONEOFTHEABOVE']]
+promotion_Level2 = [answersDict[iAnswer] for iAnswer in answers[1934].keys() if iAnswer not in['NONEOFTHEABOVE']]
+promotion_Level3 = [answersDict[iAnswer] for iAnswer in answers[1935].keys() if iAnswer not in['NONEOFTHEABOVE']]
+promotion_Level4 = [answersDict[iAnswer] for iAnswer in answers[2360].keys() if iAnswer not in['NONEOFTHEABOVE']]
 
-for x in classifications.loc[~classifications.links_user.isin(confusion_matrices.userID),'links_user'].unique():
-    confusion_matrices = confusion_matrices.append(pd.DataFrame({'userID': [x], 'confusion_matrices' : [np.zeros((c,c))],'currentworkflow' : [1],'Level2' : [0],'Level3' : [0],'Level4' : [0],'Level5' : [0]},index = [len(confusion_matrices)]))
-#confusion_matrices['confusion_matrices'] = confusion_matrices.userID.apply(make_conf_matrices)
-#def determine_min_level(x):
-#    return classifications.loc[classifications.links_user == x,'Level'].max()
-#confusion_matrices['currentworkflow'] =  confusion_matrices.userID.apply(determine_min_level)
-#confusion_matrices['currentworkflow'] = 1
-#confusion_matrices['Level2'] = 0
-#confusion_matrices['Level3'] = 0
-#confusion_matrices['Level4'] = 0
-#confusion_matrices['Level5'] = 0
+for iUser in test.groupby('links_user'):
+    columns = iUser[1].annotations_value_choiceINT        
+    rows = iUser[1]['GoldLabel']
+    entry = iUser[1]['links_subjects']
+    tmp = coo_matrix((entry,(rows,columns)),shape=(numClasses, numClasses))
+    conf_divided,a1,a2,a3 = np.linalg.lstsq(np.diagflat(tmp.sum(axis=1)), tmp.todense())
+    print tmp.sum(axis=0)
+    print tmp.sum(axis=1)
+    # print np.diag(conf_divided)[promotion_Level4]
 
-print(len(image_and_classification))
-print('updated user list ' +str(len(confusion_matrices)))
 
 alpha = .7*np.ones(c)
 Panoptes.connect()
