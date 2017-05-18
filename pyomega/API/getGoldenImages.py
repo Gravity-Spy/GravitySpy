@@ -55,3 +55,28 @@ def getGoldenImages(workflowGoldenSetDict):
         workflowGoldenSetImagesDict[iWorkflow] = goldenImages
 
     return workflowGoldenSetImagesDict
+
+def getGoldenImagesAsInts(workflowGoldenSetDict):
+    from pyomega.API.getLabelDict import getAnswers
+    import pandas as pd
+
+    answers = getAnswers('1104')
+    answersDictRev =  dict(enumerate(sorted(answers[2360].keys())))
+    answersDict = dict((str(v),k) for k,v in answersDictRev.iteritems())
+
+    goldenImagesList = []
+
+    for iWorkflow in workflowGoldenSetDict.keys():
+        for iGoldenSubjectSet in workflowGoldenSetDict[iWorkflow]:
+            tmp = SubjectSet.find(iGoldenSubjectSet)
+            tmpSubjects = tmp.subjects()
+
+            while True:
+                try:
+                    nextSubject = tmpSubjects.next()
+                    goldenImagesList.append([int(nextSubject.id), answersDict[str(nextSubject.raw['metadata']['#Label']).upper().translate(None,'() ')]])
+                except:
+                    break
+
+    return pd.DataFrame(goldenImagesList,columns=['links_subjects', 'GoldLabel'])
+

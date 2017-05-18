@@ -5,6 +5,8 @@
 from __future__ import division
 
 import sys
+sys.path.append("/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/")
+sys.path.append("/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/")
 import os
 import random
 import string
@@ -30,6 +32,7 @@ from matplotlib import use
 use('agg')
 from matplotlib import (pyplot as plt, cm)
 from matplotlib.ticker import ScalarFormatter
+from matplotlib.ticker import FormatStrFormatter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
@@ -41,6 +44,7 @@ from glue import datafind
 
 from gwpy.timeseries import TimeSeries
 from gwpy.plotter import Plot
+from gwpy.spectrogram import Spectrogram
 
 from pyomega import __version__
 import pyomega.ML.make_pickle_for_linux as make_pickle
@@ -182,10 +186,15 @@ def main(inifile,eventTime,ID,outDir,pathToModel='/home/machinelearning/GravityS
                              gps=centerTime, search=0.5, tres=0.001,
                              fres=0.5, outseg=None, whiten=True)
 
+    # For purposes of plotting the data in GSpy way
+    #tmpOffSet = qScan.times.value.min()
+    #pdb.set_trace()
+    #qScan = Spectrogram(qScan.value, times=qScan.times.value - tmpOffSet)
+
     # Crop out the different time duration windows
     specsgrams = []
     for iTimeWindow in plotTimeRanges:
-        specsgrams.append(qScan.crop(centerTime-iTimeWindow/2, centerTime+iTimeWindow/2))
+        specsgrams.append(qScan.crop(centerTime - iTimeWindow/2, centerTime + iTimeWindow/2))
 
     # Set some plotting params
     myfontsize = 15
@@ -212,32 +221,45 @@ def main(inifile,eventTime,ID,outDir,pathToModel='/home/machinelearning/GravityS
     # Create one image containing all spectogram grams
     superFig = Plot(figsize=(27,6))
     for i, spec in enumerate(specsgrams):
+
         indFig = Plot(figsize=[8, 6])
         superFig.add_spectrogram(spec,newax=True)
         indFig.add_spectrogram(spec)
+
         ax = indFig.gca()
         ax.set_position([0.125, 0.1, 0.775, 0.8])
-        ax.set_epoch(centerTime)
         ax.set_yscale('log', basey=2)
-        ax.set_xlabel('Time (s)', fontsize=mylabelfontsize, color=myColor)
+        ax.set_xscale('linear')
+
+        xticks = np.linspace(spec.xindex.min().value,spec.xindex.max().value,5)
+        xticklabels = []
+        dur = float(plotTimeRanges[i])
+        [xticklabels.append(str(i)) for i in np.linspace(-dur/2, dur/2, 5)]
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xticklabels)
+
+        ax.set_xlabel('Time (s)', labelpad=0.1, fontsize=mylabelfontsize, color=myColor)
         ax.set_ylabel('Frequency (Hz)', fontsize=mylabelfontsize, color=myColor)
         ax.set_title(title, fontsize=mylabelfontsize, color=myColor)
+        ax.title.set_position([.5, 1.05])
         ax.set_ylim(10, 2048)
-        ax.set_xlim(centerTime-plotTimeRanges[i]/2, centerTime+plotTimeRanges[i]/2)
-        for axis in [ax.xaxis, ax.yaxis]:
-            axis.set_major_formatter(ScalarFormatter())
-        plt.tick_params(axis='both', which='major', labelsize=myfontsize)
-        ax.grid(False)
-        indFig.add_colorbar(cmap='viridis', label='Normalized energy',
-                          clim=plotNormalizedERange, pad="3%", width="5%")
-        dur = float(plotTimeRanges[i])
+        ax.yaxis.set_major_formatter(ScalarFormatter())
+        ax.ticklabel_format(axis='y', style='plain')
+
+        plt.tick_params(axis='x', which='major', labelsize=myfontsize)
+        plt.tick_params(axis='y', which='major', labelsize=12)
+
+        cbar = indFig.add_colorbar(cmap='viridis', label='Normalized energy',
+                            clim=plotNormalizedERange, pad="3%", width="5%")
+        cbar.ax.tick_params(labelsize=12)
+        cbar.ax.yaxis.label.set_size(myfontsize)
+
         indFig.save(outDirtmp + detectorName + '_' + IDstring + '_spectrogram_' + str(dur) +'.png')
 
     testFig = Plot(figsize=(27,6))
     for i, iAx in enumerate(superFig.axes):
         ax = testFig.add_subplot(1, len(specsgrams), i+1)
         iAx.set_position(ax.get_position())
-        iAx.set_epoch(centerTime)
         iAx.set_yscale('log', basey=2)
         iAx.set_xlabel('Time (s)', fontsize=mylabelfontsize, color=myColor)
         iAx.set_ylabel('Frequency (Hz)', fontsize=mylabelfontsize, color=myColor)
