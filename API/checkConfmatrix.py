@@ -110,8 +110,8 @@ userStatus_DB_Init = userStatus_DB_Init.astype(int)
 updates = userStatus_DB_Init.loc[userStatus_DB_Init.workflowInit > userStatus_DB_Init.workflowDB]
 
 # Now we would like to save userStatus DB with the updates from workflowInit
-userStatus_DB_Init.loc[userStatus_DB_Init.workflowInit > userStatus_DB_Init.workflowDB, 'workflowDB'] = userStatus_DB_Ini.loc[userStatus_DB_Init.workflowInit > userStatus_DB_Init.workflowDB, 'workflowInit']
-userStatus = tmp[['userID', 'workflowDB']]
+userStatus_DB_Init.loc[userStatus_DB_Init.workflowInit > userStatus_DB_Init.workflowDB, 'workflowDB'] = userStatus_DB_Init.loc[userStatus_DB_Init.workflowInit > userStatus_DB_Init.workflowDB, 'workflowInit']
+userStatus = userStatus_DB_Init[['userID', 'workflowDB']]
 
 # Now update user settings
 Panoptes.connect()
@@ -119,12 +119,12 @@ project = Project.find(slug='zooniverse/gravity-spy')
 
 def updateSettings(x):
     user = User.find(x.userID)
-    new_settings = {"workflow_id": "{0}".format(levelWorkflowDict[x.workflow - 1])}
+    new_settings = {"workflow_id": "{0}".format(levelWorkflowDict[x.workflowInit - 1])}
     print(user)
     print(new_settings)
-    #ProjectPreferences.save_settings(project=project, user=user, settings=new_settings) 
+    ProjectPreferences.save_settings(project=project, user=user, settings=new_settings) 
 
 updates.apply(updateSettings,axis=1)
 
 # save new user Status
-#userStatus[['userID', 'currentworkflow']].to_sql('userStatus', engine, index=False, if_exists='replace', chunksize=100)
+#userStatus[['userID', 'workflowDB']].to_sql('userStatus', engine, index=False, if_exists='replace', chunksize=100)
