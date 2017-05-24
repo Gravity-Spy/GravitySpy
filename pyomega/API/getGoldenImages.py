@@ -66,17 +66,22 @@ def getGoldenImagesAsInts(workflowGoldenSetDict):
 
     goldenImagesList = []
 
-    for iWorkflow in workflowGoldenSetDict.keys():
+    for iWorkflow in sorted(workflowGoldenSetDict.keys()):
+
+        if not workflowGoldenSetDict[iWorkflow]:
+            continue
+
         for iGoldenSubjectSet in workflowGoldenSetDict[iWorkflow]:
+
             tmp = SubjectSet.find(iGoldenSubjectSet)
             tmpSubjects = tmp.subjects()
 
             while True:
                 try:
                     nextSubject = tmpSubjects.next()
-                    goldenImagesList.append([int(nextSubject.id), answersDict[str(nextSubject.raw['metadata']['#Label']).upper().translate(None,'() ')]])
+                    goldenImagesList.append([int(nextSubject.id), answersDict[str(nextSubject.raw['metadata']['#Label']).upper().translate(None,'() ')],nextSubject.raw['metadata']['subject_id']])
                 except:
                     break
 
-    return pd.DataFrame(goldenImagesList,columns=['links_subjects', 'GoldLabel'])
+    return pd.DataFrame(goldenImagesList,columns=['links_subjects', 'GoldLabel', 'uniqueID'])
 
