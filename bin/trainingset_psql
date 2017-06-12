@@ -76,7 +76,6 @@ tmp = pd.read_sql(database,engine)
 
 tmp = tmp.loc[~(tmp.Filename1 == None) & (tmp.ImageStatus == 'Training')]
 
-pdb.set_trace()
 for label in tmp.Label.unique():
     ThisTrainingFolder = os.path.join(TrainingFolder,label)
     if not os.path.isdir(ThisTrainingFolder):

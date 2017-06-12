@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import optparse,os,string,random,pdb
+import optparse,os,string,random,pdb,socket
 from gwpy.table.lsctables import SnglBurstTable
 from gwpy.segments import DataQualityFlag
 import pandas as pd
@@ -85,10 +85,10 @@ def threshold(row):
 
 # This function queries omicron to obtain trigger times of the glitches. It then proceeds to filter out these times based on whether the detector was in an analysis ready state or the glitch passes certain frequency and SNR cuts. 
 
-def get_triggers(gpsStart,gpsEnd):
+def get_triggers(gpsStart,gpsEnd,detector):
 
     # Obtain segments that are analysis ready
-    analysis_ready = DataQualityFlag.query('{0}:DMT-ANALYSIS_READY:1'.format(opts.detector),float(gpsStart),float(gpsEnd))
+    analysis_ready = DataQualityFlag.query('{0}:DMT-ANALYSIS_READY:1'.format(detector),float(gpsStart),float(gpsEnd))
 
     # Display segments for which this flag is true
     print "Segments for which the ANALYSIS READY Flag is active: {0}".format(analysis_ready.active)
@@ -187,7 +187,7 @@ def write_subfile():
 
 # Write submission file for the condor job
 
-def write_subfile_upload():
+def write_subfile_upload(detector):
     for d in ['logs_upload', 'condor']:
         if not os.path.isdir(d):
             os.makedirs(d)
@@ -195,7 +195,7 @@ def write_subfile_upload():
         subfile.write('universe = local\n')
         subfile.write('executable = {0}\n'.format(opts.pathToExecUpload))
         subfile.write('\n')
-        subfile.write('arguments = "--Label $(Label) --detector {0}"\n'.format(opts.detector))
+        subfile.write('arguments = "--Label $(Label) --detector {0}"\n'.format(detector))
         subfile.write('getEnv=True\n')
         subfile.write('\n')
         subfile.write('accounting_group_user = scott.coughlin\n')#.format(opts.username))
@@ -217,6 +217,15 @@ def write_subfile_upload():
 # Parse commandline arguments
 opts = parse_commandline()
 
+# attempt to determine detector based on cluster currently running on
+fullhostname = socket.getfqdn()
+if 'wa' in fullhostname:
+    detector = 'H1'
+elif 'la' in fullhostname
+    detector = 'L1'
+else:
+    detector = opts.detector
+
 if opts.HDF5:
     # Determine start and stop time of trigger query.
     if not opts.gpsStart:
@@ -231,10 +240,10 @@ if opts.HDF5:
         gpsEnd = opts.gpsEnd
 
     # Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
-    detchannelname = opts.detector + ':' + opts.channelname
+    detchannelname = detector + ':' + opts.channelname
 
     write_subfile()
-    omicrontriggers = get_triggers(gpsStart,gpsEnd)
+    omicrontriggers = get_triggers(gpsStart,gpsEnd,detector)
     oTriggers = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
     oTriggers.rename(columns = {'index':'peakGPS'},inplace=True)
     oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
@@ -248,7 +257,7 @@ elif opts.PostgreSQL:
 
     if not opts.gpsStart:
         tmp = pd.read_sql('glitches',engine)
-        gpsStart = tmp.loc[tmp.ifo == opts.detector,'peak_time'].max()
+        gpsStart = tmp.loc[tmp.ifo == detector,'peak_time'].max()
     else:
         gpsStart = opts.gpsStart
 
@@ -258,13 +267,13 @@ elif opts.PostgreSQL:
         gpsEnd = opts.gpsEnd
 
     # Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
-    detchannelname = opts.detector + ':' + opts.channelname
+    detchannelname = detector + ':' + opts.channelname
 
     write_subfile()
     if opts.upload:
-        write_subfile_upload()
+        write_subfile_upload(detector)
         listOfParentJobs = []
-    omicrontriggers = get_triggers(gpsStart,gpsEnd)
+    omicrontriggers = get_triggers(gpsStart,gpsEnd,detector)
 
     oTriggers = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
     oTriggers.sort_values('peak_time',ascending=False,inplace=True)
