@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
-import optparse,os,string,random,pdb,socket
-from gwpy.table.lsctables import SnglBurstTable
+import optparse,os,string,random,pdb,socket,subprocess
+from trigfind import find_trigger_files
 from gwpy.segments import DataQualityFlag
+from gwpy.table import EventTable
 import pandas as pd
+import numpy as np
 from sqlalchemy.engine import create_engine
 
 ###############################################################################
@@ -30,8 +32,6 @@ def parse_commandline():
     parser.add_option("--freqLow", help="lower frequency bound cut off for the glitches. [Default: 10]",type=int,default=10)
     parser.add_option("--maxSNR", help="This flag gives you the option to supply a upper limit to the SNR of the glitches [Optional Input]",type=float)
     parser.add_option("--outDir", help="Outdir of omega scan and omega scan webpage (i.e. your html directory)")
-    parser.add_option("--pathToExec", help="Path to version of wscan.py you want to use")
-    parser.add_option("--pathToExecUpload", help="Path to version of wscan.py you want to use")
     parser.add_option("--pathToIni", help="Path to ini file")
     parser.add_option("--pathToModel",default='./ML/trained_model/' ,help="Path to trained model")
     parser.add_option("--SNR", help="Lower bound SNR Threshold for omicron triggers, by default there is no upperbound SNR unless supplied throught the --maxSNR flag. [Default: 6]",type=float,default=6)
@@ -54,30 +54,6 @@ def id_generator(x,size=10, chars=string.ascii_uppercase + string.digits +string
     return ''.join(random.SystemRandom().choice(chars) for _ in range(size))
 
 ###############################################################################
-##########################                              #######################
-##########################   Func: threshold            #######################
-##########################                              #######################
-###############################################################################
-# Define threshold function that will filter omicron triggers based on SNR and frequency threshold the user sets (or the defaults.)
-
-def threshold(row):
-    passthresh = True
-    if not opts.durHigh is None:
-	passthresh = ((row.duration <= opts.durHigh) and passthresh)
-    if not opts.durLow is None:
-        passthresh = ((row.duration >= opts.durLow) and passthresh)
-    if not opts.freqHigh is None:
-        passthresh = ((row.peak_frequency <= opts.freqHigh) and passthresh)
-    if not opts.freqLow is None:
-        passthresh = ((row.peak_frequency >= opts.freqLow) and passthresh)
-    if not opts.maxSNR is None:
-        passthresh = ((row.snr <= opts.maxSNR) and passthresh)
-    if not opts.SNR is None:
-        passthresh = ((row.snr >= opts.SNR) and passthresh)
-    return passthresh
-
-
-###############################################################################
 ##########################                          ###########################
 ##########################   Func: get_triggers     ###########################
 ##########################                          ###########################
@@ -93,15 +69,39 @@ def get_triggers(gpsStart,gpsEnd,detector):
     # Display segments for which this flag is true
     print "Segments for which the ANALYSIS READY Flag is active: {0}".format(analysis_ready.active)
 
-    omicrontriggers = SnglBurstTable.fetch(detchannelname,'Omicron',\
-    float(gpsStart),float(gpsEnd),filt=threshold)
+    # get Omicron triggers
+    files = find_trigger_files(detchannelname,'Omicron',
+    float(gpsStart),float(gpsEnd))
 
-    print "List of available metadata information for a given glitch provided by omicron: {0}".format(omicrontriggers.columnnames)
+    omicrontriggers = EventTable.read(files, format='ligolw.sngl_burst')
+
+    # filter table
+    # Create mask assuming everything passes
+    masks = np.ones(len(omicrontriggers),dtype=bool)
+    if not opts.durHigh is None:
+        masks &= (omicrontriggers['duration'] <= opts.durHigh)
+    if not opts.durLow is None:
+        masks &= (omicrontriggers['duration'] >= opts.durLow)
+    if not opts.freqHigh is None:
+        masks &= (omicrontriggers['peak_frequency'] <= opts.freqHigh)
+    if not opts.freqLow is None:
+        masks &= (omicrontriggers['peak_frequency'] >= opts.freqLow)
+    if not opts.maxSNR is None:
+        masks &= (omicrontriggers['snr'] <= opts.maxSNR)
+    if not opts.SNR is None:
+        masks &= (omicrontriggers['snr'] >= opts.SNR)
+
+    omicrontriggers = omicrontriggers[masks]
+    # Set peakGPS
+    omicrontriggers['peakGPS'] = omicrontriggers['peak_time'] + (0.000000001)*omicrontriggers['peak_time_ns']
+
+    print "List of available metadata information for a given glitch provided by omicron: {0}".format(omicrontriggers.keys())
 
     print "Number of triggers after SNR and Freq cuts but before ANALYSIS READY flag filtering: {0}".format(len(omicrontriggers))
 
     # Filter the raw omicron triggers against the ANALYSIS READY flag.
-    omicrontriggers = omicrontriggers.vetoed(analysis_ready.active)
+    vetoed = omicrontriggers['peakGPS'].in_segmentlist(analysis_ready.active)
+    omicrontriggers = omicrontriggers[~vetoed]
 
     print "Final trigger length: {0}".format(len(omicrontriggers))
 
@@ -153,13 +153,13 @@ def write_dagfile_upload():
 
 # Write submission file for the condor job
 
-def write_subfile():
+def write_subfile(pathToWscanExec):
     for d in ['logs', 'condor']:
         if not os.path.isdir(d):
             os.makedirs(d)
     with open('./condor/gravityspy.sub', 'w') as subfile:
         subfile.write('universe = vanilla\n')
-        subfile.write('executable = {0}\n'.format(opts.pathToExec))
+        subfile.write('executable = {0}\n'.format(pathToWscanExec))
         subfile.write('\n')
         if opts.PostgreSQL:
             subfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML --PostgreSQL"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
@@ -187,13 +187,13 @@ def write_subfile():
 
 # Write submission file for the condor job
 
-def write_subfile_upload(detector):
+def write_subfile_upload(pathToUploadExec, detector):
     for d in ['logs_upload', 'condor']:
         if not os.path.isdir(d):
             os.makedirs(d)
     with open('./condor/upload.sub', 'w') as subfile:
         subfile.write('universe = local\n')
-        subfile.write('executable = {0}\n'.format(opts.pathToExecUpload))
+        subfile.write('executable = {0}\n'.format(pathToUploadExec))
         subfile.write('\n')
         subfile.write('arguments = "--Label $(Label) --detector {0}"\n'.format(detector))
         subfile.write('getEnv=True\n')
@@ -221,10 +221,30 @@ opts = parse_commandline()
 fullhostname = socket.getfqdn()
 if 'wa' in fullhostname:
     detector = 'H1'
-elif 'la' in fullhostname
+elif 'la' in fullhostname:
     detector = 'L1'
 else:
     detector = opts.detector
+
+# Determine location of executables
+proc = subprocess.Popen(['which', 'wscan'],
+                             stdin = subprocess.PIPE,
+                             stdout = subprocess.PIPE,
+                             stderr = subprocess.PIPE
+                         )
+(pathToWscanExec, err) = proc.communicate()
+if not pathToWscanExec:
+    raise ValueError('Cannot locate wscan executable in your path')
+
+proc = subprocess.Popen(['which', 'upload'],
+                             stdin = subprocess.PIPE,
+                             stdout = subprocess.PIPE,
+                             stderr = subprocess.PIPE
+                         )
+(pathToUploadExec, err) = proc.communicate()
+if not pathToUploadExec:
+    raise ValueError('Cannot locate upload executable in your path')
+
 
 if opts.HDF5:
     # Determine start and stop time of trigger query.
@@ -242,10 +262,10 @@ if opts.HDF5:
     # Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
     detchannelname = detector + ':' + opts.channelname
 
-    write_subfile()
+    write_subfile(pathToWscanExec)
     omicrontriggers = get_triggers(gpsStart,gpsEnd,detector)
-    oTriggers = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
-    oTriggers.rename(columns = {'index':'peakGPS'},inplace=True)
+    oTriggers = omicrontriggers.to_pandas()
+    oTriggers.sort_values('peak_time',ascending=False,inplace=True)
     oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
     oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID','event_id']].apply(write_dagfile,axis=1)
     oTriggers.peakGPS = oTriggers.peakGPS.apply(float)
@@ -269,19 +289,18 @@ elif opts.PostgreSQL:
     # Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
     detchannelname = detector + ':' + opts.channelname
 
-    write_subfile()
+    write_subfile(pathToWscanExec)
     if opts.upload:
-        write_subfile_upload(detector)
+        write_subfile_upload(pathToUploadExec, detector)
         listOfParentJobs = []
-    omicrontriggers = get_triggers(gpsStart,gpsEnd,detector)
+    omicrontriggers = get_triggers(gpsStart, gpsEnd, detector)
 
-    oTriggers = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
+    oTriggers = omicrontriggers.to_pandas()
     oTriggers.sort_values('peak_time',ascending=False,inplace=True)
-    oTriggers.rename(columns = {'index':'peakGPS'},inplace=True)
     oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
     oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID','event_id']].apply(write_dagfile,axis=1)
     if opts.upload:
         write_dagfile_upload()
     oTriggers.peakGPS = oTriggers.peakGPS.apply(float)
     oTriggers.to_sql('glitches',engine,index=False,if_exists='append')
-    os.system('/bin/condor_submit_dag gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max())) 
+    #os.system('/bin/condor_submit_dag gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max())) 

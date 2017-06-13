@@ -20,3 +20,4 @@ keras
 pandas
 gwpy
 psycopg2
+https://github.com/ligovirgo/trigfind/archive/v0.4.tar.gz
