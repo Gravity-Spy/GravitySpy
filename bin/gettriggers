@@ -298,6 +298,7 @@ elif opts.PostgreSQL:
     oTriggers = omicrontriggers.to_pandas()
     oTriggers.sort_values('peak_time',ascending=False,inplace=True)
     oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
+    oTriggers.peakGPS = oTriggers.peakGPS.apply(str)
     oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID','event_id']].apply(write_dagfile,axis=1)
     if opts.upload:
         write_dagfile_upload()
