@@ -1,0 +1,67 @@
+#!/usr/bin/env python
+
+# ---- Import standard modules to the python path.
+
+import optparse,os,string,random,pdb
+from gwpy.segments import DataQualityFlag
+import pandas as pd
+from sqlalchemy.engine import create_engine
+
+# Load gspySearchDB
+SQL_USER = os.environ['SQL_USER']
+SQL_PASS = os.environ['SQL_PASS']
+engine = create_engine('mysql://{0}:{1}@ldvw-dev.ligo.caltech.edu:3306/gravityspy'.format(SQL_USER,SQL_PASS))
+gSpySearch = pd.read_sql('GSMetadata', engine)
+gSpySearch.drop('indexID', 1, inplace=True)
+
+# Load GravitySpy
+engine1 = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
+gSpyDB = pd.read_sql('glitches', engine1)
+
+# Convert Graviyt Spy DB in to Search DB format. This is necessary to perform a diff between the DBs and determine how to update gspySearch accordingly
+def makelink(x):
+    # This horrendous thing obtains the public html path for image
+    interMediatePath = '/'.join(filter(None,str(x.Filename1).split('/'))[3:-1])
+    if x.ifo == 'L1':
+        return 'https://ldas-jobs.ligo-la.caltech.edu/~scoughlin/{0}/{1}.png'.format(interMediatePath,x.uniqueID)
+    else:
+        return 'https://ldas-jobs.ligo-wa.caltech.edu/~scoughlin/{0}/{1}.png'.format(interMediatePath, x.uniqueID)
+
+gSpyDB['imgUrl'] = gSpyDB[['ifo', 'uniqueID', 'Filename1']].apply(makelink,axis=1)
+
+gSpyDB['confidence'] = gSpyDB[['1400Ripples','1080Lines','Air_Compressor','Blip', 'Chirp', 'Extremely_Loud', 'Helix', 'Koi_Fish', 'Light_Modulation', 'Low_Frequency_Burst', 'Low_Frequency_Lines','None_of_the_Above', 'No_Glitch', 'Paired_Doves', 'Power_Line','Repeating_Blips', 'Scattered_Light', 'Scratchy', 'Tomte','Violin_Mode', 'Wandering_Line', 'Whistle']].max(axis=1)
+
+gSpyDB['pipeline'] = 'GravitySpy'
+gSpyDB['citizenScore'] = 0.0
+gSpyDB['flag'] = 0
+
+gSpyDB = gSpyDB[['uniqueID','ifo','Label','imgUrl', 'snr', 'amplitude','peak_frequency','central_freq','duration','bandwidth','chisq','chisq_dof','peakGPS','confidence', 'ImageStatus', 'pipeline', 'citizenScore', 'flag']]
+
+gSpyDB.columns = ['id', 'ifo', 'label', 'imgUrl', 'snr', 'amplitude', 'peakFreq', 'centralFreq', 'duration', 'bandwidth', 'chisq', 'chisqDof', 'GPStime','confidence', 'imageStatus', 'pipeline', 'citizenScore', 'flag']
+
+
+# Now gSpyDB and gSpySearch are the same, time to see what entries are different or new
+
+# First get identical entries and do a diff
+
+sameEntriesDB = gSpyDB.loc[gSpyDB.id.isin(gSpySearch.id)]
+sameEntriesSearch = gSpySearch.loc[gSpySearch.id.isin(gSpyDB.id)]
+sameEntriesDB = sameEntriesDB.set_index('id')
+sameEntriesSearch = sameEntriesSearch.set_index('id')
+sameEntriesDB.sort_index(inplace=True)
+sameEntriesSearch.sort_index(inplace=True)
+mask = (sameEntriesDB != sameEntriesSearch).any(1)
+sameEntriesDB = sameEntriesDB[mask]
+sameEntriesDB.reset_index(inplace=True)
+
+# We will now updates these rows on gSpySearch
+for iID in sameEntriesDB.id:
+    SQLCommand = 'UPDATE GSMetadata SET '
+    columnDict = sameEntriesDB.loc[sameEntriesDB.id == iID].drop('id', 1).to_dict(orient='records')[0]
+    for Column in columnDict:
+        if isinstance(columnDict[Column],basestring):
+            SQLCommand = SQLCommand + '''{0} = \'{1}\', '''.format(Column,columnDict[Column])
+        else:
+            SQLCommand = SQLCommand + '''{0} = {1}, '''.format(Column,columnDict[Column])
+    SQLCommand = SQLCommand[:-2] + ' WHERE id = \'' + iID + "'"
+    engine.execute(SQLCommand)
