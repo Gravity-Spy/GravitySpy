@@ -4,6 +4,7 @@ import optparse,os,string,random,pdb,socket,subprocess
 from trigfind import find_trigger_files
 from gwpy.segments import DataQualityFlag
 from gwpy.table import EventTable
+from decimal import Decimal
 import pandas as pd
 import numpy as np
 from sqlalchemy.engine import create_engine
@@ -119,7 +120,7 @@ def write_dagfile(x):
     with open('gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max()),'a+') as dagfile:
         dagfile.write('JOB {0}{1}{2} ./condor/gravityspy.sub\n'.format(x.peak_time,x.peak_time_ns,x.event_id))
         dagfile.write('RETRY {0}{1}{2} 10\n'.format(x.peak_time,x.peak_time_ns,x.event_id))
-        dagfile.write('VARS {0}{1}{4} jobNumber="{0}{1}{4}" eventTime="{2}" ID="{3}"'.format(x.peak_time,x.peak_time_ns,x.peakGPS,x.uniqueID,x.event_id))
+        dagfile.write('VARS {0}{1}{4} jobNumber="{0}{1}{4}" eventTime="{2}" ID="{3}"'.format(x.peak_time,x.peak_time_ns,x.peakGPSforDag,x.uniqueID,x.event_id))
         if opts.upload:
             listOfParentJobs.append('{0}{1}{2}'.format(x.peak_time,x.peak_time_ns,x.event_id))
         dagfile.write('\n\n')
@@ -263,12 +264,15 @@ if opts.HDF5:
     detchannelname = detector + ':' + opts.channelname
 
     write_subfile(pathToWscanExec)
+
     omicrontriggers = get_triggers(gpsStart,gpsEnd,detector)
+
     oTriggers = omicrontriggers.to_pandas()
     oTriggers.sort_values('peak_time',ascending=False,inplace=True)
     oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
-    oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID','event_id']].apply(write_dagfile,axis=1)
-    oTriggers.peakGPS = oTriggers.peakGPS.apply(float)
+    oTrigger['peakGPSforDag'] = oTriggers.peakGPS.apply(repr)
+    oTriggers[['peak_time','peak_time_ns','peakGPSforDag','uniqueID','event_id']].apply(write_dagfile,axis=1)
+    oTriggers.drop('peakGPSforDag', axis=1, inplace=True)
     oTriggers.to_hdf('triggers.h5','gspy_triggers',append=True)
 
 elif opts.PostgreSQL:
@@ -282,7 +286,7 @@ elif opts.PostgreSQL:
         gpsStart = opts.gpsStart
 
     if not opts.gpsEnd:
-        gpsEnd = gpsStart + 604800
+        gpsEnd = gpsStart + 86400 #+ 604800
     else:
         gpsEnd = opts.gpsEnd
 
@@ -298,10 +302,10 @@ elif opts.PostgreSQL:
     oTriggers = omicrontriggers.to_pandas()
     oTriggers.sort_values('peak_time',ascending=False,inplace=True)
     oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
-    oTriggers.peakGPS = oTriggers.peakGPS.apply(str)
-    oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID','event_id']].apply(write_dagfile,axis=1)
+    oTriggers['peakGPSforDag'] = oTriggers.peakGPS.apply(repr)
+    oTriggers[['peak_time','peak_time_ns','peakGPSforDag','uniqueID','event_id']].apply(write_dagfile,axis=1)
+    oTriggers.drop('peakGPSforDag', axis=1, inplace=True)
     if opts.upload:
         write_dagfile_upload()
-    oTriggers.peakGPS = oTriggers.peakGPS.apply(float)
     oTriggers.to_sql('glitches',engine,index=False,if_exists='append')
-    #os.system('/bin/condor_submit_dag gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max())) 
+    os.system('/bin/condor_submit_dag gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max())) 
