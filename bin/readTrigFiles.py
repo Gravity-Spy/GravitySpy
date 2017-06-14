@@ -5,6 +5,8 @@ from gwpy.table.lsctables import SnglBurstTable
 from gwpy.segments import DataQualityFlag
 import pandas as pd
 from sqlalchemy.engine import create_engine
+import cPickle as pickle
+import numpy as np
 
 ###############################################################################
 ##########################                             ########################
@@ -31,18 +33,20 @@ def parse_commandline():
     parser.add_option("--maxSNR", help="This flag gives you the option to supply a upper limit to the SNR of the glitches [Optional Input]",type=float)
     parser.add_option("--outDir", help="Outdir of omega scan and omega scan webpage (i.e. your html directory)")
     parser.add_option("--pathToExec", help="Path to version of wscan.py you want to use")
-    parser.add_option("--pathToExecUpload", help="Path to version of wscan.py you want to use")
     parser.add_option("--pathToIni", help="Path to ini file")
     parser.add_option("--pathToModel",default='./ML/trained_model/' ,help="Path to trained model")
     parser.add_option("--SNR", help="Lower bound SNR Threshold for omicron triggers, by default there is no upperbound SNR unless supplied throught the --maxSNR flag. [Default: 6]",type=float,default=6)
     parser.add_option("--uniqueID", action="store_true", default=False,help="Is this image being generated for the GravitySpy project, is so we will create a uniqueID strong to use for labeling images instead of GPS time")
     parser.add_option("--HDF5", action="store_true", default=False,help="Store triggers in local HDF5 table format")
     parser.add_option("--PostgreSQL", action="store_true", default=False,help="Store triggers in local PostgreSQL format")
-    parser.add_option("--upload", action="store_true", default=False,help="You plan on uploading to the gravityspywebsite")
+    parser.add_option("--Pipeline", help="Pipeline whose triggers you are downloading")
+    parser.add_option("--URL", help="Pipeline whose triggers you are downloading")
+    parser.add_option("--Label", help="Provide the label assocaited with the text file if known")
 
     opts, args = parser.parse_args()
 
     return opts
+
 
 ###############################################################################
 ##########################                             ########################
@@ -52,30 +56,6 @@ def parse_commandline():
 
 def id_generator(x,size=10, chars=string.ascii_uppercase + string.digits +string.ascii_lowercase):
     return ''.join(random.SystemRandom().choice(chars) for _ in range(size))
-
-###############################################################################
-##########################                              #######################
-##########################   Func: threshold            #######################
-##########################                              #######################
-###############################################################################
-# Define threshold function that will filter omicron triggers based on SNR and frequency threshold the user sets (or the defaults.)
-
-def threshold(row):
-    passthresh = True
-    if not opts.durHigh is None:
-	passthresh = ((row.duration <= opts.durHigh) and passthresh)
-    if not opts.durLow is None:
-        passthresh = ((row.duration >= opts.durLow) and passthresh)
-    if not opts.freqHigh is None:
-        passthresh = ((row.peak_frequency <= opts.freqHigh) and passthresh)
-    if not opts.freqLow is None:
-        passthresh = ((row.peak_frequency >= opts.freqLow) and passthresh)
-    if not opts.maxSNR is None:
-        passthresh = ((row.snr <= opts.maxSNR) and passthresh)
-    if not opts.SNR is None:
-        passthresh = ((row.snr >= opts.SNR) and passthresh)
-    return passthresh
-
 
 ###############################################################################
 ##########################                          ###########################
@@ -118,31 +98,9 @@ def get_triggers(gpsStart,gpsEnd):
 def write_dagfile(x):
     with open('gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max()),'a+') as dagfile:
         dagfile.write('JOB {0}{1}{2} ./condor/gravityspy.sub\n'.format(x.peak_time,x.peak_time_ns,x.event_id))
-        dagfile.write('RETRY {0}{1}{2} 10\n'.format(x.peak_time,x.peak_time_ns,x.event_id))
+        dagfile.write('RETRY {0}{1}{2} 3\n'.format(x.peak_time,x.peak_time_ns,x.event_id))
         dagfile.write('VARS {0}{1}{4} jobNumber="{0}{1}{4}" eventTime="{2}" ID="{3}"'.format(x.peak_time,x.peak_time_ns,x.peakGPS,x.uniqueID,x.event_id))
-        if opts.upload:
-            listOfParentJobs.append('{0}{1}{2}'.format(x.peak_time,x.peak_time_ns,x.event_id))
         dagfile.write('\n\n')
-
-###############################################################################
-##########################                                #####################
-##########################   Func: write_dagfile_upload   #####################
-##########################                                #####################
-###############################################################################
-
-# Write dag_file file for the condor job
-
-def write_dagfile_upload():
-    with open('gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max()),'a+') as dagfile:
-        iT=0
-        listOfChildJobs = []
-        for iLabel in ["1080Lines","1400Ripples","Air_Compressor","Blip","Chirp","Extremely_Loud","Helix","Koi_Fish","Light_Modulation","Low_Frequency_Burst","Low_Frequency_Lines","No_Glitch","None_of_the_Above","Paired_Doves","Power_Line","Repeating_Blips","Scattered_Light","Scratchy","Tomte","Violin_Mode","Wandering_Line","Whistle"]:
-            iT= iT +1
-            dagfile.write('JOB {0} ./condor/upload.sub\n'.format(iT))
-            dagfile.write('VARS {0} jobNumber="{0}" Label="{1}"\n'.format(iT,iLabel))
-            listOfChildJobs.append(str(iT))
-            dagfile.write('\n\n')
-        dagfile.write('PARENT {0} CHILD {1}'.format(' '.join(listOfParentJobs),' '.join(listOfChildJobs)))
 
 
 ###############################################################################
@@ -158,13 +116,10 @@ def write_subfile():
         if not os.path.isdir(d):
             os.makedirs(d)
     with open('./condor/gravityspy.sub', 'w') as subfile:
-        subfile.write('universe = vanilla\n')
+        subfile.write('universe = local\n')
         subfile.write('executable = {0}\n'.format(opts.pathToExec))
         subfile.write('\n')
-        if opts.PostgreSQL:
-            subfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML --PostgreSQL"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
-        elif opts.HDF5:
-            subfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML --HDF5"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
+        subfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID)"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
         subfile.write('getEnv=True\n')
         subfile.write('\n')
         subfile.write('accounting_group_user = scott.coughlin\n')#.format(opts.username))
@@ -177,38 +132,6 @@ def write_subfile():
         subfile.write('output = logs/gravityspy-$(jobNumber).out\n')
         subfile.write('notification = never\n')
         subfile.write('queue 1')
-        subfile.close()
-
-###############################################################################
-##########################                            #########################
-##########################   Func: write_subfile     #########################
-##########################                            #########################
-###############################################################################
-
-# Write submission file for the condor job
-
-def write_subfile_upload():
-    for d in ['logs_upload', 'condor']:
-        if not os.path.isdir(d):
-            os.makedirs(d)
-    with open('./condor/upload.sub', 'w') as subfile:
-        subfile.write('universe = local\n')
-        subfile.write('executable = {0}\n'.format(opts.pathToExecUpload))
-        subfile.write('\n')
-        subfile.write('arguments = "--Label $(Label) --detector {0}"\n'.format(opts.detector))
-        subfile.write('getEnv=True\n')
-        subfile.write('\n')
-        subfile.write('accounting_group_user = scott.coughlin\n')#.format(opts.username))
-        subfile.write('accounting_group = ligo.dev.o1.detchar.ch_categorization.glitchzoo\n')
-        subfile.write('\n')
-        subfile.write('priority = 0\n')
-        subfile.write('request_memory = 1000\n')
-        subfile.write('\n')
-        subfile.write('error = logs_upload/gravityspy-$(jobNumber).err\n')
-        subfile.write('output = logs_upload/gravityspy-$(jobNumber).out\n')
-        subfile.write('notification = never\n')
-        subfile.write('queue 1')
-        subfile.close()
 
 ############################################################################
 ###############          MAIN        #######################################
@@ -217,62 +140,99 @@ def write_subfile_upload():
 # Parse commandline arguments
 opts = parse_commandline()
 
-if opts.HDF5:
-    # Determine start and stop time of trigger query.
-    if not opts.gpsStart:
-        tmp = pd.read_hdf('triggers.h5')
-        gpsStart = tmp.peak_time.max()
-    else:
-        gpsStart = opts.gpsStart
+# SQL table to store results
+engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
 
-    if not opts.gpsEnd:
-        gpsEnd = gpsStart + 28800
-    else:
-        gpsEnd = opts.gpsEnd
+# Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
+detchannelname = opts.detector + ':' + opts.channelname
 
-    # Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
-    detchannelname = opts.detector + ':' + opts.channelname
+# Disentangle URL
+Path = '{0}'.format(opts.URL).replace('jobs','pcdev1')
+PathList = Path.split('/')[2::]
+PathList.insert(2,'public_html')
+PathToTrig = '/'.join(PathList).replace('edu','edu:').replace('~','/home/')
+fileName = opts.Pipeline + '.txt'
+os.system('gsiscp {0} {1}'.format(PathToTrig,fileName))
+oTriggers = pd.DataFrame()
 
-    write_subfile()
-    omicrontriggers = get_triggers(gpsStart,gpsEnd)
-    oTriggers = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
+if opts.Pipeline == 'LAL':
+    tmp = pd.read_csv(fileName,names=['GPS'])
+    # Find Omicron trigger associated with these times
+    for iGPS in tmp.GPS:
+        try:
+            omicrontriggers = SnglBurstTable.fetch(detchannelname,'Omicron',iGPS-1,iGPS+1)
+            tmp1 = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
+            tmp1 = tmp1.loc[tmp1['index'] == min(omicrontriggers.get_peak(), key=lambda x:abs(x-iGPS))]
+            oTriggers = oTriggers.append(tmp1)
+        except:
+            print(iGPS)
+
+    oTriggers['Label'] = opts.Label
+    oTriggers['Pipeline'] = opts.Pipeline
     oTriggers.rename(columns = {'index':'peakGPS'},inplace=True)
-    oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
-    oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID','event_id']].apply(write_dagfile,axis=1)
-    oTriggers.peakGPS = oTriggers.peakGPS.apply(float)
-    oTriggers.to_hdf('triggers.h5','gspy_triggers',append=True)
 
-elif opts.PostgreSQL:
+if opts.Pipeline == 'PCAT':
+    tmp = pd.read_csv(fileName,names=['GPS'])
+    oTriggers = pd.DataFrame()
+    for iGPS in tmp.GPS:
+        try:
+            omicrontriggers = SnglBurstTable.fetch(detchannelname,'Omicron',iGPS-2,iGPS+2)
+            tmp1 = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
+            tmp1 = tmp1.loc[tmp1['index'] == min(omicrontriggers.get_peak(), key=lambda x:abs(x-iGPS))]
+            oTriggers = oTriggers.append(tmp1)
+        except:
+            print(iGPS)
 
-    engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
-
-    if not opts.gpsStart:
-        tmp = pd.read_sql('glitches',engine)
-        gpsStart = tmp.loc[tmp.ifo == opts.detector,'peak_time'].max()
-    else:
-        gpsStart = opts.gpsStart
-
-    if not opts.gpsEnd:
-        gpsEnd = gpsStart + 604800
-    else:
-        gpsEnd = opts.gpsEnd
-
-    # Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
-    detchannelname = opts.detector + ':' + opts.channelname
-
-    write_subfile()
-    if opts.upload:
-        write_subfile_upload()
-        listOfParentJobs = []
-    omicrontriggers = get_triggers(gpsStart,gpsEnd)
-
-    oTriggers = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
-    oTriggers.sort_values('peak_time',ascending=False,inplace=True)
+    oTriggers['Label'] = opts.Label
+    oTriggers['Pipeline'] = opts.Pipeline
     oTriggers.rename(columns = {'index':'peakGPS'},inplace=True)
-    oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
-    oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID','event_id']].apply(write_dagfile,axis=1)
-    if opts.upload:
-        write_dagfile_upload()
-    oTriggers.peakGPS = oTriggers.peakGPS.apply(float)
-    oTriggers.to_sql('glitches',engine,index=False,if_exists='append')
-    os.system('/bin/condor_submit_dag gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max())) 
+
+if opts.Pipeline == 'WDF':
+    oTriggers = pd.DataFrame()
+    tmp = pd.read_csv(fileName)
+    for (iGPS, iSNR, iDur, iLabel, iPeakT, iPeakF) in zip(tmp.GPSMax, tmp.SNRMax, tmp.Duration, tmp.LABEL, tmp.GPSstart, tmp.FreqMax):
+        try:
+            omicrontriggers = SnglBurstTable.fetch(detchannelname,'Omicron',iGPS-2,iGPS+2)
+            tmp1 = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
+            tmp1 = tmp1.loc[tmp1['index'] == min(omicrontriggers.get_peak(), key=lambda x:abs(x-iGPS))]
+            tmp1['Label']    = iLabel
+            tmp1['WDF_snr'] = iSNR
+            tmp1['WDF_duration'] = iDur
+            tmp1['WDF_iPeakT'] = iPeakT
+            tmp1['WDF_iPeakF'] = iPeakF
+            oTriggers = oTriggers.append(tmp1)
+        except:
+            print(iGPS)
+
+    oTriggers['Pipeline'] = opts.Pipeline
+    oTriggers.rename(columns = {'index':'peakGPS'},inplace=True)
+
+if opts.Pipeline == 'DBNN':
+    tmp = pd.read_csv(fileName,names=['GPS'])
+    oTriggers = pd.DataFrame()
+    for iGPS in tmp.GPS:
+        try:
+            omicrontriggers = SnglBurstTable.fetch(detchannelname,'Omicron',iGPS-2,iGPS+2)
+            tmp1 = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
+            tmp1 = tmp1.loc[tmp1['index'] == min(omicrontriggers.get_peak(), key=lambda x:abs(x-iGPS))]
+            oTriggers = oTriggers.append(tmp1)
+        except:
+            print(iGPS)
+
+    oTriggers['Label'] = opts.Label
+    oTriggers['Pipeline'] = opts.Pipeline
+    oTriggers.rename(columns = {'index':'peakGPS'},inplace=True)
+
+
+# Read file
+# Can we determine the label from either the name of the file or a column in 
+
+write_subfile()
+oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
+oTriggers.drop_duplicates(['peakGPS'],inplace=True)
+oTriggers[['peak_time','peak_time_ns','peakGPS','uniqueID','event_id']].apply(write_dagfile,axis=1)
+oTriggers.peakGPS = oTriggers.peakGPS.apply(float)
+oTriggers = oTriggers[['peakGPS', 'ifo', 'peak_time', 'peak_time_ns', 'start_time','start_time_ns', 'duration', 'search', 'process_id', 'event_id','peak_frequency', 'central_freq', 'bandwidth', 'channel','amplitude', 'snr', 'confidence', 'chisq', 'chisq_dof','param_one_name', 'param_one_value', 'Label', 'Pipeline','uniqueID']]
+oTriggers.to_csv(open('{0}_test.csv'.format(opts.Pipeline),'w'),index=False)
+oTriggers.to_sql('O1GlitchClassificationUpdate',engine,index=False,if_exists='append',chunksize=100)
+#os.system('/bin/condor_submit_dag -maxjobs 10 gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max())) 

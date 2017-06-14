@@ -39,6 +39,7 @@ engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5
 triggers = pd.read_sql('glitches',engine)
 triggers = triggers.loc[(triggers.UploadFlag == 0) & (triggers.ifo == opts.detector)]
 triggers = triggers.iloc[np.where(triggers.Filename1.apply(os.path.isfile )==True)]
+triggers = triggers.loc[triggers.peakGPS > 1161907217]
 
 labels = [opts.Label]
 

@@ -54,11 +54,9 @@ classificationsList = []
 
 # Query the last 100 classificaitons made (this is the max allowable)
 allClassifications = Classification.where(scope='project', project_id='1104', last_id='{0}'.format(lastID), page_size='100')
-allClassifications = Classification.where(scope='project', project_id='1104')
 
 # Loop until no more classifications
-#for iN in range(0,allClassifications.object_count):
-while True:
+for iN in range(0,allClassifications.object_count):
     try:
         classification = allClassifications.next()
     except:
