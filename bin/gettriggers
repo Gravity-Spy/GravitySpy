@@ -172,7 +172,7 @@ def write_subfile(pathToWscanExec):
         subfile.write('accounting_group = ligo.dev.o1.detchar.ch_categorization.glitchzoo\n')
         subfile.write('\n')
         subfile.write('priority = 0\n')
-        subfile.write('request_memory = 1000\n')
+        subfile.write('request_memory = 4000\n')
         subfile.write('\n')
         subfile.write('error = logs/gravityspy-$(jobNumber).err\n')
         subfile.write('output = logs/gravityspy-$(jobNumber).out\n')
@@ -286,7 +286,7 @@ elif opts.PostgreSQL:
         gpsStart = opts.gpsStart
 
     if not opts.gpsEnd:
-        gpsEnd = gpsStart + 86400 #+ 604800
+        gpsEnd = gpsStart + 120*86400
     else:
         gpsEnd = opts.gpsEnd
 
@@ -307,5 +307,6 @@ elif opts.PostgreSQL:
     oTriggers.drop('peakGPSforDag', axis=1, inplace=True)
     if opts.upload:
         write_dagfile_upload()
+    oTriggers['ImageStatus'] = 'Testing'
     oTriggers.to_sql('glitches',engine,index=False,if_exists='append')
     os.system('/bin/condor_submit_dag gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max())) 

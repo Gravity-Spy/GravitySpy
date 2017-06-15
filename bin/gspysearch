@@ -65,3 +65,7 @@ for iID in sameEntriesDB.id:
             SQLCommand = SQLCommand + '''{0} = {1}, '''.format(Column,columnDict[Column])
     SQLCommand = SQLCommand[:-2] + ' WHERE id = \'' + iID + "'"
     engine.execute(SQLCommand)
+
+# Get new entries
+newEntriesDB = gSpyDB.loc[~gSpyDB.id.isin(gSpySearch.id)]
+newEntriesDB.loc[~newEntriesDB.confidence.isnull()].to_sql(con=engine, name='GSMetadata', if_exists='append',index=False,chunksize=100)
