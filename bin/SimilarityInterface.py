@@ -6,7 +6,7 @@ import argparse #this helps parse the arguments to the call
 import sys #this is needed to deal with inputs
 
 #sql database to look at
-SQLCommand = "null"
+SQLCommand = ''
 
 #main function
 def main(args):
