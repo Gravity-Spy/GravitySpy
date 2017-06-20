@@ -20,7 +20,7 @@ def main(args):
 # checks to see if the arguement inputs are correct, if not, program ends
 #temporarly changed because it crashes
 def null_check():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Script to look for other images that are very simular in the database")
     parser.add_argument("--howmany", help="How many closest simularites to display.", type=int, action="store_true")
     parser.add_argument("--thresh" , help="threshold for what simularites to display.", type=int, action="store_true")
     parser.add_argument("--threshArray", help="Array in which to display simularites from. (unclear) (DONT USE THIS UNLESS YOU KNOW WHAT YOU ARE DOING)", action="store_true")
