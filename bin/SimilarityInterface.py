@@ -20,26 +20,27 @@ def main(args):
 # checks to see if the arguement inputs are correct, if not, program ends
 #temporarly changed because it crashes
 def null_check():
+    #you cannot split the parser into required and unrequired groups because there is no "required input"... if you input --howmany and --ZooID it is valid and if you input --UniqueID and --thresh it is valid
     parser = argparse.ArgumentParser(description="Script to look for other images that are very simular in the database")
-    parser.add_argument("--howmany", help="How many closest simularites to display.", type=int, action="store_true")
-    parser.add_argument("--thresh" , help="threshold for what simularites to display.", type=int, action="store_true")
-    parser.add_argument("--threshArray", help="Array in which to display simularites from. (unclear) (DONT USE THIS UNLESS YOU KNOW WHAT YOU ARE DOING)", action="store_true")
+    parser.add_argument("--howmany", help="How many closest simularites to display.", type=float, action="store_true", default=5)
+    parser.add_argument("--thresh" , help="threshold for what simularites to display.", type=float, action="store_true", default=.9)
+    parser.add_argument("--threshUpper", help="Upper bound on similarity (there is no reason to use this)", type=float, action="store_true", default=99)
     parser.add_argument("--ZooID", help="ZooID of the image you want to compare.", action="store_true")
     parser.add_argument("--UniqueID", help="UniqueID of the image you want to compare.", action="store_true")
     args = parser.parse_args();
     #make sure that there arn't too many inputs
-    if (args.howmany and args.tresh):
-        input_error(1)
-    if (args.howmany and args.threshArray):
-        input_error(1)
-    if (args.tresh and args.threshArray):
-        input_error(1)
     if (args.ZooID and args.UniqueId):
         input_error(2)
     if (~(args.ZooID or args.UniqueId)):
         input_error(3)
     #this return statment is not completely fleshed out yet
-    return 0;
+    out = {'count': args.howmany, 'thresh': args.thresh, 'tresh-high': args.threshHigh}
+    if args.ZooID:
+        out['ID'] = args.ZooID
+        out['ID-type'] = 'Zoo'
+    else:
+        out['ID'] = args.UniqueID
+        out['ID-type'] = 'Uni'
 #temporary for testing other parts of projet
 def check():
     return {'count': 7, 'c-type': 'num', 'ID': "memes", 'ID-type': "ZooID"}
@@ -49,8 +50,9 @@ def check():
 #error 2: too many ID inputs
 #error 3: no ID input
 def input_error(i):
-    if (i == 1):
-        print "You can only have one restricting input, you put in two or more"
+    #currently i != 1
+    #if (i == 1):
+    #    print "You can only have one restricting input, you put in two or more"
     if (i == 2):
         print "You can only have one ID input, if you know both, just put one."
     if (i == 3):
@@ -75,22 +77,8 @@ def sort(simularities):
 # prints out all the simular images information, calls the image downloading if active
 def output(simularities, args):
     #case where user choses how many to print off of top
-    if args['c-type'] == 'num':
-        for index, row in simularities.nlargest(args['count'], 'two').iterrows():
-            print row[0], row[1]
-    #case where user choses at what value to stop printing them at
-    elif args['c-type'] == 'tresh':
-        for index, row in simularities.iterrows():
-            if row[1] >= args['count']:
-                print row[0], row[1]
-    #case where user (doesn't know what they are doing) is chosing a range of values to print
-    elif args['c-type'] == 'treshArray':
-        for index, row in simularities.iterrows():
-            if row[1] >= args['count']: #incomplete
-                print row[0], row[1]
-    #case where user gave us no spesifics
-    else:
-        for index, row in simularities.nlargest(5, 'two').iterrows():
+    for index, row in simularities.nlargest(args['count'], 'two').iterrows():
+        if row[1] >= args['tresh'] and row[1] <= args['treshHigh']:
             print row[0], row[1]
 
 #calls main with the inputs given to the function
