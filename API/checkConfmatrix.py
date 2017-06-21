@@ -85,19 +85,19 @@ for iUser in test.groupby('links_user'):
     conf_divided,a1,a2,a3 = np.linalg.lstsq(np.diagflat(tmp.sum(axis=1)), tmp.todense())
     alphaTmp = np.diag(conf_divided)
     # Extract this users currentworkflow based on what maximum level they had made a classification.
-    userCurrentLevel = userStatusInit.loc[userStatusInit.userID == iUser[0], 'workflowInit']
+    userCurrentLevel = userStatusInit.loc[userStatusInit.userID == iUser[0], 'workflowInit'].iloc[0]
     # Check to see if they satisfy the promotion criteria for any level above their current level
     # if so update initialized workflow to the true workflow
-    if (alphaTmp[promotion_Level1] > alpha[promotion_Level1]) and (userCurrentLevel < 2):
+    if (alphaTmp[promotion_Level1] > alpha[promotion_Level1]).all() and (userCurrentLevel < 2):
         userStatusInit.loc[userStatusInit.userID == iUser[0], 'workflowInit'] = 2
 
-    if (alphaTmp[promotion_Level2] > alpha[promotion_Level2]) and (userCurrentLevel < 3):
+    if (alphaTmp[promotion_Level2] > alpha[promotion_Level2]).all() and (userCurrentLevel < 3):
         userStatusInit.loc[userStatusInit.userID == iUser[0], 'workflowInit'] = 3
 
-    if (alphaTmp[promotion_Level3] > alpha[promotion_Level3]) and (userCurrentLevel < 4):
+    if (alphaTmp[promotion_Level3] > alpha[promotion_Level3]).all() and (userCurrentLevel < 4):
         userStatusInit.loc[userStatusInit.userID == iUser[0], 'workflowInit'] = 4
 
-    if (alphaTmp[promotion_Level4] > alpha[promotion_Level4]) and (userCurrentLevel < 5):
+    if (alphaTmp[promotion_Level4] > alpha[promotion_Level4]).all() and (userCurrentLevel < 5):
         userStatusInit.loc[userStatusInit.userID == iUser[0], 'workflowInit'] = 5
 
 # Merge user Status DB with DB containing the workflowInit DB
