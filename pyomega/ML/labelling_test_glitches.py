@@ -20,6 +20,14 @@ options:
 
 def main(pickle_adr,model_adr,save_adr,verbose):
 
+    dw = label_glitches(pickle_adr,model_adr,save_adr,verbose)
+    dwslice = dw[0][1:]
+    dwslice = np.array(map(float, dwslice))
+
+    return dw[0],np.argmax(dwslice)    
+
+def label_glitches(pickle_adr,model_adr,save_adr,verbose):
+
     # Pickles of unlabelled glitches have already saved in this address
     pickle_adr += '/'
 
@@ -89,7 +97,7 @@ def main(pickle_adr,model_adr,save_adr,verbose):
 
     dw = np.concatenate((name_array_unlabelled, score3_unlabelled), axis=1)
 
-    return dw[0],np.argmax(score3_unlabelled[0])
+    return dw
 
 if __name__ == "__main__":
    print 'Start ...'
