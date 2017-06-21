@@ -21,43 +21,20 @@ def main(args):
 #temporarly changed because it crashes
 def null_check():
     #you cannot split the parser into required and unrequired groups because there is no "required input"... if you input --howmany and --ZooID it is valid and if you input --UniqueID and --thresh it is valid
-    parser = argparse.ArgumentParser(description="Script to look for other images that are very simular in the database")
-    parser.add_argument("--howmany", help="How many closest simularites to display.", type=float, action="store_true", default=5)
-    parser.add_argument("--thresh" , help="threshold for what simularites to display.", type=float, action="store_true", default=.9)
-    parser.add_argument("--threshUpper", help="Upper bound on similarity (there is no reason to use this)", type=float, action="store_true", default=99)
-    parser.add_argument("--ZooID", help="ZooID of the image you want to compare.", action="store_true")
-    parser.add_argument("--UniqueID", help="UniqueID of the image you want to compare.", action="store_true")
-    args = parser.parse_args();
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--howmany", help="How many closest simularites to display.", type=float)
+    parser.add_argument("--thresh" , help="threshold for what simularites to display.", type=float)
+    parser.add_argument("--threshArray", help="Array in which to display simularites from. (unclear) (DONT USE THIS UNLESS YOU KNOW WHAT YOU ARE DOING)")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--ZooID", help="ZooID of the image you want to compare.")
+    group.add_argument("--UniqueID", help="UniqueID of the image you want to compare.")
+    args = parser.parse_args()
     #make sure that there arn't too many inputs
-    if (args.ZooID and args.UniqueId):
-        input_error(2)
-    if (~(args.ZooID or args.UniqueId)):
-        input_error(3)
     #this return statment is not completely fleshed out yet
-    out = {'count': args.howmany, 'thresh': args.thresh, 'tresh-high': args.threshHigh}
-    if args.ZooID:
-        out['ID'] = args.ZooID
-        out['ID-type'] = 'Zoo'
-    else:
-        out['ID'] = args.UniqueID
-        out['ID-type'] = 'Uni'
+    return 0;
 #temporary for testing other parts of projet
 def check():
     return {'count': 7, 'c-type': 'num', 'ID': "memes", 'ID-type': "ZooID"}
-
-#helper of check that displays the error and stops the program
-#error 1: too many treshhold inputs
-#error 2: too many ID inputs
-#error 3: no ID input
-def input_error(i):
-    #currently i != 1
-    #if (i == 1):
-    #    print "You can only have one restricting input, you put in two or more"
-    if (i == 2):
-        print "You can only have one ID input, if you know both, just put one."
-    if (i == 3):
-        print "You did not give an ID input."
-    sys.exit()
 
 # inputs: arguments
 # output: a pandas list of the simularity mesurements of inputed ID
