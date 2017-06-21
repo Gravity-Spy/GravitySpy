@@ -54,9 +54,11 @@ def sort(simularities):
 # prints out all the simular images information, calls the image downloading if active
 def output(simularities, args):
     #case where user choses how many to print off of top
-    for index, row in simularities.nlargest(args['count'], 'two').iterrows():
-        if row[1] >= args['tresh'] and row[1] <= args['treshHigh']:
+    count = 0;
+    for index, row in simularities.iterrows():
+        if row[1] >= args['thresh'] and row[1] <= args['threshHigh'] and count < args['count']:
             print row[0], row[1]
+            count += 1
 
 #calls main with the inputs given to the function
 main(sys.argv[1:])
