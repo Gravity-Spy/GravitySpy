@@ -184,7 +184,7 @@ elif UniqueID:
             SubjectSets[str(tmpSubject.raw['links']['subject_sets'][0])] = tmpSubject
 
     else:
-        SubjectSets.append(str(subject.raw['links']['subject_sets'][0]))
+        print 'Since training and not golden no need to find what subject set it belongs to...'
 
     print "Contained in Subject Set(s) %s."%SubjectSets
 

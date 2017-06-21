@@ -11,12 +11,16 @@ from sqlalchemy.engine import create_engine
 SQL_USER = os.environ['SQL_USER']
 SQL_PASS = os.environ['SQL_PASS']
 engine = create_engine('mysql://{0}:{1}@ldvw-dev.ligo.caltech.edu:3306/gravityspy'.format(SQL_USER,SQL_PASS))
+print 'loading GSpySearchDB ...'
 gSpySearch = pd.read_sql('GSMetadata', engine)
 gSpySearch.drop('indexID', 1, inplace=True)
+print 'done'
 
 # Load GravitySpy
 engine1 = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
+print 'loading GSpyDB ...'
 gSpyDB = pd.read_sql('glitches', engine1)
+print 'done'
 
 # Convert Graviyt Spy DB in to Search DB format. This is necessary to perform a diff between the DBs and determine how to update gspySearch accordingly
 def makelink(x):
@@ -44,6 +48,7 @@ gSpyDB.columns = ['id', 'ifo', 'label', 'imgUrl', 'snr', 'amplitude', 'peakFreq'
 
 # First get identical entries and do a diff
 
+"""
 sameEntriesDB = gSpyDB.loc[gSpyDB.id.isin(gSpySearch.id)]
 sameEntriesSearch = gSpySearch.loc[gSpySearch.id.isin(gSpyDB.id)]
 sameEntriesDB = sameEntriesDB.set_index('id')
@@ -65,7 +70,8 @@ for iID in sameEntriesDB.id:
             SQLCommand = SQLCommand + '''{0} = {1}, '''.format(Column,columnDict[Column])
     SQLCommand = SQLCommand[:-2] + ' WHERE id = \'' + iID + "'"
     engine.execute(SQLCommand)
-
+"""
 # Get new entries
 newEntriesDB = gSpyDB.loc[~gSpyDB.id.isin(gSpySearch.id)]
+print 'Number of new entries...{0}'.format(len(newEntriesDB.loc[~newEntriesDB.confidence.isnull()]))
 newEntriesDB.loc[~newEntriesDB.confidence.isnull()].to_sql(con=engine, name='GSMetadata', if_exists='append',index=False,chunksize=100)
