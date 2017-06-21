@@ -12,6 +12,7 @@ import collections
 import operator
 
 from pyomega.API.getLabelDict import getAnswers
+from pyomega.API import getGoldenImages
 
 ########################
 ####### Functions ######
@@ -40,6 +41,11 @@ def flatten(d, parent_key='', sep='_'):
 answers = getAnswers('1104')
 answersDictRev =  dict(enumerate(sorted(answers[2360].keys())))
 answersDict = dict((str(v),k) for k,v in answersDictRev.iteritems())
+
+# Obtain workflow order
+workflowGoldenSetDict = getGoldenImages.getGoldenSubjectSets('1104')
+workflowOrder = [int(str(i)) for i in Project.find('1104').raw['configuration']['workflow_order']]
+levelWorkflowDict = dict(enumerate(workflowOrder))
 
 # Load lastID that was parsed
 #lastID = "16822410"
@@ -83,13 +89,18 @@ classifications.metadata_finished_at = pd.to_datetime(classifications.metadata_f
 
 # Now we have to handle follow up question parsing very carefully. It is something that is very useful but can be a headache to parse. From the answers dict obtained about we know which answers have follow up questions. As import we know that the classification DF we created will have the format of 'annotations_value_answers_' + "Follow up question" if such a follow up qustion was answered.
 #Check if field is *not* empty
-if not classifications.filter(regex="annotations_value_answers").empty:
+#if not classifications.filter(regex="annotations_value_answers").empty:
  
 
 # At this point we have generically parsed the classification of the user. The label given by the parser is a string and for the purposes of our exercise converting these strings to ints is useful. After we will append the classifications to the old classifications and save. Then we tackle the information about the image that was classified. 
 
 classifications['annotations_value_choiceINT'] = classifications['annotations_value_choice'].apply(extract_choiceINT)
 classifications = classifications.select_dtypes(exclude=['object'])
+try:
+    classifications[['links_user']]
+except:
+    classifications['links_user'] = 0
+
 classifications = classifications[['created_at','id','links_project','links_subjects','links_user','links_workflow','metadata_finished_at','metadata_started_at','metadata_workflow_version','annotations_value_choiceINT']]
 classifications.loc[classifications.links_user.isnull(),'links_user'] = 0
 classifications.links_user = classifications.links_user.astype(int)

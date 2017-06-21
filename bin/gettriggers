@@ -143,8 +143,12 @@ def write_dagfile_upload():
             dagfile.write('VARS {0} jobNumber="{0}" Label="{1}"\n'.format(iT,iLabel))
             listOfChildJobs.append(str(iT))
             dagfile.write('\n\n')
+        iT= iT +1
+        dagfile.write('JOB {0} ./condor/gspysearch.sub\n'.format(iT))
+        dagfile.write('VARS {0} jobNumber="{0}"\n'.format(iT))
+        listOfChildJobs.append(str(iT))
+        dagfile.write('\n\n')
         dagfile.write('PARENT {0} CHILD {1}'.format(' '.join(listOfParentJobs),' '.join(listOfChildJobs)))
-
 
 ###############################################################################
 ##########################                            #########################
@@ -172,11 +176,11 @@ def write_subfile(pathToWscanExec):
         subfile.write('accounting_group = ligo.dev.o1.detchar.ch_categorization.glitchzoo\n')
         subfile.write('\n')
         subfile.write('priority = 0\n')
-        subfile.write('request_memory = 1000\n')
+        subfile.write('request_memory = 4000\n')
         subfile.write('\n')
         subfile.write('error = logs/gravityspy-$(jobNumber).err\n')
         subfile.write('output = logs/gravityspy-$(jobNumber).out\n')
-        subfile.write('notification = never\n')
+        subfile.write('notification = Error\n')
         subfile.write('queue 1')
         subfile.close()
 
@@ -207,7 +211,37 @@ def write_subfile_upload(pathToUploadExec, detector):
         subfile.write('\n')
         subfile.write('error = logs_upload/gravityspy-$(jobNumber).err\n')
         subfile.write('output = logs_upload/gravityspy-$(jobNumber).out\n')
-        subfile.write('notification = never\n')
+        subfile.write('notification = Error\n')
+        subfile.write('queue 1')
+        subfile.close()
+
+###############################################################################
+##########################                            #########################
+##########################   Func: write_subfile     #########################
+##########################                            #########################
+###############################################################################
+
+# Write submission file for the condor job
+
+def write_subfile_gspysearch(pathTogspysearchExec):
+    for d in ['logs_gspysearch', 'condor']:
+        if not os.path.isdir(d):
+            os.makedirs(d)
+    with open('./condor/gspysearch.sub', 'w') as subfile:
+        subfile.write('universe = local\n')
+        subfile.write('executable = {0}\n'.format(pathTogspysearchExec))
+        subfile.write('\n')
+        subfile.write('getEnv=True\n')
+        subfile.write('\n')
+        subfile.write('accounting_group_user = scott.coughlin\n')#.format(opts.username))
+        subfile.write('accounting_group = ligo.dev.o1.detchar.ch_categorization.glitchzoo\n')
+        subfile.write('\n')
+        subfile.write('priority = 0\n')
+        subfile.write('request_memory = 1000\n')
+        subfile.write('\n')
+        subfile.write('error = logs_gspysearch/gravityspy-$(jobNumber).err\n')
+        subfile.write('output = logs_gspysearch/gravityspy-$(jobNumber).out\n')
+        subfile.write('notification = Error\n')
         subfile.write('queue 1')
         subfile.close()
 
@@ -246,6 +280,15 @@ proc = subprocess.Popen(['which', 'upload'],
 if not pathToUploadExec:
     raise ValueError('Cannot locate upload executable in your path')
 
+proc = subprocess.Popen(['which', 'gspysearch'],
+                             stdin = subprocess.PIPE,
+                             stdout = subprocess.PIPE,
+                             stderr = subprocess.PIPE
+                         )
+(pathTogspysearchExec, err) = proc.communicate()
+if not pathTogspysearchExec:
+    raise ValueError('Cannot locate gspysearch executable in your path')
+
 
 if opts.HDF5:
     # Determine start and stop time of trigger query.
@@ -281,12 +324,12 @@ elif opts.PostgreSQL:
 
     if not opts.gpsStart:
         tmp = pd.read_sql('glitches',engine)
-        gpsStart = tmp.loc[tmp.ifo == detector,'peak_time'].max()
+        gpsStart = tmp.loc[tmp.ifo == detector,'peak_time'].max() + 1
     else:
         gpsStart = opts.gpsStart
 
     if not opts.gpsEnd:
-        gpsEnd = gpsStart + 86400 #+ 604800
+        gpsEnd = gpsStart + 120*86400
     else:
         gpsEnd = opts.gpsEnd
 
@@ -296,16 +339,22 @@ elif opts.PostgreSQL:
     write_subfile(pathToWscanExec)
     if opts.upload:
         write_subfile_upload(pathToUploadExec, detector)
+        write_subfile_gspysearch(pathTogspysearchExec)
         listOfParentJobs = []
     omicrontriggers = get_triggers(gpsStart, gpsEnd, detector)
 
     oTriggers = omicrontriggers.to_pandas()
-    oTriggers.sort_values('peak_time',ascending=False,inplace=True)
-    oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
-    oTriggers['peakGPSforDag'] = oTriggers.peakGPS.apply(repr)
-    oTriggers[['peak_time','peak_time_ns','peakGPSforDag','uniqueID','event_id']].apply(write_dagfile,axis=1)
-    oTriggers.drop('peakGPSforDag', axis=1, inplace=True)
-    if opts.upload:
-        write_dagfile_upload()
-    oTriggers.to_sql('glitches',engine,index=False,if_exists='append')
-    os.system('/bin/condor_submit_dag gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max())) 
+    oTriggers = oTriggers.loc[oTriggers.peakGPS > gpsStart]
+    if oTriggers.empty:
+        print 'No triggers survived cuts.'
+    else:
+        oTriggers.sort_values('peak_time',ascending=False,inplace=True)
+        oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
+        oTriggers['peakGPSforDag'] = oTriggers.peakGPS.apply(repr)
+        oTriggers[['peak_time','peak_time_ns','peakGPSforDag','uniqueID','event_id']].apply(write_dagfile,axis=1)
+        oTriggers.drop('peakGPSforDag', axis=1, inplace=True)
+        if opts.upload:
+	    write_dagfile_upload()
+        oTriggers['ImageStatus'] = 'Testing'
+        oTriggers.to_sql('glitches',engine,index=False,if_exists='append')
+        os.system('/bin/condor_submit_dag gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max())) 
