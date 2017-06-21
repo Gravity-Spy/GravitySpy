@@ -345,13 +345,16 @@ elif opts.PostgreSQL:
 
     oTriggers = omicrontriggers.to_pandas()
     oTriggers = oTriggers.loc[oTriggers.peakGPS > gpsStart]
-    oTriggers.sort_values('peak_time',ascending=False,inplace=True)
-    oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
-    oTriggers['peakGPSforDag'] = oTriggers.peakGPS.apply(repr)
-    oTriggers[['peak_time','peak_time_ns','peakGPSforDag','uniqueID','event_id']].apply(write_dagfile,axis=1)
-    oTriggers.drop('peakGPSforDag', axis=1, inplace=True)
-    if opts.upload:
-        write_dagfile_upload()
-    oTriggers['ImageStatus'] = 'Testing'
-    oTriggers.to_sql('glitches',engine,index=False,if_exists='append')
-    os.system('/bin/condor_submit_dag gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max())) 
+    if oTriggers.empty:
+        print 'No triggers survived cuts.'
+    else:
+        oTriggers.sort_values('peak_time',ascending=False,inplace=True)
+        oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
+        oTriggers['peakGPSforDag'] = oTriggers.peakGPS.apply(repr)
+        oTriggers[['peak_time','peak_time_ns','peakGPSforDag','uniqueID','event_id']].apply(write_dagfile,axis=1)
+        oTriggers.drop('peakGPSforDag', axis=1, inplace=True)
+        if opts.upload:
+	    write_dagfile_upload()
+        oTriggers['ImageStatus'] = 'Testing'
+        oTriggers.to_sql('glitches',engine,index=False,if_exists='append')
+        os.system('/bin/condor_submit_dag gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max())) 
