@@ -102,7 +102,7 @@ def get_triggers(gpsStart,gpsEnd,detector):
 
     # Filter the raw omicron triggers against the ANALYSIS READY flag.
     vetoed = omicrontriggers['peakGPS'].in_segmentlist(analysis_ready.active)
-    omicrontriggers = omicrontriggers[~vetoed]
+    omicrontriggers = omicrontriggers[vetoed]
 
     print "Final trigger length: {0}".format(len(omicrontriggers))
 
