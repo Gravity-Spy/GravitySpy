@@ -169,12 +169,7 @@ def main(inifile,eventTime,ID,outDir,pathToModel='/home/machinelearning/GravityS
     stopTime = startTime + blockTime
 
     # Read in the data
-    if NSDF:
-        data = TimeSeries.fetch(channelName, startTime, stopTime)
-    else:
-        connection = datafind.GWDataFindHTTPConnection()
-        cache = connection.find_frame_urls(det, frameType, startTime, stopTime, urltype='file')
-        data = TimeSeries.read(cache, channelName, format='gwf', start=startTime, end=stopTime)
+    data = TimeSeries.get(channelName, startTime, stopTime)
 
     # resample data
     if data.sample_rate.decompose().value != sampleFrequency:
