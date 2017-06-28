@@ -2,10 +2,20 @@
 
 # ---- Import standard modules to the python path.
 
-import optparse,os,string,random,pdb
+import argparse,os,string,random,pdb
 from gwpy.segments import DataQualityFlag
 import pandas as pd
 from sqlalchemy.engine import create_engine
+
+def parse_commandline():
+    """Parse the arguments given on the command-line.
+    """
+    parser = argparse.ArgumentParser(description=__doc__)
+    args = parser.parse_args()
+
+    return args
+
+args = parse_commandline()
 
 # Load gspySearchDB
 SQL_USER = os.environ['SQL_USER']
