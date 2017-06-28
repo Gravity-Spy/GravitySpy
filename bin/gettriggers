@@ -176,7 +176,7 @@ def write_subfile(pathToWscanExec):
         subfile.write('accounting_group = ligo.dev.o1.detchar.ch_categorization.glitchzoo\n')
         subfile.write('\n')
         subfile.write('priority = 0\n')
-        subfile.write('request_memory = 4000\n')
+        subfile.write('request_memory = 5000\n')
         subfile.write('\n')
         subfile.write('error = logs/gravityspy-$(jobNumber).err\n')
         subfile.write('output = logs/gravityspy-$(jobNumber).out\n')
