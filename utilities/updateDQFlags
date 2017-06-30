@@ -52,3 +52,13 @@ for era in searchEras:
         else:
             mask = H1glitches.segments.apply(lambda x: iFlagValues.active.intersects_segment(x))
             glitches.loc[H1glitches.loc[mask].index,'DQFlag'] = iFlagName
+
+glitches.drop('segments', axis=1, inplace=True)
+glitchOrig = pd.read_sql('glitches', engine)
+mask = (glitchOrig != glitches).any(1)
+glitches = glitches.loc[mask]
+
+# We will now updates these rows on gSpySearch
+for iID, iDQFlag in zip(glitches.uniqueID, glitches.DQFlag):
+    SQLCommand = 'UPDATE glitches SET \"DQFlag\" = \'' + iDQFlag + "\'  WHERE \"uniqueID\" = \'" + iID + "\'"
+    engine.execute(SQLCommand)
