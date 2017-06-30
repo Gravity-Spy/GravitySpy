@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+
+import optparse,os,string,random,pdb,socket,subprocess
+import pandas as pd
+from sqlalchemy.engine import create_engine
+from panoptes_client import *
+
+engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
+
+# Load classifications, current user DB status and golden images from DB
+#classifications = pd.read_sql('classifications', engine)
+
+#SQLCommand = 'UPDATE classifications SET \"uniqueID\" = \'{0}\' WHERE links_subjects = {1}'.format(gravitySpyID, iZooID)
+#engine.execute(SQLCommand)
+
+StartOfO1 = 1126400000
+EndOfO1 = 1137250000
+
+StartofER10andO2 = 1161907217
+
+O1DQFlags = 'curl -O https://code.pycbc.phy.syr.edu/detchar/veto-definitions/download/8be194f5d083f99f9c2e5875da38a32f28cba01e/burst/O1/H1L1-HOFT_C00_O1_BURST.xml'
+O2DQFlags = 'curl -O https://code.pycbc.phy.syr.edu/detchar/veto-definitions/download/8be194f5d083f99f9c2e5875da38a32f28cba01e/burst/O2/H1L1-HOFT_C00_O2_BURST.xml'
+
+os.system(O1DQFlags)
+os.system(
