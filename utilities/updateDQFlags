@@ -4,22 +4,51 @@ import optparse,os,string,random,pdb,socket,subprocess
 import pandas as pd
 from sqlalchemy.engine import create_engine
 from panoptes_client import *
+from gwpy.segments import DataQualityDict, SegmentList, Segment
 
 engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
 
 # Load classifications, current user DB status and golden images from DB
-#classifications = pd.read_sql('classifications', engine)
+glitches = pd.read_sql('glitches', engine)
 
-#SQLCommand = 'UPDATE classifications SET \"uniqueID\" = \'{0}\' WHERE links_subjects = {1}'.format(gravitySpyID, iZooID)
-#engine.execute(SQLCommand)
+commandStart = 'curl -O '
+baseURL = 'https://code.pycbc.phy.syr.edu/detchar/veto-definitions/download/'
+gitHash = '8be194f5d083f99f9c2e5875da38a32f28cba01e'
+searchType = 'burst'
+xmlFileBase = 'H1L1-HOFT_C00'
 
-StartOfO1 = 1126400000
-EndOfO1 = 1137250000
+searchEras = ['O1', 'O2']
 
-StartofER10andO2 = 1161907217
+startOfGSpySeg = glitches.peakGPS.min()
+endOfGSpySeg = glitches.peakGPS.max()
+GSpySegment = SegmentList([Segment(startOfGSpySeg,endOfGSpySeg)])
 
-O1DQFlags = 'curl -O https://code.pycbc.phy.syr.edu/detchar/veto-definitions/download/8be194f5d083f99f9c2e5875da38a32f28cba01e/burst/O1/H1L1-HOFT_C00_O1_BURST.xml'
-O2DQFlags = 'curl -O https://code.pycbc.phy.syr.edu/detchar/veto-definitions/download/8be194f5d083f99f9c2e5875da38a32f28cba01e/burst/O2/H1L1-HOFT_C00_O2_BURST.xml'
+# We want to make a column of segment lists in our pandas temporarily. This will
+# allow an easy use of intersects in gwpy
 
-os.system(O1DQFlags)
-os.system(
+def makeSeg(x):
+    return Segment(x,x)
+
+glitches['segments'] = glitches.peakGPS.apply(makeSeg)
+
+L1glitches = glitches.loc[glitches.ifo == 'L1']
+H1glitches = glitches.loc[glitches.ifo == 'H1']
+
+for era in searchEras:
+    # Obtain XML file
+    xmlFile = xmlFileBase + '_' + era + '_' + searchType.upper() + '.xml'
+    command_line = commandStart + baseURL + '/' + gitHash + '/' + searchType + '/' + era + '/' + xmlFile 
+    os.system(command_line)
+
+    # Query XML file and populate flags
+    flags = DataQualityDict.from_veto_definer_file(xmlFile)
+    flags.populate(segments=GSpySegment)
+
+    # Loop over flags and determine whether glitch falls within segment with flag
+    for iFlagName, iFlagValues in flags.iteritems():
+        if 'L1' in iFlagName:
+            mask = L1glitches.segments.apply(lambda x: iFlagValues.active.intersects_segment(x))
+            glitches.loc[L1glitches.loc[mask].index,'DQFlag'] = iFlagName
+        else:
+            mask = H1glitches.segments.apply(lambda x: iFlagValues.active.intersects_segment(x))
+            glitches.loc[H1glitches.loc[mask].index,'DQFlag'] = iFlagName
