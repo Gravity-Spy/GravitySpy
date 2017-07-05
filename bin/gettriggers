@@ -356,5 +356,6 @@ elif opts.PostgreSQL:
         if opts.upload:
 	    write_dagfile_upload()
         oTriggers['ImageStatus'] = 'Testing'
+        oTriggers['DQFlag'] = 'NoFlag'
         oTriggers.to_sql('glitches',engine,index=False,if_exists='append')
         os.system('/bin/condor_submit_dag gravityspy_{0}_{1}.dag'.format(oTriggers.peak_time.min(),oTriggers.peak_time.max())) 
