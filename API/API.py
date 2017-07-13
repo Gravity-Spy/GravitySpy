@@ -43,13 +43,12 @@ answersDictRev =  dict(enumerate(sorted(answers[2360].keys())))
 answersDict = dict((str(v),k) for k,v in answersDictRev.iteritems())
 
 # Obtain workflow order
-workflowGoldenSetDict = getGoldenImages.getGoldenSubjectSets('1104')
 workflowOrder = [int(str(i)) for i in Project.find('1104').raw['configuration']['workflow_order']]
 levelWorkflowDict = dict(enumerate(workflowOrder))
 
 # Load lastID that was parsed
 #lastID = "16822410"
-lastID = pd.read_sql("select max(id) from classifications",engine).iloc[0].iloc[0]
+lastID = pd.read_sql("select max(id) from classificationsdev",engine).iloc[0].iloc[0]
 print(lastID)
 
 # Connect to panoptes and query all classifications done on project 1104 (i.e. GravitySpy)
@@ -95,13 +94,13 @@ classifications.metadata_finished_at = pd.to_datetime(classifications.metadata_f
 # At this point we have generically parsed the classification of the user. The label given by the parser is a string and for the purposes of our exercise converting these strings to ints is useful. After we will append the classifications to the old classifications and save. Then we tackle the information about the image that was classified. 
 
 classifications['annotations_value_choiceINT'] = classifications['annotations_value_choice'].apply(extract_choiceINT)
-classifications = classifications.select_dtypes(exclude=['object'])
 try:
     classifications[['links_user']]
 except:
     classifications['links_user'] = 0
 
-classifications = classifications[['created_at','id','links_project','links_subjects','links_user','links_workflow','metadata_finished_at','metadata_started_at','metadata_workflow_version','annotations_value_choiceINT']]
+classifications = classifications[['created_at','id','links_project','links_subjects','links_user','links_workflow','metadata_finished_at','metadata_started_at','metadata_workflow_version','annotations_value_choiceINT', 'annotations_value_choice']]
 classifications.loc[classifications.links_user.isnull(),'links_user'] = 0
 classifications.links_user = classifications.links_user.astype(int)
-classifications.to_sql('classificationsDev',engine,index=False,if_exists='append',chunksize=100)
+print classifications['created_at'].iloc[0]
+classifications.to_sql('classificationsdev',engine,index=False,if_exists='append',chunksize=100)

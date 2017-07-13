@@ -21,12 +21,11 @@ def levelDict(x):
 engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
 
 # Load classifications, current user DB status and golden images from DB
-classifications = pd.read_sql('classifications', engine) 
+classifications = pd.read_sql('classificationsdev', engine) 
 userStatus = pd.read_sql('userStatus', engine)
 goldenDF = pd.read_sql('goldenimages', engine)
 
 # Obtain workflow order
-workflowGoldenSetDict = getGoldenImages.getGoldenSubjectSets('1104')
 workflowOrder = [int(str(i)) for i in Project.find('1104').raw['configuration']['workflow_order']]
 levelWorkflowDict = dict(enumerate(workflowOrder))
 workflowLevelDict = dict((v, k + 1) for k,v in levelWorkflowDict.iteritems())
@@ -127,4 +126,4 @@ def updateSettings(x):
 updates.apply(updateSettings,axis=1)
 
 # save new user Status
-#userStatus[['userID', 'workflowDB']].to_sql('userStatus', engine, index=False, if_exists='replace', chunksize=100)
+userStatus[['userID', 'workflowDB']].to_sql('userStatus', engine, index=False, if_exists='replace', chunksize=100)
