@@ -59,17 +59,17 @@ answersDict = dict((str(v),k) for k,v in answersDictRev.iteritems())
 numClasses = max(answersDict.iteritems(), key=operator.itemgetter(1))[1] + 1
 
 # merge the golden image DF with th classification (this merge is on links_subject (i.e. the zooID of the image classified)
-image_and_classification = classifications.merge(goldenDF)
+image_and_classification = classifications.merge(goldenDF, on=['links_subjects'])
 
 # This is where the power of pandas comes in...on the fly in very quick order we can fill all users confusion matrices by smartly chosen groupby
 test = image_and_classification.groupby(['links_user','annotations_value_choiceINT','GoldLabel'])
 test = test.count().links_subjects.to_frame().reset_index()
 
 # Determine what indices of the confusion matrix we evaluate for each level based on the answers for that level
-promotion_Level1 = [answersDict[iAnswer] for iAnswer in answers[1610].keys() if iAnswer not in['NONEOFTHEABOVE']]
-promotion_Level2 = [answersDict[iAnswer] for iAnswer in answers[1934].keys() if iAnswer not in['NONEOFTHEABOVE']]
-promotion_Level3 = [answersDict[iAnswer] for iAnswer in answers[1935].keys() if iAnswer not in['NONEOFTHEABOVE']]
-promotion_Level4 = [answersDict[iAnswer] for iAnswer in answers[2360].keys() if iAnswer not in['NONEOFTHEABOVE']]
+promotion_Level1 = [answersDict[iAnswer] for iAnswer in answers[1610].keys() if iAnswer not in['NONEOFTHEABOVE', '1400RIPPLES', '1080LINES']]
+promotion_Level2 = [answersDict[iAnswer] for iAnswer in answers[1934].keys() if iAnswer not in['NONEOFTHEABOVE', '1400RIPPLES', '1080LINES']]
+promotion_Level3 = [answersDict[iAnswer] for iAnswer in answers[1935].keys() if iAnswer not in['NONEOFTHEABOVE', '1400RIPPLES', '1080LINES']]
+promotion_Level4 = [answersDict[iAnswer] for iAnswer in answers[2360].keys() if iAnswer not in['NONEOFTHEABOVE', '1400RIPPLES', '1080LINES']]
 
 # Set a criteria for "user skill"
 alpha = .7*np.ones(numClasses)
@@ -111,6 +111,9 @@ updates = userStatus_DB_Init.loc[userStatus_DB_Init.workflowInit > userStatus_DB
 # Now we would like to save userStatus DB with the updates from workflowInit
 userStatus_DB_Init.loc[userStatus_DB_Init.workflowInit > userStatus_DB_Init.workflowDB, 'workflowDB'] = userStatus_DB_Init.loc[userStatus_DB_Init.workflowInit > userStatus_DB_Init.workflowDB, 'workflowInit']
 userStatus = userStatus_DB_Init[['userID', 'workflowDB']]
+
+for iWorkflow in range(1,6):
+    print('Level {0}: {1}'.format(iWorkflow,len(userStatus.loc[userStatus.workflowDB == iWorkflow])))
 
 # Now update user settings
 Panoptes.connect()
