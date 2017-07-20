@@ -11,8 +11,8 @@ engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5
 # Load classifications, current user DB status and golden images from DB
 glitches = pd.read_sql('glitches', engine)
 
-commandStart = 'curl -O '
-baseURL = 'https://code.pycbc.phy.syr.edu/detchar/veto-definitions/download/'
+commandStart = "curl -O -s -L -b /tmp/ecpcookie.u`id -u` "
+baseURL = 'https://git.ligo.org/detchar/veto-definitions/raw/'
 gitHash = '8be194f5d083f99f9c2e5875da38a32f28cba01e'
 searchType = 'burst'
 xmlFileBase = 'H1L1-HOFT_C00'
