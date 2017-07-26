@@ -19,7 +19,7 @@
 import os, sys
 import subprocess
 import numpy as np
-import optparse
+import argparse
 from sqlalchemy.engine import create_engine
 import pandas as pd
 import pdb
@@ -36,14 +36,15 @@ __date__    = "4/17/2017"
 
 def parse_commandline():
     """@parse the options given on the command-line.
+       Example command line would be trainingset_psql --userhome-H1=/home/scott.coughlin/tmp1/ --userhome-H1=/home/scoughlin/tmp1/ --outdir=./TrainingSet --imageType Training 
     """
-    parser = optparse.OptionParser(usage=__doc__,version=__version__)
+    parser = argparse.ArgumentParser(usage=__doc__,version=__version__)
 
     parser.add_option("-b", "--database", help="Database (O1GlitchClassification,classification,glitches).", default="glitches")
     parser.add_option("-w", "--userhome-H1", help="Path to your user directory on Hanford", default="/home/scott.coughlin/")
     parser.add_option("-l", "--userhome-L1", help="Path to your user directory on Livingston", default="/home/scoughlin/")
     parser.add_option("-o", "--outdir", help="Output directory.",default ="./TrainingSet")
-
+    parser.add_option("-t", "--imageType", help="Output directory.",default ="./TrainingSet")
     parser.add_option("-v", "--verbose", action="store_true", default=False,
                       help="Run verbosely. (Default: False)")
 
@@ -70,9 +71,11 @@ TrainingFolder = opts.outdir
 if not os.path.isdir(TrainingFolder):
     os.mkdir(TrainingFolder) 
 database = opts.database
+imageType = opts.imageType
 
 engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
-tmp = pd.read_sql(database,engine)
+print 'Loading {0} images from table {1}'.format(imageType, database)
+tmp = pd.read_sql('SELECT * FROM {0} WHERE \"ImageStatus\" = \'{1}\''.format(database, imageType),engine)
 
 tmp = tmp.loc[~(tmp.Filename1 == None) & (tmp.ImageStatus == 'Training')]
 
@@ -91,8 +94,11 @@ for label in tmp.Label.unique():
             userpath = "{0}".format(opts.userhome_L1)
 
         pd.DataFrame(tmp2.loc[(tmp.ifo == ifo),['Filename1','Filename2','Filename3','Filename4']].as_matrix().flatten()).to_csv(open('filenames.txt','w'),index=False,header=False)
+
+        print 'making directory on {0}'.format(hostpath)
+        os.system("gsissh {0} 'mkdir -p {1}'".format(hostpath, userpath))
         os.system("gsiscp filenames.txt {0}:{1}".format(hostpath,userpath))
-        os.system("gsissh {0} 'tar -cz --file={1}_{2}.tar.gz --files-from=filenames.txt'".format(hostpath,ifo,label))
+        os.system("gsissh {0} 'tar -cz --file={1}/{2}_{3}.tar.gz --files-from={1}/filenames.txt'".format(hostpath,userpath,ifo,label))
         os.system("gsiscp {0}:{1}/{2}_{3}.tar.gz .".format(hostpath,userpath,ifo,label))
         os.system("tar -xzf {0}_{1}.tar.gz".format(ifo,label))
     os.system("find home/ -name '*.png' -exec mv {} . \;")
