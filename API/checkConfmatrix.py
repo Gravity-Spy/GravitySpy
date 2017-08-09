@@ -21,7 +21,7 @@ def levelDict(x):
 engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
 
 # Load classifications, current user DB status and golden images from DB
-classifications = pd.read_sql('classificationsdev', engine) 
+classifications = pd.read_sql('SELECT links_user, links_subjects, links_workflow, "annotations_value_choiceINT" FROM classificationsdev', engine)
 userStatus = pd.read_sql('userStatus', engine)
 goldenDF = pd.read_sql('goldenimages', engine)
 
@@ -129,4 +129,9 @@ def updateSettings(x):
 updates.apply(updateSettings,axis=1)
 
 # save new user Status
-userStatus[['userID', 'workflowDB']].to_sql('userStatus', engine, index=False, if_exists='replace', chunksize=100)
+for iRow in updates.iterrows():
+    SQLCommand = 'UPDATE \"userStatus\" SET \"workflowDB\" = {0} WHERE \"userID\" = {1}'.format(iRow[1][['workflowInit']].iloc[0], iRow[1][['userID']].iloc[0])
+    result = engine.execute(SQLCommand)
+    if not result.rowcount:
+        print 'New User {0}'.format(iRow[1][['userID']].iloc[0])
+        pd.DataFrame({'userID' : iRow[1]['userID'], 'workflowDB' : iRow[1]['workflowInit']},index=[0])[['userID', 'workflowDB']].to_sql('userStatus', engine, index=False, if_exists='append')
