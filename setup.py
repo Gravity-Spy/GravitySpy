@@ -84,6 +84,8 @@ requires = [
     'pandas',
     'gwpy',
     'lscsoft_glue',
+    'https://github.com/ligovirgo/trigfind/archive/v0.4.tar.gz',
+    'psycopg2',
     'panoptes_client',
 ]
 tests_require = [
@@ -134,6 +136,8 @@ setup(name=DISTNAME,
           'Development Status :: 3 - Alpha',
           'Intended Audience :: Science/Research',
           'Intended Audience :: End Users/Desktop',
+          'Intended Audience :: Science/Research',
+          'Intended Audience :: End Users/Desktop',
           'Intended Audience :: Developers',
           'Natural Language :: English',
           'Topic :: Scientific/Engineering',
@@ -143,5 +147,3 @@ setup(name=DISTNAME,
           'Operating System :: Unix',
           'Operating System :: MacOS',
           'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-      ],
-)
