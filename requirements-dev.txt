@@ -1,0 +1,6 @@
+# docs
+sphinx
+numpydoc
+sphinx-bootstrap-theme
+sphinxcontrib-programoutput
+sphinx_rtd_theme
