@@ -3,24 +3,30 @@
 # ---- Import standard modules to the python path.
 
 import os,csv,ast
+import pickle
 import optparse
 import pandas as pd
 from panoptes_client import *
 import numpy as np
-#Hold
 import pdb
 from sqlalchemy.engine import create_engine
 import time
+
+from pyomega.API import getGoldenImages
+from pyomega.API.getLabelDict import getAnswers
 
 def parse_commandline():
     """
     Parse the options given on the command-line.
     """
     parser = optparse.OptionParser()
-    parser.add_option("--SubjectSet", help="Zooniverse subject set.",type=int,default=6584)
-    parser.add_option("--SubjectID", help="Zooniverse subject id.",type=int,default=3775127)
+    parser.add_option("-b", "--database", help="Database (O1GlitchClassification,classification,glitches).", default="glitches")
+    parser.add_option("-z","--ZooniverseID", help="Zooniverse subject set.",type=int)
+    parser.add_option("-s","--GravitySpyID", help="Gravity Spy id.")
     parser.add_option("--doAdd", action="store_true", default=False,
           help="Add SubjectID to SubjectSet. (Default: False)")
+    parser.add_option("--Label",
+          help="If you want to add a zooID to the golden et you need to specify the label. Also this label MUST comply with answers on website")
     parser.add_option("--doRemove", action="store_true", default=False,
           help="Remove SubjectID from SubjectSet. (Default: False)")
 
@@ -35,36 +41,170 @@ def parse_commandline():
 # Parse commandline arguments
 opts = parse_commandline()
 
-Panoptes.connect()
-project = Project.find(slug='zooniverse/gravity-spy')
+try:
+    Panoptes.connect()
+    project = Project.find(slug='zooniverse/gravity-spy')
+except:
+    ValueError('Remember to set export PANOPTES_USERNAME and export PANOPTES_PASSWORD')
 
-# Remember to set
-# export PANOPTES_USERNAME
-# export PANOPTES_PASSWORD
+database = opts.database
 
-subjectset=SubjectSet.find(opts.SubjectSet)
-iSubject = Subject.find(opts.SubjectID)
-iSubjectMeta = iSubject.raw["metadata"]
+try:
+    engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
+    print 'Looking in on server gravityspy.ciera.northwestern.edu and in DB {0}'.format(database)
+except:
+    ValueError('Remember to set export QUEST_SQL_USER and export QUEST_SQL_PASSWORD in order to access the Gravity Spy Data')
 
-subject = Subject()
-subject.links.project = project
-#subject.add_location(iSubjectMeta['Filename1'])
-#subject.add_location(iSubjectMeta['Filename2'])
-#subject.add_location(iSubjectMeta['Filename3'])
-#subject.add_location(iSubjectMeta['Filename4'])
-subject.metadata['date']          = iSubjectMeta['date']
-subject.metadata['subject_id']    = iSubjectMeta['subject_id']
-subject.metadata['Filename1']     = iSubjectMeta['Filename1'].split('/')[-1]
-subject.metadata['Filename2']     = iSubjectMeta['Filename2'].split('/')[-1]
-subject.metadata['Filename3']     = iSubjectMeta['Filename3'].split('/')[-1].split('/')[-1]
-subject.metadata['Filename4']     = iSubjectMeta['Filename4'].split('/')[-1].split('/')[-1]
-subject.save()
 
-if opts.doAdd:
-    subjectset.add(subject)
+GoldenImage = False
+TrainingSet = False
+SubjectSets = {}
+UniqueID = opts.GravitySpyID
+ZooniverseID = opts.ZooniverseID
 
-if opts.doRemove:
-    for iSubject in subjectset.subjects():
-        if iSubject.raw["metadata"]['Filename1'] == subject.metadata['Filename1']:
-            subject_id = iSubject.id 
-            subjectset.remove(subject_id)
+if ZooniverseID:
+    print "Analyzing Zooniverse ID {0}".format(ZooniverseID)
+    subject = Subject.find(ZooniverseID)
+
+    # Verify type of image
+    print 'checking whether image is a golden one or not...'
+    try:
+        if ZooniverseID == pd.read_sql('SELECT * FROM {0} WHERE "links_subjects" = \'{1}\''.format('goldenimages',ZooniverseID),engine).links_subjects.iloc[0]:
+            GoldenImage = True
+    except:
+        GoldenImage = False
+    print GoldenImage
+
+    print 'Checking for uniqueID value...'
+    try:
+        UniqueID = subject.metadata['subject_id']
+    except:
+        ValueError("Zooniverse ID does not have a subject ID assosciated wtih it: That should never be the case")
+    print UniqueID
+
+    print 'Checking if image in Training Set...'
+    try:
+        if pd.read_sql('SELECT * FROM {0} WHERE "uniqueID" = \'{1}\''.format(database,UniqueID),engine).ImageStatus.iloc[0] == 'Training':
+            TrainingSet = True
+        else:
+            TrainingSet = False
+    except:
+        ValueError('ID does not exist in DB there is a problem')
+    print TrainingSet
+
+    if (GoldenImage) and (not TrainingSet):
+        raise ValueError('Image is in golden set but cannot be found in training set. This is bad')
+
+    if GoldenImage:
+        # Need to loop over all possible duplicates of this image
+        uniqueID = pd.read_sql('SELECT * FROM {0} WHERE "links_subjects" = \'{1}\''.format('goldenimages',ZooniverseID),engine).uniqueID.iloc[0]
+        for iZooID in pd.read_sql('SELECT * FROM {0} WHERE "uniqueID" = \'{1}\''.format('goldenimages',uniqueID),engine).links_subjects: 
+            tmpSubject = Subject.find(iZooID)
+            SubjectSets[str(tmpSubject.raw['links']['subject_sets'][0])] = tmpSubject
+
+    else:
+        SubjectSets.append(str(subject.raw['links']['subject_sets'][0]))
+
+    print "Contained in Subject Set(s) %s."%SubjectSets
+
+    if TrainingSet and GoldenImage  and not opts.doRemove:   
+        print "If you want to remove from golden set and training set, add --doRemove flag"
+    elif TrainingSet and GoldenImage  and opts.doRemove:
+        # Removing from golden set on API
+        print 'Removing from golden set on API'
+        for (iSubjectSet, iSubject) in SubjectSets.iteritems():
+            subjectset=SubjectSet.find(iSubjectSet)
+            print 'Removing {0} from {1}'.format(iSubject,subjectset)
+            #subjectset.remove(iSubject)
+            print "Removing {0} from golden set.".format(iSubject)
+            print 'DELETE * FROM {0} WHERE "links_subjects" = \'{1}\''.format('goldenimages',iSubject.id)
+        print "Removing from training set."
+        print 'DELETE * FROM {0} WHERE "uniqueID" = \'{1}\''.format(database,UniqueID)
+    elif TrainingSet and not opts.doRemove:
+        print "If you want to remove from training set, add --doRemove flag"
+    elif TrainingSet and opts.doRemove:
+        print 'How did you manage to have training set but not golden iamge by supplying a zooID?'
+    elif not TrainingSet and not GoldenImage and ((not opts.doAdd) or (not opts.Label)):
+        print 'This ZooID is not in the trianing or golden...are you attempting to add it? if so please add --doAdd'
+    elif not TrainingSet and not GoldenImage and opts.doAdd and opts.Label:
+        print 'Alright trying to add this image to the Golden and Training Set'
+        answers = getAnswers('1104')
+        goldenSets = []
+        r = re.compile(opts.Label, re.IGNORECASE)
+        for k, v in answers.iteritems():
+            cond = filter(r.match, v)
+            if cond:
+                try:
+                    goldenSets.append(Workflow.find(k).raw['configuration']['gold_standard_sets'][0])
+                except:
+                    print 'No golden set for workflow {0}, process still running and working'.format(k)
+
+        if not goldenSets:
+            raise ValueError('Label given does not match enough with API answer to be excepted')
+
+        newGold = Subject.find(ZooniverseID)
+        oldSubjectSet = str(newGold.raw['links']['subject_sets'][0])
+        print 'Removing {0} from testing Subject Set {1}'.format(newGold, oldSubjectSet)
+        print 'Adding {0} to golden set(s) {1}'.format(newGold,goldenSets)
+        #newGold.metadata['#Type'] = gold
+        #newGold.metadata['#Label'] = opts.Label
+        #newGold.save()
+       
+
+elif UniqueID:
+
+    print "Analyzing uniqueID {0}".format(UniqueID)
+
+    # Verify type of image
+    print 'checking whether image is a golden one or not...'
+    try:
+        if pd.read_sql('SELECT * FROM {0} WHERE "uniqueID" = \'{1}\''.format('goldenimages',UniqueID),engine).links_subjects.iloc[0]:
+            GoldenImage = True
+    except:
+        GoldenImage = False
+    print GoldenImage
+
+    print 'Checking if image in Training Set...'
+    try:
+        if pd.read_sql('SELECT * FROM {0} WHERE "uniqueID" = \'{1}\''.format(database,UniqueID),engine).ImageStatus.iloc[0] == 'Training':
+            TrainingSet = True
+        else:
+            TrainingSet = False
+    except:
+        ValueError('ID does not exist in DB there is a problem')
+    print TrainingSet
+
+    if (GoldenImage) and (not TrainingSet):
+        raise ValueError('Image is in golden set but cannot be found in training set. This is bad')
+
+    if GoldenImage:
+        # Need to loop over all possible duplicates of this image
+        for iZooID in pd.read_sql('SELECT * FROM {0} WHERE "uniqueID" = \'{1}\''.format('goldenimages',UniqueID),engine).links_subjects:
+            tmpSubject = Subject.find(iZooID)
+            SubjectSets[str(tmpSubject.raw['links']['subject_sets'][0])] = tmpSubject
+
+    else:
+        print 'Since training and not golden no need to find what subject set it belongs to...'
+
+    print "Contained in Subject Set(s) %s."%SubjectSets
+
+    if TrainingSet and GoldenImage  and not opts.doRemove:
+        print "If you want to remove from golden set and training set, add --doRemove flag"
+    elif TrainingSet and GoldenImage  and opts.doRemove:
+        # Removing from golden set on API
+        print 'Removing from golden set on API'
+        for (iSubjectSet, iSubject) in SubjectSets.iteritems():
+            subjectset=SubjectSet.find(iSubjectSet)
+            print 'Removing {0} from {1}'.format(iSubject,subjectset)
+            #subjectset.remove(iSubject)
+            print "Removing {0} from golden set."
+            print 'DELETE * FROM {0} WHERE "links_subjects" = \'{1}\''.format('goldenimages',iSubject.id)
+        print "Removing from training set."
+        print 'DELETE * FROM {0} WHERE "uniqueID" = \'{1}\''.format(database,UniqueID)
+    elif TrainingSet and not opts.doRemove:
+        print "If you want to remove from training set, add --doRemove flag"
+    elif TrainingSet and opts.doRemove:
+        print "Removing from training set."
+        print 'DELETE * FROM {0} WHERE "uniqueID" = \'{1}\''.format(database,UniqueID)
+else:
+    print 'Need to supply uniqueID or ZooniverseID'

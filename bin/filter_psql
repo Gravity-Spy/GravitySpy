@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Copyright (C) 2013 Michael Coughlin
 #
@@ -40,12 +40,14 @@ def parse_commandline():
 
     parser.add_option("-d", "--detector", help="Detector.",default ="H1")
     parser.add_option("-b", "--database", help="Database (O1GlitchClassification,classification,glitches).", default="O1GlitchClassification")
-    parser.add_option("-l", "--label", help="Label.",default ="Blip")
+    parser.add_option("-l", "--label", help="Label.",default = None)
     parser.add_option("-o", "--outfile", help="Output file.",default ="test.csv")
     parser.add_option("-f", "--segfile", help="segment file.",default ="test.dat")
     parser.add_option("-p", "--padding", help="segment file padding.",type=int,default=1)
-    parser.add_option("-s", "--gpsStart", help="Start GPS Time.",type=int,default=1120000000)
-    parser.add_option("-e", "--gpsEnd", help="End GPS Time.",type=int,default=1140000000)
+    parser.add_option("-s", "--gpsStart", help="Start GPS Time.",type=int,default=1126400000)
+    parser.add_option("-e", "--gpsEnd", help="End GPS Time.",type=int,default=1126900000)
+    parser.add_option("--fmin", help="Start Frequency.",type=float,default=0.0)
+    parser.add_option("--fmax", help="End Frequency.",type=float,default=16384.0)
     parser.add_option("-v", "--verbose", action="store_true", default=False,
                       help="Run verbosely. (Default: False)")
 
@@ -76,13 +78,18 @@ segfile = opts.segfile
 padding = opts.padding
 gpsStart = opts.gpsStart
 gpsEnd = opts.gpsEnd
+fmin = opts.fmin
+fmax = opts.fmax
 
 engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
 tmp = pd.read_sql(database,engine)
 tmp = tmp.loc[tmp.ifo == detector]
-tmp = tmp.loc[tmp.Label == label]
+if not label == None:
+    tmp = tmp.loc[tmp.Label == label]
 tmp = tmp.loc[tmp.peakGPS >= gpsStart]
 tmp = tmp.loc[tmp.peakGPS <= gpsEnd]
+tmp = tmp.loc[tmp.peak_frequency >= fmin]
+tmp = tmp.loc[tmp.peak_frequency <= fmax]
 columns=["peakGPS","peak_frequency", "snr"]
 tmp.to_csv(outfile,columns=columns,index=False,header=True)
 
@@ -98,5 +105,6 @@ for segment in segmentlist:
     fid.write("%d %d\n"%(segment[0],segment[1]))
 fid.close()
 
-
 print "GPS: %.0f - %.0f"%(tmp["peakGPS"].min(),tmp["peakGPS"].max())
+print "Frequency: %.5f - %.5f"%(tmp["peak_frequency"].min(),tmp["peak_frequency"].max())
+

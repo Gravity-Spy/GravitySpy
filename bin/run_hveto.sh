@@ -5,8 +5,11 @@ gpsEnd=$4
 
 path=`pwd`
 
-python filter_psql.py -d $ifo -l $label -o triggers_${gpsStart}_${gpsEnd}.csv -f segs_${gpsStart}_${gpsEnd}.dat -p 1 -s $gpsStart -e $gpsEnd
+dur=$(expr ${gpsEnd} - ${gpsStart})
 
-ls $path/triggers_${gpsStart}_${gpsEnd}.csv > cache.lcf
+filter_psql -d $ifo -l $label -o $path/$ifo-triggers-${gpsStart}-${dur}.csv -f segs_${gpsStart}_${gpsEnd}.dat -p 1 -s $gpsStart -e $gpsEnd --database O1GlitchClassificationUpdate
 
-hveto $gpsStart $gpsEnd --ifo $ifo --config-file h1l1-hveto-daily-o2.ini -p cache.lcf -o ~/public_html/HVeto/$ifo/$label/$gpsStart-$gpsEnd
+ls $path/$ifo-triggers-${gpsStart}-${dur}.csv | lalapps_path2cache > cache.lcf
+
+hveto $gpsStart $gpsEnd --ifo $ifo --config-file h1l1-hveto-daily-o2.ini -p cache.lcf -o ~/public_html/HVeto/$ifo/$label/$gpsStart-$gpsEnd --nproc 32 --omega-scans 5
+

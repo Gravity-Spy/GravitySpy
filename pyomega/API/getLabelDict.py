@@ -4,6 +4,7 @@
 
 from panoptes_client import *
 import re, operator
+import pickle
 
 #This function generically flatten a dict
 def flatten(d, parent_key='', sep='_'):
@@ -17,41 +18,57 @@ def flatten(d, parent_key='', sep='_'):
     return dict(items)
 
 def getAnswers(ProjectID):
-    # now determine infrastructure of workflows so we know what workflow this image belongs in
-    workflowDictAnswers = {}
-    tmp = Project.find(ProjectID)
-    project_flat = flatten(tmp.raw)
-    order = project_flat['configuration_workflow_order']
+    try:
+        print 'Trying to load dict from cache...'
+        inputFile = open('workflowDictAnswers.pkl', 'rb')
+        # Pickle dictionary using protocol 0.
+        workflowDictAnswers = pickle.load(inputFile)
+        print 'successful'
+        return workflowDictAnswers
 
-    # Determine workflow order
-    workflows = [int(str(iWorkflow)) for iWorkflow in order]
+    except:
+        print 'failure...'
+        print 'generating dict on the fly'
+	# now determine infrastructure of workflows so we know what workflow this image belongs in
+	workflowDictAnswers = {}
+	tmp = Project.find(ProjectID)
+	project_flat = flatten(tmp.raw)
+	order = project_flat['configuration_workflow_order']
 
-    # Determine possible answers to the workflows
-    for iWorkflow in workflows:
-        workflow = Workflow.find(iWorkflow)
-        if workflow.raw['tasks']['T1']['questionsMap']:
-            workflowDictAnswers[iWorkflow] = workflow.raw['tasks']['T1']['questionsMap']
+	# Determine workflow order
+	workflows = [int(str(iWorkflow)) for iWorkflow in order]
 
-            # Find Answers with follow ups
-            followupAns = [k for k, v in workflow.raw['tasks']['T1']['questionsMap'].iteritems() if v != []]
+	# Determine possible answers to the workflows
+	for iWorkflow in workflows:
+	    workflow = Workflow.find(iWorkflow)
+	    if workflow.raw['tasks']['T1']['questionsMap']:
+		workflowDictAnswers[iWorkflow] = workflow.raw['tasks']['T1']['questionsMap']
 
-            # Loop over follow answers which have follow ups to them.
-            for iFollow in followupAns:
-                questionsAndAnswersDict = {}
+		# Find Answers with follow ups
+		followupAns = [k for k, v in workflow.raw['tasks']['T1']['questionsMap'].iteritems() if v != []]
 
-                # Loop over questions
-                for iQuestion in workflowDictAnswers[iWorkflow][iFollow]:
-                    if iQuestion in workflow.raw['tasks']['T1']['questions'].keys():
-                        questionsAndAnswersDict[iQuestion] = workflow.raw['tasks']['T1']['questions'][iQuestion]['answersOrder']
+		# Loop over follow answers which have follow ups to them.
+		for iFollow in followupAns:
+		    questionsAndAnswersDict = {}
 
-            workflowDictAnswers[iWorkflow][iFollow] = questionsAndAnswersDict
+		    # Loop over questions
+		    for iQuestion in workflowDictAnswers[iWorkflow][iFollow]:
+			if iQuestion in workflow.raw['tasks']['T1']['questions'].keys():
+			    questionsAndAnswersDict[iQuestion] = workflow.raw['tasks']['T1']['questions'][iQuestion]['answersOrder']
 
-        else:
+		workflowDictAnswers[iWorkflow][iFollow] = questionsAndAnswersDict
 
-            answerDict = {}
+	    else:
 
-            for iAnswer in workflow.raw['tasks']['T1']['choicesOrder']:
-                answerDict[iAnswer] = []
-            workflowDictAnswers[iWorkflow] = answerDict
+		answerDict = {}
 
-    return workflowDictAnswers
+		for iAnswer in workflow.raw['tasks']['T1']['choicesOrder']:
+		    answerDict[iAnswer] = []
+		workflowDictAnswers[iWorkflow] = answerDict
+
+        print 'Saving dict to cache...'
+        output = open('workflowDictAnswers.pkl', 'wb')
+        # Pickle dictionary using protocol 0.
+        pickle.dump(workflowDictAnswers, output)
+
+	return workflowDictAnswers

@@ -12,6 +12,7 @@ import collections
 import operator
 
 from pyomega.API.getLabelDict import getAnswers
+from pyomega.API import getGoldenImages
 
 ########################
 ####### Functions ######
@@ -21,10 +22,7 @@ engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5
 
 # This function translates the string answer to an integer value.
 def extract_choiceINT(x):
-    try:
-        return answersDict[x]
-    except:
-        return -1
+    return answersDict[x]
 
 #This function generically flatten a dict
 def flatten(d, parent_key='', sep='_'):
@@ -44,9 +42,13 @@ answers = getAnswers('1104')
 answersDictRev =  dict(enumerate(sorted(answers[2360].keys())))
 answersDict = dict((str(v),k) for k,v in answersDictRev.iteritems())
 
+# Obtain workflow order
+workflowOrder = [int(str(i)) for i in Project.find('1104').raw['configuration']['workflow_order']]
+levelWorkflowDict = dict(enumerate(workflowOrder))
+
 # Load lastID that was parsed
 #lastID = "16822410"
-lastID = pd.read_sql("select max(id) from classifications",engine).iloc[0].iloc[0]
+lastID = pd.read_sql("select max(id) from classificationsdev",engine).iloc[0].iloc[0]
 print(lastID)
 
 # Connect to panoptes and query all classifications done on project 1104 (i.e. GravitySpy)
@@ -56,7 +58,7 @@ Panoptes.connect()
 classificationsList = []
 
 # Query the last 100 classificaitons made (this is the max allowable)
-allClassifications = Classification.where(scope='project',project_id='1104',last_id='{0}'.format(lastID),page_size='100')
+allClassifications = Classification.where(scope='project', project_id='1104', last_id='{0}'.format(lastID), page_size='100')
 
 # Loop until no more classifications
 for iN in range(0,allClassifications.object_count):
@@ -86,14 +88,19 @@ classifications.metadata_finished_at = pd.to_datetime(classifications.metadata_f
 
 # Now we have to handle follow up question parsing very carefully. It is something that is very useful but can be a headache to parse. From the answers dict obtained about we know which answers have follow up questions. As import we know that the classification DF we created will have the format of 'annotations_value_answers_' + "Follow up question" if such a follow up qustion was answered.
 #Check if field is *not* empty
-if not classifications.filter(regex="annotations_value_answers").empty:
+#if not classifications.filter(regex="annotations_value_answers").empty:
  
 
 # At this point we have generically parsed the classification of the user. The label given by the parser is a string and for the purposes of our exercise converting these strings to ints is useful. After we will append the classifications to the old classifications and save. Then we tackle the information about the image that was classified. 
 
 classifications['annotations_value_choiceINT'] = classifications['annotations_value_choice'].apply(extract_choiceINT)
-classifications = classifications.select_dtypes(exclude=['object'])
-classifications = classifications[['created_at','id','links_project','links_subjects','links_user','links_workflow','metadata_finished_at','metadata_started_at','metadata_workflow_version','annotations_value_choiceINT']]
+try:
+    classifications[['links_user']]
+except:
+    classifications['links_user'] = 0
+
+classifications = classifications[['created_at','id','links_project','links_subjects','links_user','links_workflow','metadata_finished_at','metadata_started_at','metadata_workflow_version','annotations_value_choiceINT', 'annotations_value_choice']]
 classifications.loc[classifications.links_user.isnull(),'links_user'] = 0
 classifications.links_user = classifications.links_user.astype(int)
-classifications.to_sql('classificationsDev',engine,index=False,if_exists='append',chunksize=100)
+print classifications['created_at'].iloc[0]
+classifications.to_sql('classificationsdev',engine,index=False,if_exists='append',chunksize=100)

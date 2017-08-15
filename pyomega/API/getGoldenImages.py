@@ -39,7 +39,7 @@ def getGoldenImages(workflowGoldenSetDict):
     workflowGoldenSetImagesDict = {}
 
     for iWorkflow in workflowGoldenSetDict.keys():
-        goldenImages = []
+        goldenImages = {}
 
         for iGoldenSubjectSet in workflowGoldenSetDict[iWorkflow]:
             tmp = SubjectSet.find(iGoldenSubjectSet)
@@ -47,10 +47,41 @@ def getGoldenImages(workflowGoldenSetDict):
 
             while True:
                 try:
-                    goldenImages.append(str(tmpSubjects.next().id))
+                    nextSubject = tmpSubjects.next()
+                    goldenImages[str(nextSubject.id)] = [str(nextSubject.raw['metadata']['subject_id']), str(nextSubject.raw['metadata']['#Label'])]
                 except:
                     break
 
         workflowGoldenSetImagesDict[iWorkflow] = goldenImages
 
     return workflowGoldenSetImagesDict
+
+def getGoldenImagesAsInts(workflowGoldenSetDict):
+    from pyomega.API.getLabelDict import getAnswers
+    import pandas as pd
+
+    answers = getAnswers('1104')
+    answersDictRev =  dict(enumerate(sorted(answers[2360].keys())))
+    answersDict = dict((str(v),k) for k,v in answersDictRev.iteritems())
+
+    goldenImagesList = []
+
+    for iWorkflow in sorted(workflowGoldenSetDict.keys()):
+
+        if not workflowGoldenSetDict[iWorkflow]:
+            continue
+
+        for iGoldenSubjectSet in workflowGoldenSetDict[iWorkflow]:
+
+            tmp = SubjectSet.find(iGoldenSubjectSet)
+            tmpSubjects = tmp.subjects()
+
+            while True:
+                try:
+                    nextSubject = tmpSubjects.next()
+                    goldenImagesList.append([int(nextSubject.id), answersDict[str(nextSubject.raw['metadata']['#Label']).upper().translate(None,'() ')],nextSubject.raw['metadata']['subject_id']])
+                except:
+                    break
+
+    return pd.DataFrame(goldenImagesList,columns=['links_subjects', 'GoldLabel', 'uniqueID'])
+
