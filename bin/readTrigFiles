@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
-import optparse,os,string,random,pdb
-from gwpy.table.lsctables import SnglBurstTable
+import optparse,os,string,random,pdb,socket,subprocess
+from trigfind import find_trigger_files
 from gwpy.segments import DataQualityFlag
+from gwpy.table import EventTable
+from decimal import Decimal
 import pandas as pd
-from sqlalchemy.engine import create_engine
-import cPickle as pickle
 import numpy as np
+from sqlalchemy.engine import create_engine
 
 ###############################################################################
 ##########################                             ########################
@@ -23,7 +24,6 @@ def parse_commandline():
     parser.add_option("--applyallDQ", action="store_true", default=False,help="Generate a list of omicron triggers that exclude all of the DQ cuts already created by detchar. (Default:False)")
     parser.add_option("--channelname", help="channel name [Default:GDS-CALIB_STRAIN]",
                         default="GDS-CALIB_STRAIN")
-    parser.add_option("--detector", help="detector name [L1 or H1]. [No Default must supply]")
     parser.add_option("--durHigh", help="The max duration of a glitch you want to make images for [Optional Input]",type=float)
     parser.add_option("--durLow", help="lower duration of a glitch you want to make images for[Optional Input]",type=float)
     parser.add_option("--gpsStart", type=int,help="gps Start Time of Query for meta data and omega scans. If not supplied will attempt to imply from datatable",default=0)
@@ -32,7 +32,6 @@ def parse_commandline():
     parser.add_option("--freqLow", help="lower frequency bound cut off for the glitches. [Default: 10]",type=int,default=10)
     parser.add_option("--maxSNR", help="This flag gives you the option to supply a upper limit to the SNR of the glitches [Optional Input]",type=float)
     parser.add_option("--outDir", help="Outdir of omega scan and omega scan webpage (i.e. your html directory)")
-    parser.add_option("--pathToExec", help="Path to version of wscan.py you want to use")
     parser.add_option("--pathToIni", help="Path to ini file")
     parser.add_option("--pathToModel",default='./ML/trained_model/' ,help="Path to trained model")
     parser.add_option("--SNR", help="Lower bound SNR Threshold for omicron triggers, by default there is no upperbound SNR unless supplied throught the --maxSNR flag. [Default: 6]",type=float,default=6)
@@ -65,27 +64,52 @@ def id_generator(x,size=10, chars=string.ascii_uppercase + string.digits +string
 
 # This function queries omicron to obtain trigger times of the glitches. It then proceeds to filter out these times based on whether the detector was in an analysis ready state or the glitch passes certain frequency and SNR cuts. 
 
-def get_triggers(gpsStart,gpsEnd):
+def get_triggers(gpsStart,gpsEnd,detector):
 
     # Obtain segments that are analysis ready
-    analysis_ready = DataQualityFlag.query('{0}:DMT-ANALYSIS_READY:1'.format(opts.detector),float(gpsStart),float(gpsEnd))
+    analysis_ready = DataQualityFlag.query('{0}:DMT-ANALYSIS_READY:1'.format(detector),float(gpsStart),float(gpsEnd))
 
     # Display segments for which this flag is true
     print "Segments for which the ANALYSIS READY Flag is active: {0}".format(analysis_ready.active)
 
-    omicrontriggers = SnglBurstTable.fetch(detchannelname,'Omicron',\
-    float(gpsStart),float(gpsEnd),filt=threshold)
+    # get Omicron triggers
+    files = find_trigger_files(detchannelname,'Omicron',
+    float(gpsStart),float(gpsEnd))
 
-    print "List of available metadata information for a given glitch provided by omicron: {0}".format(omicrontriggers.columnnames)
+    omicrontriggers = EventTable.read(files, format='ligolw.sngl_burst')
+
+    # filter table
+    # Create mask assuming everything passes
+    masks = np.ones(len(omicrontriggers),dtype=bool)
+    if not opts.durHigh is None:
+        masks &= (omicrontriggers['duration'] <= opts.durHigh)
+    if not opts.durLow is None:
+        masks &= (omicrontriggers['duration'] >= opts.durLow)
+    if not opts.freqHigh is None:
+        masks &= (omicrontriggers['peak_frequency'] <= opts.freqHigh)
+    if not opts.freqLow is None:
+        masks &= (omicrontriggers['peak_frequency'] >= opts.freqLow)
+    if not opts.maxSNR is None:
+        masks &= (omicrontriggers['snr'] <= opts.maxSNR)
+    if not opts.SNR is None:
+        masks &= (omicrontriggers['snr'] >= opts.SNR)
+
+    omicrontriggers = omicrontriggers[masks]
+    # Set peakGPS
+    omicrontriggers['peakGPS'] = omicrontriggers['peak_time'] + (0.000000001)*omicrontriggers['peak_time_ns']
+
+    print "List of available metadata information for a given glitch provided by omicron: {0}".format(omicrontriggers.keys())
 
     print "Number of triggers after SNR and Freq cuts but before ANALYSIS READY flag filtering: {0}".format(len(omicrontriggers))
 
     # Filter the raw omicron triggers against the ANALYSIS READY flag.
-    omicrontriggers = omicrontriggers.vetoed(analysis_ready.active)
+    vetoed = omicrontriggers['peakGPS'].in_segmentlist(analysis_ready.active)
+    omicrontriggers = omicrontriggers[vetoed]
 
     print "Final trigger length: {0}".format(len(omicrontriggers))
 
     return omicrontriggers
+
 
 ###############################################################################
 ##########################                            #########################
@@ -111,15 +135,48 @@ def write_dagfile(x):
 
 # Write submission file for the condor job
 
-def write_subfile():
+def write_subfile(pathToWscanExec):
     for d in ['logs', 'condor']:
         if not os.path.isdir(d):
             os.makedirs(d)
     with open('./condor/gravityspy.sub', 'w') as subfile:
-        subfile.write('universe = local\n')
-        subfile.write('executable = {0}\n'.format(opts.pathToExec))
+        subfile.write('universe = vanilla\n')
+        subfile.write('executable = {0}\n'.format(pathToWscanExec))
         subfile.write('\n')
-        subfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID)"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
+        if opts.PostgreSQL:
+            subfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML --PostgreSQL"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
+        elif opts.HDF5:
+            subfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML --HDF5"\n'.format(opts.pathToIni,opts.outDir,opts.pathToModel))
+        subfile.write('getEnv=True\n')
+        subfile.write('\n')
+        subfile.write('accounting_group_user = scott.coughlin\n')#.format(opts.username))
+        subfile.write('accounting_group = ligo.dev.o1.detchar.ch_categorization.glitchzoo\n')
+        subfile.write('\n')
+        subfile.write('priority = 0\n')
+        subfile.write('request_memory = 5000\n')
+        subfile.write('\n')
+        subfile.write('error = logs/gravityspy-$(jobNumber).err\n')
+        subfile.write('output = logs/gravityspy-$(jobNumber).out\n')
+        subfile.write('notification = Error\n')
+        subfile.write('queue 1')
+        subfile.close()
+
+###############################################################################
+##########################                                 ####################
+##########################   Func: write_subfile_glitchdb  ####################
+##########################                                 ####################
+###############################################################################
+
+# Write submission file for the condor job
+
+def write_subfile_gspysearch(pathTogspysearchExec):
+    for d in ['logs_gspysearch', 'condor']:
+        if not os.path.isdir(d):
+            os.makedirs(d)
+    with open('./condor/gspysearch.sub', 'w') as subfile:
+        subfile.write('universe = local\n')
+        subfile.write('executable = {0}\n'.format(pathTogspysearchExec))
+        subfile.write('\n')
         subfile.write('getEnv=True\n')
         subfile.write('\n')
         subfile.write('accounting_group_user = scott.coughlin\n')#.format(opts.username))
@@ -128,10 +185,25 @@ def write_subfile():
         subfile.write('priority = 0\n')
         subfile.write('request_memory = 1000\n')
         subfile.write('\n')
-        subfile.write('error = logs/gravityspy-$(jobNumber).err\n')
-        subfile.write('output = logs/gravityspy-$(jobNumber).out\n')
-        subfile.write('notification = never\n')
+        subfile.write('error = logs_gspysearch/gravityspy-$(jobNumber).err\n')
+        subfile.write('output = logs_gspysearch/gravityspy-$(jobNumber).out\n')
+        subfile.write('notification = Error\n')
         subfile.write('queue 1')
+        subfile.close()
+
+############################################################################
+###############      Find relevant Omicron Trigger  ########################
+############################################################################
+
+def find_omicron_trigger(gpsTime, oTriggers):
+    try:
+        omicrontriggers = get_triggers(gpsTime - 2, gpsTime + 2, detector) 
+        tmp1 = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
+        tmp1 = tmp1.loc[tmp1['index'] == min(omicrontriggers.get_peak(), key=lambda x:abs(x-gpsTime))]
+        oTriggers = oTriggers.append(tmp1)
+        return oTriggers
+    except:
+        print('The following gpsTime did not have a corresponding omicron trigger between 10 and 2048 Hz and SNR greater than 7.5 during Analysis Ready time: GPS Time'.format(gpsTime))
 
 ############################################################################
 ###############          MAIN        #######################################
@@ -140,32 +212,51 @@ def write_subfile():
 # Parse commandline arguments
 opts = parse_commandline()
 
-# SQL table to store results
-engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
+# attempt to determine detector based on cluster currently running on
+fullhostname = socket.getfqdn()
+if 'wa' in fullhostname:
+    detector = 'H1'
+elif 'la' in fullhostname:
+    detector = 'L1'
+else:
+    raise ValueError('This is not being run on either LLO or LHO and thus will not work since Omicron triggers are only discoverable on those clusters')
+
+try:
+    engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
+    print 'You are connect to server gravityspy.ciera.northwestern.edu, DB gravityspy and table {0}'.format('O1GlitchClassificationUpdate')
+except:
+    ValueError('Remember to set export QUEST_SQL_USER and export QUEST_SQL_PASSWORD in order to access the Gravity Spy Data which is the description and secret,respectively, found here: https://secrets.ligo.org/secrets/144/')
+
+# Determine location of executables
+proc = subprocess.Popen(['which', 'wscan'],
+                             stdin = subprocess.PIPE,
+                             stdout = subprocess.PIPE,
+                             stderr = subprocess.PIPE
+                         )
+(pathToWscanExec, err) = proc.communicate()
+if not pathToWscanExec:
+    raise ValueError('Cannot locate wscan executable in your path')
+
+proc = subprocess.Popen(['which', 'glitchsearchDB'],
+                             stdin = subprocess.PIPE,
+                             stdout = subprocess.PIPE,
+                             stderr = subprocess.PIPE
+                         )
+(pathTogspysearchExec, err) = proc.communicate()
+if not pathTogspysearchExec:
+    raise ValueError('Cannot locate glitchsearchDB executable in your path')
 
 # Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
 detchannelname = opts.detector + ':' + opts.channelname
 
-# Disentangle URL
-Path = '{0}'.format(opts.URL).replace('jobs','pcdev1')
-PathList = Path.split('/')[2::]
-PathList.insert(2,'public_html')
-PathToTrig = '/'.join(PathList).replace('edu','edu:').replace('~','/home/')
-fileName = opts.Pipeline + '.txt'
-os.system('gsiscp {0} {1}'.format(PathToTrig,fileName))
+# Create empty pandas to append events to
 oTriggers = pd.DataFrame()
 
 if opts.Pipeline == 'LAL':
     tmp = pd.read_csv(fileName,names=['GPS'])
     # Find Omicron trigger associated with these times
     for iGPS in tmp.GPS:
-        try:
-            omicrontriggers = SnglBurstTable.fetch(detchannelname,'Omicron',iGPS-1,iGPS+1)
-            tmp1 = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
-            tmp1 = tmp1.loc[tmp1['index'] == min(omicrontriggers.get_peak(), key=lambda x:abs(x-iGPS))]
-            oTriggers = oTriggers.append(tmp1)
-        except:
-            print(iGPS)
+        oTriggers = find_omicron_trigger(iGPS, oTriggers)
 
     oTriggers['Label'] = opts.Label
     oTriggers['Pipeline'] = opts.Pipeline
@@ -173,36 +264,22 @@ if opts.Pipeline == 'LAL':
 
 if opts.Pipeline == 'PCAT':
     tmp = pd.read_csv(fileName,names=['GPS'])
-    oTriggers = pd.DataFrame()
     for iGPS in tmp.GPS:
-        try:
-            omicrontriggers = SnglBurstTable.fetch(detchannelname,'Omicron',iGPS-2,iGPS+2)
-            tmp1 = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
-            tmp1 = tmp1.loc[tmp1['index'] == min(omicrontriggers.get_peak(), key=lambda x:abs(x-iGPS))]
-            oTriggers = oTriggers.append(tmp1)
-        except:
-            print(iGPS)
+        oTriggers = find_omicron_trigger(iGPS, oTriggers)
 
     oTriggers['Label'] = opts.Label
     oTriggers['Pipeline'] = opts.Pipeline
     oTriggers.rename(columns = {'index':'peakGPS'},inplace=True)
 
 if opts.Pipeline == 'WDF':
-    oTriggers = pd.DataFrame()
     tmp = pd.read_csv(fileName)
     for (iGPS, iSNR, iDur, iLabel, iPeakT, iPeakF) in zip(tmp.GPSMax, tmp.SNRMax, tmp.Duration, tmp.LABEL, tmp.GPSstart, tmp.FreqMax):
-        try:
-            omicrontriggers = SnglBurstTable.fetch(detchannelname,'Omicron',iGPS-2,iGPS+2)
-            tmp1 = pd.DataFrame(omicrontriggers.to_recarray(),omicrontriggers.get_peak()).reset_index()
-            tmp1 = tmp1.loc[tmp1['index'] == min(omicrontriggers.get_peak(), key=lambda x:abs(x-iGPS))]
-            tmp1['Label']    = iLabel
-            tmp1['WDF_snr'] = iSNR
-            tmp1['WDF_duration'] = iDur
-            tmp1['WDF_iPeakT'] = iPeakT
-            tmp1['WDF_iPeakF'] = iPeakF
-            oTriggers = oTriggers.append(tmp1)
-        except:
-            print(iGPS)
+        oTriggers = find_omicron_trigger(iGPS, oTriggers)
+        tmp1['Label'] = iLabel
+        tmp1['WDF_snr'] = iSNR
+        tmp1['WDF_duration'] = iDur
+        tmp1['WDF_iPeakT'] = iPeakT
+        tmp1['WDF_iPeakF'] = iPeakF
 
     oTriggers['Pipeline'] = opts.Pipeline
     oTriggers.rename(columns = {'index':'peakGPS'},inplace=True)
