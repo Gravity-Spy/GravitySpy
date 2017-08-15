@@ -4,13 +4,13 @@
    contain the root `toctree` directive.
 
 Welcome to GravitySpy's documentation!
-=================================
+======================================
 
 `Gravity Spy <https://gravityspy.org>`_ is an innovative citizen-science meets Machine Learning meets gravitational wave physics project. This repository is meant to faciliate the creation of new similar citizen science projects on `Zooniverse <https://zooniverse.org>`_
 For full details see `Zevin et al. (Classical and Quantum Gravity, 2016) <https://iopscience.iop.org/article/10.1088/1361-6382/aa5cea>`_
 
 Installing GravitySpy
-----------------
+---------------------
 
 The easiest method to install pyomega is using `pip <https://pip.pypa.io/en/stable/>`_ directly from the `GitHub repository <https://github.com/Gravity-Spy/GravitySpy.git>`_:
 
@@ -19,23 +19,23 @@ The easiest method to install pyomega is using `pip <https://pip.pypa.io/en/stab
    $ pip install git+https://github.com/Gravity-Spy/GravitySpy.git
 
 How to run GravitySpy
-----------------
+---------------------
 
-The main product of this package is the command-line executable `pyomega`, which runs an end-to-end search for statistical coincidences, and produces a list of viable data-quality flags that can be used as vetoes in a search, as well as an HTML summary.
+The main product of this package is the command-line executable `wscan`, which runs an end-to-end search for statistical coincidences, and produces a list of viable data-quality flags that can be used as vetoes in a search, as well as an HTML summary.
 
 To run an analysis:
 
 .. code-block:: bash
 
-   $ pyomega <gpsstart> <gpsend> --config-file ./my-config-file.ini
+   $ wscan --inifile my-wini-config-file.ini --eventTime <eventTime> --outDir . --uniqueID --ID 123abc1234 --HDF5 --runML 
 
-where ``<gpsstart>`` and ``<gpsend>`` are the start and stop GPS times of the analysis period, and ``./my-config-file.ini`` is the path of your configuration file. Strictly speaking the configuration file is optional, but is highly recommend if you want to have any control over your analysis.
+where ``<eventtime>`` is the GPS tiem stamp assosciated with an Omicron trigger, and ``./my-wini-config-file.ini`` is the path of your configuration file.
 
 For a full list of command-line argument and options, run
 
 .. code-block:: bash
 
-   $ pyomega --help
+   $ wscan --help
 
 For more details see :ref:`command-line`.
 
@@ -48,7 +48,6 @@ Please consult these pages for more details on using GravitySpy:
    :maxdepth: 1
 
    command-line/index
-   api/pyomega.config
 
 Indices and tables
 ==================
