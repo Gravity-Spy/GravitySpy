@@ -84,7 +84,6 @@ requires = [
     'pandas',
     'gwpy',
     'lscsoft_glue',
-    'https://github.com/ligovirgo/trigfind/archive/v0.4.tar.gz',
     'psycopg2',
     'panoptes_client',
 ]
@@ -128,6 +127,7 @@ setup(name=DISTNAME,
       dependency_links=[
           'http://software.ligo.org/lscsoft/source/glue-1.49.1.tar.gz',
           'http://software.ligo.org/lscsoft/source/dqsegdb-1.2.2.tar.gz',
+          'https://github.com/ligovirgo/trigfind/archive/v0.4.tar.gz',
       ],
       test_suite='pyomega.tests',
       use_2to3=True,
