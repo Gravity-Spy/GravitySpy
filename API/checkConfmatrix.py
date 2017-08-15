@@ -41,7 +41,10 @@ classifications = classifications.loc[classifications.links_workflow.isin(workfl
 classifications['Level'] = classifications.links_workflow.apply(levelDict)
 
 # Make sure choice is a valid index
-classifications = classifications.loc[classifications.annotations_value_choiceINT != -1]
+classifications = classifications.loc[(classifications.annotations_value_choiceINT != -1)]
+
+# Ignore NONEOFTHEABOVE classificatios when constructing confusion matrix
+classifications = classifications.loc[classifications.annotations_value_choiceINT != 12]
 
 # Make sure to evaluate only logged in users
 classifications = classifications.loc[classifications.links_user != 0]
