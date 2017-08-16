@@ -62,8 +62,7 @@ setup_requires = [
     'setuptools',
     'pytest-runner',
 ]
-install_requires = []
-requires = [
+install_requires = [
     'SQLAlchemy',
     'cython',
     'six',
@@ -121,7 +120,6 @@ setup(name=DISTNAME,
       scripts=scripts,
       setup_requires=setup_requires,
       install_requires=install_requires,
-      requires=requires,
       tests_require=tests_require,
       extras_require=extras_require,
       dependency_links=[
