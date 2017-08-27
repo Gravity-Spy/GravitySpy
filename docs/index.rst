@@ -39,6 +39,11 @@ For a full list of command-line argument and options, run
 
 For more details see :ref:`command-line`.
 
+The many databses of GravitySpy
+-------------------------------
+
+For more details see :ref:`DBs`
+
 Package documentation
 ---------------------
 
@@ -48,6 +53,7 @@ Please consult these pages for more details on using GravitySpy:
    :maxdepth: 1
 
    command-line/index
+   DBs/index
 
 Indices and tables
 ==================
