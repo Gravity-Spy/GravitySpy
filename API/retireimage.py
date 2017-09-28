@@ -97,4 +97,4 @@ def get_post_contribution(x):
 
 confusion_matrices.apply(get_post_contribution, axis=1)
 
-image_db[['finalScore', 'finalLabel', 'retired']].loc[image_db.retired == 1].to_sql('retiredimages',engine, if_exists='replace')
+image_db[['finalScore', 'finalLabel', 'retired', 'uniqueID']].loc[image_db.retired == 1].to_sql('retiredimages',engine, if_exists='replace')
