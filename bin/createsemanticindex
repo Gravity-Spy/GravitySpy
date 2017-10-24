@@ -1,0 +1,53 @@
+#!/usr/bin/env python
+
+import optparse,os,string,random,pdb,socket,subprocess
+import ConfigParser
+
+from gwpy.table import EventTable
+import numpy as np
+
+from skimage import io
+from skimage.color import rgb2gray
+from skimage.transform import rescale
+
+from pyomega.deep_metric_learning import get_semantic_index
+import pyomega.ML.make_pickle_for_linux as make_pickle
+
+# Definite Command line arguments here
+
+def parse_commandline():
+    """Parse the options given on the command-line.
+    """
+    parser = optparse.OptionParser()
+    parser.add_option("--path-to-semantic-model", help="folder where labeled images live")
+    parser.add_option("--detector", help="what cluster are you running on")
+    opts, args = parser.parse_args()
+
+
+    return opts
+
+# example script
+
+#THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 trainmodel --path-to-golden /home/scoughlin/public_html/GravitySpy/TrainingSet2/H1L1/ --path-to-pickle ./pickleddata/ --path-to-trained-model ./model --number-of-classes 22 --batch-size 500
+opts = parse_commandline()
+# attempt to determine detector based on cluster currently running on
+fullhostname = socket.getfqdn()
+if 'wa' in fullhostname:
+    detector = 'H1'
+elif 'la' in fullhostname:
+    detector = 'L1'
+else:
+    detector = opts.detector
+
+glitches = EventTable.fetch('gravityspy', 'glitches', columns = ['uniqueID', 'Filename1', 'Filename2', 'Filename3', 'Filename4', 'ifo'])
+glitches = glitches[glitches['ifo'] == detector]
+for idx, iglitch in enumerate(glitches[:2]):
+    if not os.path.isdir('tmp/' + iglitch['uniqueID'] + '/'):
+        os.makedirs('tmp/' + iglitch['uniqueID'] + '/')
+
+    for ifile in [iglitch['Filename1'], iglitch['Filename2'], iglitch['Filename3'], iglitch['Filename4']]:
+        copy_command = 'cp ' + ifile + ' tmp/'  + iglitch['uniqueID']
+        os.system(copy_command)
+
+make_pickle.main('tmp/' , 'tmp/' , 1, 1)
+get_semantic_index.main(pickle_address='tmp/', model_address=opts.path_to_semantic_model)
