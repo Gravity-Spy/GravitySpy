@@ -35,7 +35,7 @@ classifications = classifications.loc[~(classifications.annotations_value_choice
 glitches = pd.read_sql("glitches",engine)
 
 # filter glitches for only testing images
-glitches = glitches.loc[glitches.ImageStatus == 'Testing']
+glitches = glitches.loc[glitches.ImageStatus != 'Training']
 
 # Merge DBs
 combined_data = classifications.merge(glitches)
