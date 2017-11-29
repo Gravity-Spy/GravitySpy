@@ -52,6 +52,11 @@ def main(ProjectID,IDfilter=''):
             subjectset_id = [int(str(iSubject)) for iSubject in subjects_workflow]
             subjectset_id = [iSubject for iSubject in subjectset_id if iSubject not in goldenset]
 
+
+            # If it is final workflow level 4 subject sets are also linked so need to filter
+            # for level 5 subject sets
+            if iWorkflow == 2117:
+                IDfilter = IDfilter + ' (M)'
             # Determine Display names of subject set
             subjectset_displayname_id = {}
             for iSubjectSet in subjectset_id:
