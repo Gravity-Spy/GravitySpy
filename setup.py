@@ -77,6 +77,7 @@ install_requires = [
     'pykerberos',
     'ujson',
     'pyRXP',
+    'enum',
     'tables',
     'scikit_image',
     'Theano==0.9',
