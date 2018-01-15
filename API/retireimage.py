@@ -66,17 +66,17 @@ def get_post_contribution(x):
     # a users contribution to the posterior for that type is the same 
     # for every image. Therefore, it is in our interest to pre-
     # compute all of these values.
-    post_contribution = conf_divided/sum(conf_divided)
+    post_contribution = conf_divided/np.sum(conf_divided, axis=1)
     # Determine none nan columns
-    annotations = np.unique(np.argwhere(~np.isnan(post_contribution))[:,1])
+    annotations = np.unique(np.argwhere(~np.isnan(post_contribution))[:,0])
     # Find all images for which the user gave one of these annotations
     imagesUserLabeled = combined_data.loc[(combined_data.links_user == x.userID) & (combined_data.annotations_value_choiceINT.isin(annotations)), ['links_subjects', 'annotations_value_choiceINT']]
     userLabeledSubjectIDs = imagesUserLabeled.links_subjects.values
     # with this info we can create an array of labels and therefore create a
     # matrix of the posterior contribution that user gave to all the images
     # they labeled
-    columns = imagesUserLabeled.annotations_value_choiceINT.as_matrix()
-    posteriorToAdd = post_contribution[:,columns].T
+    rows = imagesUserLabeled.annotations_value_choiceINT.as_matrix()
+    posteriorToAdd = post_contribution[rows, :]
     # In image DB find the relevant images and add the posterior contribution
     image_db.loc[userLabeledSubjectIDs, classes] = image_db.loc[userLabeledSubjectIDs, classes].add(posteriorToAdd, axis=1)
     # add 1 to numLabels for all images
@@ -92,8 +92,7 @@ def get_post_contribution(x):
             image_db.loc[retiredIDs, 'finalScore'] = posterior.loc[retiredIDs][classes].max(1).values
             image_db.loc[retiredIDs, 'finalLabel'] = posterior.loc[retiredIDs][classes].idxmax(1).values 
             image_db.loc[retiredIDs, 'retired'] = 1
-            
-            
+
 
 confusion_matrices.apply(get_post_contribution, axis=1)
 
