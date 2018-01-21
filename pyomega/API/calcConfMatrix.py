@@ -18,11 +18,13 @@ from scipy.sparse import coo_matrix
 def main(userID = None, returnMatrixPerImage = False):
 
     engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
-    goldenDF = pd.read_sql('goldenimages', engine)
+    #goldenDF = pd.read_sql('goldenimages', engine)
+    goldenDF = pd.read_pickle('pickled_data/goldenDF.pkl')
 
     if userID:
         # Only retrieve classication by that particular user. 
         classifications = pd.read_sql('SELECT links_user, links_subjects, links_workflow, "annotations_value_choiceINT", id FROM classificationsdev WHERE \"links_user\" = {0}'.format(userID), engine)
+        # classifications = 
         if returnMatrixPerImage:
             testing_images_labeled_by_user = classifications.sort_values('id').loc[~classifications.links_subjects.isin(goldenDF.links_subjects)].id.unique() 
     else:
