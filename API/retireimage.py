@@ -25,7 +25,7 @@ priors = np.ones((numClasses))/numClasses
 
 # Load info about classifications and glitches
 print '\nreading classifications...'
-classifications = pd.read_pickle('pickled_data/weighted_classifications.pkl')
+classifications = pd.read_pickle('pickled_data/classifications.pkl')
 classifications = classifications.loc[~(classifications.annotations_value_choiceINT == -1)]
 # NOTE: we remove all classifications that were done on defunct workflows
 classifications = classifications.loc[~(classifications.weight == 0.0)]
@@ -39,7 +39,7 @@ glitches['MLLabel'] = glitches[classes].idxmax(1)
 
 # Load confusion matrices
 print 'reading confusion matrices...'
-conf_matrices = pd.read_pickle('pickled_data/conf_matrices_chron.pkl')
+conf_matrices = pd.read_pickle('pickled_data/conf_matrices.pkl')
 
 # Merge DBs
 print 'combining data...'
@@ -130,4 +130,5 @@ for idx, g in enumerate(subjects):
         sys.stderr.write('\r {:04.2f}% complete'.format(100*float(idx)/len(subjects)))
 
 retired_db = image_db.loc[image_db.retired == 1]
-retired_db.to_pickle('pickled_data/ret_subjects_chron.pkl')
+retired_db.to_pickle('pickled_data/ret_subjects.pkl')
+image_db.to_pickle('pickled_data/image_db.pkl')
