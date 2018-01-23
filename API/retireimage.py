@@ -78,6 +78,10 @@ def get_post_contribution(x):
 
     # loop through all people that classified until retirement is reached
     for person in glitch.links_user:
+        # for now, let's assume everything with >20 classifications and no retirement has not retired
+        if image_db.loc[x, 'numLabel'] > 20:
+            return
+
         classification = glitch[glitch.links_user == person]
         # if they classified the image multiple times, take the most recent classification
         if len(classification) > 1:
@@ -97,17 +101,16 @@ def get_post_contribution(x):
         # for now, only use posteriors for users that have seen and classified a golden image of this particular class
         # update image_db with the posterior contribution
         image_db.loc[x, classes] = image_db.loc[x, classes].add(np.asarray(posteriorToAdd).squeeze())
+        # NOTE: normalize the posterior contribution when saved
         # add 1 to numLabels for all images
         image_db.loc[x, 'numLabel'] = image_db.loc[x, 'numLabel'] + 1
-        # for now, let's assume everything with >20 classifications and no retirement has not retired
-        if image_db.loc[x, 'numLabel'] > 20:
-            return
         # check if we have more than 1 label for an image and check for retirement
         # Check if posterior is above threshold, add 1 for the ML component
         #posterior = image_db.loc[x][classes].divide(image_db.loc[x]['numLabel'] + 1)
         posterior = image_db.loc[x][classes]
         if ((posterior.divide(weight_ctr) > retired_thres).any() and image_db.loc[x, 'numLabel'] > 1):
             # save count that was needed to retire image
+            image_db.loc[x, classes] = image_db.loc[x, classes].divide(weight_ctr)
             image_db.loc[x, 'numRetire'] = image_db.loc[x, 'numLabel']
             image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
             image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
