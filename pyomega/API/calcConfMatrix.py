@@ -69,7 +69,7 @@ def main(userID = None, returnMatrixPerImage = False):
                 entry = iUser[1]['links_subjects']
                 tmp = coo_matrix((entry,(rows,columns)), shape=(numClasses, numClasses))
                 conf_divided,a1,a2,a3 = np.linalg.lstsq(np.diagflat(tmp.sum(axis=1)), tmp.todense())
-                confusion_matrices = confusion_matrices.append(pd.DataFrame({'userID' : iUser[0], 'conf_matrix' : [conf_divided], 'classificationid' : [iclassificationid]}, index=[iUser[0]]))
+                confusion_matrices = confusion_matrices.append(pd.DataFrame({'links_user' : iUser[0], 'conf_matrix' : [conf_divided], 'id' : [iclassificationid]}, index=[iUser[0]]))
 
     else:
 
