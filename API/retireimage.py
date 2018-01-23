@@ -3,13 +3,15 @@ from panoptes_client import *
 import pandas as pd
 import numpy as np
 import os, sys
+import pickle
 import pdb
 
-from pyomega.API import projectStructure
-from pyomega.API import calcConfMatrix
+# from pyomega.API import projectStructure
+# from pyomega.API import calcConfMatrix
 
 # Obtain number of classes from API
-workflowDictSubjectSets = projectStructure.main('1104','O2')
+pickle_in = open("pickled_data/workflowDictSubjectSets.pkl","rb")
+workflowDictSubjectSets = pickle.load(pickle_in)
 classes = sorted(workflowDictSubjectSets[2117].keys())
 
 # From ansers Dict determine number of classes
@@ -35,9 +37,14 @@ glitches = glitches.loc[glitches.ImageStatus != 'Training']
 glitches['MLScore'] = glitches[classes].max(1)
 glitches['MLLabel'] = glitches[classes].idxmax(1)
 
+# Load confusion matrices
+print 'reading confusion matrices...'
+conf_matrices = pd.read_pickle('pickled_data/conf_matrices_chron.pkl')
+
 # Merge DBs
 print 'combining data...'
-combined_data = classifications.merge(glitches)
+combined_data = classifications.merge(conf_matrices, on=['id','links_user'])
+combined_data = combined_data.merge(glitches, on=['links_subjects', 'uniqueID'])
 
 #Must start with earlier classifications and work way to new ones
 combined_data.drop_duplicates(['links_subjects','links_user'],inplace=True)
@@ -54,22 +61,15 @@ image_db['finalScore'] = 0.0
 image_db['finalLabel'] = ''
 image_db['cum_weight'] = 0.0
 
-# Load confusion matrices
-print 'reading confusion matrices...'
-
-conf_matrices = pd.read_pickle('pickled_data/conf_matrices_chron.pkl')
-#conf_matrices_old = pd.read_pickle('pickled_data/confusion_matrices.pkl')
-#confusion_matrices = calcConfMatrix.main() 
 
 def get_post_contribution(x):
     # NOTE: the subject link is the variable x
-    print x
     # find all classifications for a particular subject
-    glitch = classifications[classifications.links_subjects==x]
+    glitch = combined_data[combined_data.links_subjects==x]
     # NOTE: for now only take classifications from registered users
     glitch = glitch[glitch.links_user != 0]
     # ensure each classification id has a confusion matrix
-    matrices = conf_matrices[conf_matrices.id.isin(glitch.id)]
+    matrices = combined_data[combined_data.id.isin(glitch.id)]
     glitch = glitch[glitch.id.isin(matrices.id)]
     # sort based on when the classification was made
     glitch = glitch.sort_values('metadata_finished_at')
@@ -99,24 +99,21 @@ def get_post_contribution(x):
         image_db.loc[x, classes] = image_db.loc[x, classes].add(np.asarray(posteriorToAdd).squeeze())
         # add 1 to numLabels for all images
         image_db.loc[x, 'numLabel'] = image_db.loc[x, 'numLabel'] + 1
-        # check if we have more than 1 label for an image and check for retirement
-        # Check if posterior is above threshold, add 1 for the ML component
-        #posterior = image_db.loc[x][classes].divide(image_db.loc[x]['numLabel'] + 1)
-        posterior = image_db.loc[x][classes].divide(weight_ctr)
-        if ((posterior > retired_thres).any() and image_db.loc[x, 'numLabel'] > 1):
-            # save count that was needed to retire image
-            image_db.loc[x, 'numRetire'] = image_db.loc[x, 'numLabel']
-            image_db.loc[x, 'finalScore'] = posterior.max()
-            image_db.loc[x, 'finalLabel'] = posterior.idxmax()
-            image_db.loc[x, 'retired'] = 1
-            image_db.loc[x, 'cum_weight'] = weight_ctr
-            print '...number of classifications to retire: %i' % image_db.loc[x, 'numRetire']
-            return
-
         # for now, let's assume everything with >20 classifications and no retirement has not retired
         if image_db.loc[x, 'numLabel'] > 20:
             return
-
+        # check if we have more than 1 label for an image and check for retirement
+        # Check if posterior is above threshold, add 1 for the ML component
+        #posterior = image_db.loc[x][classes].divide(image_db.loc[x]['numLabel'] + 1)
+        posterior = image_db.loc[x][classes]
+        if ((posterior.divide(weight_ctr) > retired_thres).any() and image_db.loc[x, 'numLabel'] > 1):
+            # save count that was needed to retire image
+            image_db.loc[x, 'numRetire'] = image_db.loc[x, 'numLabel']
+            image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
+            image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
+            image_db.loc[x, 'retired'] = 1
+            image_db.loc[x, 'cum_weight'] = weight_ctr
+            return
 
 
 print 'determining retired images...'
@@ -126,6 +123,8 @@ subjects.sort()
 #confusion_matrices.apply(get_post_contribution, axis=1)
 for idx, g in enumerate(subjects):
     get_post_contribution(g)
+    if idx%100 == 0:
+        sys.stderr.write('\r {:04.2f}% complete'.format(100*float(idx)/len(subjects)))
     
 retired_db = image_db.loc[image_db.retired == 1]
 retired_db.to_pickle('pickled_data/ret_subjects_chron.pkl')

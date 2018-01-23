@@ -47,7 +47,7 @@ for idx, user in enumerate(users):
     if master_index.size != 0:
         classifications.loc[master_index, 'weight'] = 2.0
 
-    # see how far into the simulation we are
+    # see how far into the loop we are
     if idx%100 == 0:
         sys.stderr.write('\r {:04.2f}% complete'.format(100*float(idx)/len(users)))
 
