@@ -1,4 +1,4 @@
-from panoptes_client import *
+#from panoptes_client import *
 
 import pandas as pd
 import numpy as np
@@ -94,7 +94,7 @@ def get_post_contribution(x):
         row = int(classification.annotations_value_choiceINT)
         # grab the posterior contribution for that class, weighted by classification weight
         posteriorToAdd = float(classification.weight)*post_contribution[row, :]
-        if np.isnan(posteriorToAdd).any(): 
+        if np.isnan(posteriorToAdd).any():
             return
         # keep track of weighting counter for normalization purposes
         weight_ctr += float(classification.weight)
@@ -128,6 +128,6 @@ for idx, g in enumerate(subjects):
     get_post_contribution(g)
     if idx%100 == 0:
         sys.stderr.write('\r {:04.2f}% complete'.format(100*float(idx)/len(subjects)))
-    
+
 retired_db = image_db.loc[image_db.retired == 1]
 retired_db.to_pickle('pickled_data/ret_subjects_chron.pkl')
