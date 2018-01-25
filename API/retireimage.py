@@ -21,8 +21,8 @@ else:
     multiproc=False
 
 # Obtain number of classes from API
-pickle_in = open("../pickled_data/workflowDictSubjectSets.pkl","rb")
-workflowDictSubjectSets = pickle.load(pickle_in)
+with open("../pickled_data/workflowDictSubjectSets.pkl","rb") as f:
+    workflowDictSubjectSets = pickle.load(f)
 classes = sorted(workflowDictSubjectSets[2117].keys())
 
 # From ansers Dict determine number of classes
