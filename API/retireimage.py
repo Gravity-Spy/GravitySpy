@@ -144,7 +144,6 @@ def get_post_contribution(x):
             image_db.loc[x, 'retired'] = 1
             image_db.loc[x, 'cum_weight'] = weight_ctr
             tracks[x] = tracker
-            pdb.set_trace()
             return
 
 
