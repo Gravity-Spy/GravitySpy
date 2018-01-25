@@ -5,9 +5,20 @@ import numpy as np
 import os, sys
 import pickle
 import pdb
+import argparse
 
-# from pyomega.API import projectStructure
-# from pyomega.API import calcConfMatrix
+### Argument handling ###
+
+argp = argparse.ArgumentParser()
+argp.add_argument("-f", "--file-name", default='', type=str, help="File stem for output data")
+argp.add_argument("-nc", "--num-cores", default=None, type=int, help="Specify the number of cores that the retirement code will be parallelized over")
+argp.add_argument("-i", "--index", default=None, type=int, help="Index which indicates the chunk of image files that retirement will be calculated for")
+args = argp.parse_args()
+
+if args.num_cores and args.index:
+    multiproc=True
+else:
+    multiproc=False
 
 # Obtain number of classes from API
 pickle_in = open("../pickled_data/workflowDictSubjectSets.pkl","rb")
@@ -66,6 +77,7 @@ image_db['numRetire'] = 0
 image_db['finalScore'] = 0.0
 image_db['finalLabel'] = ''
 image_db['cum_weight'] = 0.0
+tracks={}
 
 
 def get_post_contribution(x):
@@ -81,11 +93,18 @@ def get_post_contribution(x):
     glitch = glitch.sort_values('metadata_finished_at')
     # counter to keep track of the weighting normalization, starts at 1.0 for machine
     weight_ctr = 1.0
+    # track the contribution of each user towards retirement (can take first entry for intial ML score)
+    tracker = np.atleast_2d(glitch.iloc[0][classes].values)
 
     # loop through all people that classified until retirement is reached
     for person in glitch.links_user:
         # for now, let's assume everything with >20 classifications and no retirement has not retired
-        if image_db.loc[x, 'numLabel'] > 20:
+        max_label = 50
+        if image_db.loc[x, 'numLabel'] > max_label:
+            image_db.loc[x, 'numRetire'] = max_label
+            image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
+            image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
+            tracks[x] = tracker
             return
 
         classification = glitch[glitch.links_user == person]
@@ -101,7 +120,9 @@ def get_post_contribution(x):
         # grab the posterior contribution for that class, weighted by classification weight
         posteriorToAdd = float(classification.weight)*post_contribution[row, :]
         if np.isnan(posteriorToAdd).any():
-            return
+            continue
+        # concatenate the new posterior contribution to tracker
+        tracker = np.concatenate((tracker, np.asarray(posteriorToAdd)))
         # keep track of weighting counter for normalization purposes
         weight_ctr += float(classification.weight)
         # for now, only use posteriors for users that have seen and classified a golden image of this particular class
@@ -122,6 +143,7 @@ def get_post_contribution(x):
             image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
             image_db.loc[x, 'retired'] = 1
             image_db.loc[x, 'cum_weight'] = weight_ctr
+            tracks[x] = tracker
             return
 
 
@@ -129,12 +151,22 @@ print 'determining retired images...'
 # sort data based on subjects number
 subjects = combined_data.links_subjects.unique()
 subjects.sort()
-#confusion_matrices.apply(get_post_contribution, axis=1)
+
+# implementation for multiprocessing
+if multiproc:
+    breakdown = np.linspace(0,len(subjects),args.num_cores+1)
+    subjects = subjects[int(np.floor(breakdown[args.index])):int(np.floor(breakdown[args.index+1]))]
+
+# do the loop
 for idx, g in enumerate(subjects):
     get_post_contribution(g)
     if idx%100 == 0:
-        sys.stderr.write('\r {:04.2f}% complete'.format(100*float(idx)/len(subjects)))
+        print '%.2f%% complete' % (100*float(idx)/len(subjects))
 
-retired_db = image_db.loc[image_db.retired == 1]
-retired_db.to_pickle('../pickled_data/ret_subjects.pkl')
-image_db.to_pickle('../pickled_data/image_db.pkl')
+# save image and retirement data as pickles
+if multiproc:
+    image_db.to_pickle('../pickled_data/imageDB_'+args.file_name+'_'+str(args.index)+'.pkl')
+    tracks.to_pickle('../pickled_data/tracks_'+args.file_name+'_'+str(args.index)+'.pkl')
+else:
+    image_db.to_pickle('../pickled_data/imageDB_'+args.file_name+'.pkl')
+    tracks.to_pickle('../pickled_data/tracks_'+args.file_name+'.pkl')
