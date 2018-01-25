@@ -13,7 +13,7 @@ defunct_workflows = [1479, 3063, 5106]
 
 # Load info about classifications and glitches
 print '\nreading classifications...'
-classifications = pd.read_pickle('pickled_data/classifications.pkl')
+classifications = pd.read_pickle('../pickled_data/classifications.pkl')
 classifications = classifications.loc[~(classifications.annotations_value_choiceINT == -1)]
 
 # Make an empty DataFrame for the classification weight, starting at beginner's weight
@@ -55,5 +55,5 @@ for idx, user in enumerate(users):
 classifications.loc[classifications.links_workflow.isin(defunct_workflows), 'weight'] = 0.0
 
 print '\nwriting to pickle...'
-classifications.to_pickle('pickled_data/weighted_classifications.pkl')
+classifications.to_pickle('../pickled_data/weighted_classifications.pkl')
 

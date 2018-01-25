@@ -15,7 +15,7 @@ args = argp.parse_args()
 
 
 # Obtain number of classes from API
-pickle_in = open("pickled_data/workflowDictSubjectSets.pkl","rb")
+pickle_in = open("../pickled_data/workflowDictSubjectSets.pkl","rb")
 workflowDictSubjectSets = pickle.load(pickle_in)
 classes = sorted(workflowDictSubjectSets[2117].keys())
 
@@ -30,13 +30,13 @@ priors = np.ones((numClasses))/numClasses
 
 # Load info about classifications and glitches
 print '\nreading classifications...'
-classifications = pd.read_pickle('pickled_data/classifications.pkl')
+classifications = pd.read_pickle('../pickled_data/classifications.pkl')
 classifications = classifications.loc[~(classifications.annotations_value_choiceINT == -1)]
 # NOTE: we remove all classifications that were done on defunct workflows
 classifications = classifications.loc[~(classifications.weight == 0.0)]
 
 print 'reading glitches...'
-glitches = pd.read_pickle('pickled_data/glitches.pkl')
+glitches = pd.read_pickle('../pickled_data/glitches.pkl')
 # filter glitches for only testing images
 glitches = glitches.loc[glitches.ImageStatus != 'Training']
 glitches['MLScore'] = glitches[classes].max(1)
@@ -44,7 +44,7 @@ glitches['MLLabel'] = glitches[classes].idxmax(1)
 
 # Load confusion matrices
 print 'reading confusion matrices...'
-conf_matrices = pd.read_pickle('pickled_data/conf_matrices.pkl')
+conf_matrices = pd.read_pickle('../pickled_data/conf_matrices.pkl')
 
 # Merge DBs
 print 'combining data...'
@@ -146,5 +146,5 @@ for idx, g in enumerate(cut_subjects):
         print '%.2f%% complete' % (100*float(idx)/len(cut_subjects))
 
 retired_db = image_db.loc[image_db.retired == 1]
-retired_db.to_pickle('pickled_data/multiproc_jobarray/ret_subjects_'+str(args.index)+'.pkl')
-image_db.to_pickle('pickled_data/multiproc_jobarray/image_db_'+str(args.index)+'.pkl')
+retired_db.to_pickle('../pickled_data/multiproc_jobarray/ret_subjects_'+str(args.index)+'.pkl')
+image_db.to_pickle('../pickled_data/multiproc_jobarray/image_db_'+str(args.index)+'.pkl')
