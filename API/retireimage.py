@@ -144,6 +144,7 @@ def get_post_contribution(x):
             image_db.loc[x, 'retired'] = 1
             image_db.loc[x, 'cum_weight'] = weight_ctr
             tracks[x] = tracker
+            pdb.set_trace()
             return
 
 
@@ -166,7 +167,7 @@ for idx, g in enumerate(subjects):
 # save image and retirement data as pickles
 if multiproc:
     image_db.to_pickle('../pickled_data/imageDB_'+args.file_name+'_'+str(args.index)+'.pkl')
-    tracks.to_pickle('../pickled_data/tracks_'+args.file_name+'_'+str(args.index)+'.pkl')
+    pickle.dump(tracks, open('../pickled_data/tracks_'+args.file_name+'_'+str(args.index)+'.pkl', "wb" ))
 else:
     image_db.to_pickle('../pickled_data/imageDB_'+args.file_name+'.pkl')
-    tracks.to_pickle('../pickled_data/tracks_'+args.file_name+'.pkl')
+    pickle.dump(tracks, open('../pickled_data/tracks_'+args.file_name+'.pkl', "wb" ))
