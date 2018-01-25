@@ -1,13 +1,18 @@
-#from panoptes_client import *
-
 import pandas as pd
 import numpy as np
 import os, sys
 import pickle
 import pdb
+import argparse
 
-# from pyomega.API import projectStructure
-# from pyomega.API import calcConfMatrix
+### Argument handling ###
+
+argp = argparse.ArgumentParser()
+argp.add_argument("-nc", "--num_cores", type=int, help="Specify the number of cores that the retirement code will be parallelized over")
+argp.add_argument("-i", "--index", type=int, help="Index which indicates the chunk of image files that retirement will be calculated for")
+args = argp.parse_args()
+
+
 
 # Obtain number of classes from API
 pickle_in = open("pickled_data/workflowDictSubjectSets.pkl","rb")
@@ -52,7 +57,7 @@ classifications, glitches, conf_matrices = 0,0,0
 col_list = ['id','uniqueID','links_subjects','links_user','MLScore','MLLabel','annotations_value_choiceINT','conf_matrix','weight','metadata_finished_at']+sorted(workflowDictSubjectSets[2117].keys())
 combined_data = combined_data[col_list]
 
-#Must start with earlier classifications and work way to new ones
+# Must start with earlier classifications and work way to new ones
 combined_data.drop_duplicates(['links_subjects','links_user'],inplace=True)
 
 # Create imageDB
@@ -129,12 +134,17 @@ print 'determining retired images...'
 # sort data based on subjects number
 subjects = combined_data.links_subjects.unique()
 subjects.sort()
-#confusion_matrices.apply(get_post_contribution, axis=1)
-for idx, g in enumerate(subjects):
+
+# implementation for multiprocessing
+breakdown = np.linspace(0,len(subjects),args.num_cores+1)
+cut_subjects = subjects[int(np.floor(breakdown[args.index])):int(np.floor(breakdown[args.index+1]))]
+print cut_subjects
+
+for idx, g in enumerate(cut_subjects):
     get_post_contribution(g)
     if idx%100 == 0:
-        sys.stderr.write('\r {:04.2f}% complete'.format(100*float(idx)/len(subjects)))
+        print '%.2f%% complete' % (100*float(idx)/len(cut_subjects))
 
 retired_db = image_db.loc[image_db.retired == 1]
-retired_db.to_pickle('pickled_data/ret_subjects.pkl')
-image_db.to_pickle('pickled_data/image_db.pkl')
+retired_db.to_pickle('pickled_data/multiproc_jobarray/ret_subjects_'+str(args.index)+'.pkl')
+image_db.to_pickle('pickled_data/multiproc_jobarray/image_db_'+str(args.index)+'.pkl')
