@@ -21,7 +21,7 @@ else:
     multiproc=False
 
 # Obtain number of classes from API
-with open("../pickled_data/workflowDictSubjectSets.pkl","rb") as f:
+with open("../data/workflowDictSubjectSets.pkl","rb") as f:
     workflowDictSubjectSets = pickle.load(f)
 classes = sorted(workflowDictSubjectSets[2117].keys())
 
@@ -36,13 +36,13 @@ priors = np.ones((numClasses))/numClasses
 
 # Load info about classifications and glitches
 print '\nreading classifications...'
-classifications = pd.read_pickle('../pickled_data/classifications.pkl')
+classifications = pd.read_pickle('../data/classifications.pkl')
 classifications = classifications.loc[~(classifications.annotations_value_choiceINT == -1)]
 # NOTE: we remove all classifications that were done on defunct workflows
 classifications = classifications.loc[~(classifications.weight == 0.0)]
 
 print 'reading glitches...'
-glitches = pd.read_pickle('../pickled_data/glitches.pkl')
+glitches = pd.read_pickle('../data/glitches.pkl')
 # filter glitches for only testing images
 glitches = glitches.loc[glitches.ImageStatus != 'Training']
 glitches['MLScore'] = glitches[classes].max(1)
@@ -50,7 +50,7 @@ glitches['MLLabel'] = glitches[classes].idxmax(1)
 
 # Load confusion matrices
 print 'reading confusion matrices...'
-conf_matrices = pd.read_pickle('../pickled_data/conf_matrices.pkl')
+conf_matrices = pd.read_pickle('../data/conf_matrices.pkl')
 
 # Merge DBs
 print 'combining data...'
@@ -165,8 +165,8 @@ for idx, g in enumerate(subjects):
 
 # save image and retirement data as pickles
 if multiproc:
-    image_db.to_pickle('../pickled_data/imageDB_'+args.file_name+'_'+str(args.index)+'.pkl')
-    pickle.dump(tracks, open('../pickled_data/tracks_'+args.file_name+'_'+str(args.index)+'.pkl', "wb" ))
+    image_db.to_pickle('../output/imageDB_'+args.file_name+'_'+str(args.index)+'.pkl')
+    pickle.dump(tracks, open('../output/tracks_'+args.file_name+'_'+str(args.index)+'.pkl', "wb" ))
 else:
-    image_db.to_pickle('../pickled_data/imageDB_'+args.file_name+'.pkl')
-    pickle.dump(tracks, open('../pickled_data/tracks_'+args.file_name+'.pkl', "wb" ))
+    image_db.to_pickle('../output/imageDB_'+args.file_name+'.pkl')
+    pickle.dump(tracks, open('../output/tracks_'+args.file_name+'.pkl', "wb" ))

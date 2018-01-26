@@ -9,9 +9,9 @@
 #MSUB -j oe
 #MSUB -d /projects/b1011/mzevin/gravity_spy/GravitySpy/
 
-num_cores=10
+num_cores=20
 
 module load python
 
 cd /projects/b1011/mzevin/gravity_spy/GravitySpy/API/
-python retireimage_multiproc.py --num_cores ${num_cores} --index ${MOAB_JOBARRAYINDEX}
+python retireimage.py --num-cores ${num_cores} --index ${MOAB_JOBARRAYINDEX} --file-name 'test'
