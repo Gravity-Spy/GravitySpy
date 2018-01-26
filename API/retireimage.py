@@ -73,7 +73,7 @@ image_db = combined_data[columnsForImageDB].drop_duplicates(['links_subjects'])
 image_db.set_index(['links_subjects'],inplace=True)
 image_db['numLabel'] = 0
 image_db['retired'] = 0
-image_db['numRetire'] = 0
+image_db['numClassifications'] = 0
 image_db['finalScore'] = 0.0
 image_db['finalLabel'] = ''
 image_db['cum_weight'] = 0.0
@@ -97,11 +97,11 @@ def get_post_contribution(x):
     tracker = np.atleast_2d(glitch.iloc[0][classes].values)
 
     # loop through all people that classified until retirement is reached
-    for person in glitch.links_user:
-        # for now, let's assume everything with >20 classifications and no retirement has not retired
+    for idx, person in enumerate(glitch.links_user):
+        # for now, let's assume everything with >50 classifications and no retirement has not retired
         max_label = 50
         if image_db.loc[x, 'numLabel'] > max_label:
-            image_db.loc[x, 'numRetire'] = max_label
+            image_db.loc[x, 'numClassifications'] = max_label
             image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
             image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
             tracks[x] = tracker
@@ -138,11 +138,19 @@ def get_post_contribution(x):
         if ((posterior.divide(weight_ctr) > retired_thres).any() and image_db.loc[x, 'numLabel'] > 1):
             # save count that was needed to retire image
             image_db.loc[x, classes] = image_db.loc[x, classes].divide(weight_ctr)
-            image_db.loc[x, 'numRetire'] = image_db.loc[x, 'numLabel']
+            image_db.loc[x, 'numClassifications'] = image_db.loc[x, 'numLabel']
             image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
             image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
             image_db.loc[x, 'retired'] = 1
             image_db.loc[x, 'cum_weight'] = weight_ctr
+            tracks[x] = tracker
+            return
+
+       # if all people have been accounted for and image not retired, save info to image_db and tracks
+        if idx == len(glitch.links_user)-1:
+            image_db.loc[x, 'numClassifications'] = image_db.loc[x, 'numLabel']
+            image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
+            image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
             tracks[x] = tracker
             return
 
