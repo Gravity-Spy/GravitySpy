@@ -6,7 +6,7 @@ import pdb
 
 argp = argparse.ArgumentParser()
 argp.add_argument("-f", "--file-name", type=str, default='',  help="File stem for imageDB and tracks to read from directory")
-argp.add_argument("-d", "--directory", type=str, default='pickled_data/',  help="Specify the directory where the multiprocessing file output are. Default=pickled_data")
+argp.add_argument("-d", "--directory", type=str, default='data/',  help="Specify the directory where the multiprocessing file output are. Default=pickled_data")
 args = argp.parse_args()
 
 # combined retired subjects and image_db pickles
