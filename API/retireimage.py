@@ -105,6 +105,7 @@ def get_post_contribution(x):
             image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
             image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
             tracks[x] = tracker
+            image_db.loc[x, 'tracks'] = [tracks]
             return
 
         classification = glitch[glitch.links_user == person]
@@ -144,6 +145,7 @@ def get_post_contribution(x):
             image_db.loc[x, 'retired'] = 1
             image_db.loc[x, 'cum_weight'] = weight_ctr
             tracks[x] = tracker
+            image_db.loc[x, 'tracks'] = [tracks]
             return
 
        # if all people have been accounted for and image not retired, save info to image_db and tracks
@@ -152,6 +154,7 @@ def get_post_contribution(x):
             image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
             image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
             tracks[x] = tracker
+            image_db.loc[x, 'tracks'] = [tracks]
             return
 
 
@@ -174,7 +177,5 @@ for idx, g in enumerate(subjects):
 # save image and retirement data as pickles
 if multiproc:
     image_db.to_pickle('../output/imageDB_'+args.file_name+'_'+str(args.index)+'.pkl')
-    pickle.dump(tracks, open('../output/tracks_'+args.file_name+'_'+str(args.index)+'.pkl', "wb" ))
 else:
     image_db.to_pickle('../output/imageDB_'+args.file_name+'.pkl')
-    pickle.dump(tracks, open('../output/tracks_'+args.file_name+'.pkl', "wb" ))
