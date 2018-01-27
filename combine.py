@@ -13,20 +13,10 @@ args = argp.parse_args()
 
 files = os.listdir(args.directory)
 imageDB_list = []
-tracks_list = []
 for names in files:
     if names.startswith('imageDB_'+args.file_name):
         imageDB_list.append(names)
-    elif names.startswith('tracks_'+args.file_name):
-        tracks_list.append(names)
 imageDB_list.sort()
-tracks_list.sort()
-
-tracks={}
-for f in tracks_list:
-    with open(args.directory+f,"rb") as f:
-        temp = pickle.load(f)
-        tracks.update(temp)
 
 imageDB = pd.DataFrame()
 for f in imageDB_list:
@@ -34,5 +24,4 @@ for f in imageDB_list:
     imageDB =imageDB.append(temp)
 
 imageDB.to_pickle(args.directory+'imageDB_'+args.file_name+'.pkl')
-pickle.dump(tracks, open('tracks_'+args.file_name+'.pkl', "wb" ))
 
