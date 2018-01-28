@@ -166,7 +166,7 @@ subjects.sort()
 # implementation for multiprocessing
 if multiproc:
     breakdown = np.linspace(0,len(subjects),args.num_cores+1)
-    subjects = subjects[int(np.floor(breakdown[args.index])):int(np.floor(breakdown[args.index+1]))]
+    subjects = subjects[int(np.floor(breakdown[args.index-1])):int(np.floor(breakdown[args.index]))]
 
 # do the loop
 for idx, g in enumerate(subjects):
