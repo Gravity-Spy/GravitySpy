@@ -80,8 +80,6 @@ image_db['cum_weight'] = 0.0
 
 
 def get_post_contribution(x):
-    # create empty dict for holding the tracks for this image
-    tracks={}
     # NOTE: the subject link is the variable x
     # find all classifications for a particular subject
     glitch = combined_data[combined_data.links_subjects==x]
@@ -105,8 +103,7 @@ def get_post_contribution(x):
             image_db.loc[x, 'numClassifications'] = max_label
             image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
             image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
-            tracks[x] = tracker
-            image_db.loc[x, 'tracks'] = [tracks]
+            image_db.loc[x, 'tracks'] = [tracker]
             return
 
         classification = glitch[glitch.links_user == person]
@@ -145,8 +142,7 @@ def get_post_contribution(x):
             image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
             image_db.loc[x, 'retired'] = 1
             image_db.loc[x, 'cum_weight'] = weight_ctr
-            tracks[x] = tracker
-            image_db.loc[x, 'tracks'] = [tracks]
+            image_db.loc[x, 'tracks'] = [tracker]
             return
 
        # if all people have been accounted for and image not retired, save info to image_db and tracks
@@ -154,8 +150,7 @@ def get_post_contribution(x):
             image_db.loc[x, 'numClassifications'] = image_db.loc[x, 'numLabel']
             image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
             image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
-            tracks[x] = tracker
-            image_db.loc[x, 'tracks'] = [tracks]
+            image_db.loc[x, 'tracks'] = [tracker]
             return
 
 
