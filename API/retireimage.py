@@ -77,10 +77,11 @@ image_db['numClassifications'] = 0
 image_db['finalScore'] = 0.0
 image_db['finalLabel'] = ''
 image_db['cum_weight'] = 0.0
-tracks={}
 
 
 def get_post_contribution(x):
+    # create empty dict for holding the tracks for this image
+    tracks={}
     # NOTE: the subject link is the variable x
     # find all classifications for a particular subject
     glitch = combined_data[combined_data.links_subjects==x]
