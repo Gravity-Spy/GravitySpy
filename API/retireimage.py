@@ -52,6 +52,8 @@ glitches['MLLabel'] = glitches[classes].idxmax(1)
 print 'reading confusion matrices...'
 conf_matrices = pd.read_pickle('../data/conf_matrices.pkl')
 
+pdb.set_trace()
+
 # Merge DBs
 print 'combining data...'
 combined_data = classifications.merge(conf_matrices, on=['id','links_user'])
@@ -173,6 +175,6 @@ for idx, g in enumerate(subjects):
 
 # save image and retirement data as pickles
 if multiproc:
-    image_db.to_pickle('../output/imageDB_'+args.file_name+'_'+str(args.index)+'.pkl')
+    image_db.to_pickle('../output/imageDB_'+args.file_name+str(args.index)+'.pkl')
 else:
     image_db.to_pickle('../output/imageDB_'+args.file_name+'.pkl')
