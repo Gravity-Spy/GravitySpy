@@ -65,7 +65,10 @@ def id_generator(x,size=10, chars=string.ascii_uppercase + string.digits +string
 def get_triggers(gpsStart,gpsEnd,detector):
 
     # Obtain segments that are analysis ready
-    analysis_ready = DataQualityFlag.query('{0}:DMT-ANALYSIS_READY:1'.format(detector),float(gpsStart),float(gpsEnd))
+    if detector == 'V1':
+        analysis_ready = DataQualityFlag.query('{0}:ITF_SCIENCE:1'.format(detector),float(gpsStart),float(gpsEnd))
+    else:
+       analysis_ready = DataQualityFlag.query('{0}:DMT-ANALYSIS_READY:1'.format(detector),float(gpsStart),float(gpsEnd))
 
     # Display segments for which this flag is true
     print "Segments for which the ANALYSIS READY Flag is active: {0}".format(analysis_ready.active)

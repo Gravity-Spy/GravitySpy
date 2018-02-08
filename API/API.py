@@ -85,6 +85,7 @@ classifications = classifications.convert_objects(convert_numeric=True)
 classifications.created_at = pd.to_datetime(classifications.created_at,infer_datetime_format=True)
 classifications.metadata_started_at = pd.to_datetime(classifications.metadata_started_at,infer_datetime_format=True)
 classifications.metadata_finished_at = pd.to_datetime(classifications.metadata_finished_at,infer_datetime_format=True)
+classifications = classifications.loc[~classifications.annotations_value_choice.isnull()]
 
 # Now we have to handle follow up question parsing very carefully. It is something that is very useful but can be a headache to parse. From the answers dict obtained about we know which answers have follow up questions. As import we know that the classification DF we created will have the format of 'annotations_value_answers_' + "Follow up question" if such a follow up qustion was answered.
 #Check if field is *not* empty

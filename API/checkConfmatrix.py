@@ -76,6 +76,7 @@ promotion_Level4 = [answersDict[iAnswer] for iAnswer in answers[2360].keys() if 
 
 # Set a criteria for "user skill"
 alpha = .7*np.ones(numClasses)
+alpha[4] = 0.65
 
 # Create "Sparse Matrices" and perform a normalization task on them. 
 # Afterwards determine if the users diagonal is above the threshold set above
