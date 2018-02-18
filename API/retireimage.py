@@ -13,6 +13,12 @@ argp = argparse.ArgumentParser()
 argp.add_argument("-f", "--file-name", default='', type=str, help="File stem for output data")
 argp.add_argument("-nc", "--num-cores", default=None, type=int, help="Specify the number of cores that the retirement code will be parallelized over")
 argp.add_argument("-i", "--index", default=None, type=int, help="Index which indicates the chunk of image files that retirement will be calculated for")
+
+argp.add_argument("--min-label", default=2, type=int, help="Minimum number of citizen labels that an image must receive before it is retired. Default=2")
+argp.add_argument("--max-label", default=50, type=int, help="Maximum number of citizen labels that an image must receive before it is retired as NOA. Default=50")
+argp.add_argument("--ret-thresh", default=0.9, help="Retirement threshold that must be achieved to retire a particular class. Can be a float, or a 22-length vector of floats. Default = 0.9")
+argp.add_argument("--prior", default='uniform', type=str, help="String indicating the prior choice for the subjects. Calls function from class priors.py. Default=uniform")
+argp.add_argument("--weighting", default='default', type=str, help="String indicating the weighting choice for the subjects. Calls function from class weightings.py. Default=default")
 args = argp.parse_args()
 
 if args.num_cores and args.index:
@@ -28,11 +34,12 @@ classes = sorted(workflowDictSubjectSets[2117].keys())
 # From ansers Dict determine number of classes
 numClasses = len(classes)
 
-# Flat retirement criteria
-retired_thres = .9*np.ones(numClasses)
+# Flat retirement criteria #FIXME make this work for vector of thresholds
+ret_thresh = float(args.ret_thresh)*np.ones(numClasses)
 
-# Flat priors b/c we do not know what category the image is in
-priors = np.ones((numClasses))/numClasses
+# Flat priors b/c we do not know what category the image is in #FIXME make this work for other defined priors
+if args.prior == 'uniform':
+    priors = np.ones((numClasses))/numClasses
 
 # Load info about classifications and glitches
 print '\nreading classifications...'
@@ -50,17 +57,14 @@ glitches['MLLabel'] = glitches[classes].idxmax(1)
 
 # Load confusion matrices
 print 'reading confusion matrices...'
-conf_matrices = pd.read_pickle('../data/conf_matrices.pkl')
-
-pdb.set_trace()
+# call this combined data for memory purposes
+combined_data = pd.read_pickle('../data/conf_matrices.pkl')
 
 # Merge DBs
 print 'combining data...'
-combined_data = classifications.merge(conf_matrices, on=['id','links_user'])
+combined_data = classifications.merge(combined_data, on=['id','links_user'])
 combined_data = combined_data.merge(glitches, on=['links_subjects', 'uniqueID'])
 
-# Get rid of unnecessary files
-classifications, glitches, conf_matrices = 0,0,0
 # Remove unnecessary columns from combined_data
 col_list = ['id','uniqueID','links_subjects','links_user','MLScore','MLLabel','annotations_value_choiceINT','conf_matrix','weight','metadata_finished_at']+sorted(workflowDictSubjectSets[2117].keys())
 combined_data = combined_data[col_list]
@@ -100,11 +104,11 @@ def get_post_contribution(x):
     # loop through all people that classified until retirement is reached
     for idx, person in enumerate(glitch.links_user):
         # for now, let's assume everything with >50 classifications and no retirement has not retired
-        max_label = 50
-        if image_db.loc[x, 'numLabel'] > max_label:
-            image_db.loc[x, 'numClassifications'] = max_label
+        if image_db.loc[x, 'numLabel'] > args.max_label:
+            image_db.loc[x, 'numClassifications'] = args.max_label
             image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
-            image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
+            image_db.loc[x, 'finalLabel'] = classes[np.asarray(posterior.divide(weight_ctr)).argmax()]
+            #image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
             image_db.loc[x, 'tracks'] = [tracker]
             return
 
@@ -125,6 +129,7 @@ def get_post_contribution(x):
         # concatenate the new posterior contribution to tracker
         tracker = np.concatenate((tracker, np.asarray(posteriorToAdd)))
         # keep track of weighting counter for normalization purposes
+        # FIXME we need to allow other definied weighting schemes...
         weight_ctr += float(classification.weight)
         # for now, only use posteriors for users that have seen and classified a golden image of this particular class
         # update image_db with the posterior contribution
@@ -136,12 +141,13 @@ def get_post_contribution(x):
         # Check if posterior is above threshold, add 1 for the ML component
         #posterior = image_db.loc[x][classes].divide(image_db.loc[x]['numLabel'] + 1)
         posterior = image_db.loc[x][classes]
-        if ((posterior.divide(weight_ctr) > retired_thres).any() and image_db.loc[x, 'numLabel'] > 1):
+        if ((posterior.divide(weight_ctr) > ret_thresh).any() and image_db.loc[x, 'numLabel'] >= args.min_label):
             # save count that was needed to retire image
             image_db.loc[x, classes] = image_db.loc[x, classes].divide(weight_ctr)
             image_db.loc[x, 'numClassifications'] = image_db.loc[x, 'numLabel']
             image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
-            image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
+            image_db.loc[x, 'finalLabel'] = classes[np.asarray(posterior.divide(weight_ctr)).argmax()]
+            #image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
             image_db.loc[x, 'retired'] = 1
             image_db.loc[x, 'cum_weight'] = weight_ctr
             image_db.loc[x, 'tracks'] = [tracker]
@@ -151,7 +157,8 @@ def get_post_contribution(x):
         if idx == len(glitch.links_user)-1:
             image_db.loc[x, 'numClassifications'] = image_db.loc[x, 'numLabel']
             image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
-            image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
+            image_db.loc[x, 'finalLabel'] = classes[np.asarray(posterior.divide(weight_ctr)).argmax()]
+            #image_db.loc[x, 'finalLabel'] = posterior.divide(weight_ctr).idxmax()
             image_db.loc[x, 'tracks'] = [tracker]
             return
 

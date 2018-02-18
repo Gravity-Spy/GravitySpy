@@ -10,8 +10,13 @@
 #MSUB -d /projects/b1011/mzevin/gravity_spy/GravitySpy/
 
 num_cores=20
+min_label=2
+max_label=50
+ret_thresh=0.9
+prior='uniform'
+weighting='default'
 
 module load python
 
 cd /projects/b1011/mzevin/gravity_spy/GravitySpy/API/
-python retireimage.py --num-cores ${num_cores} --index ${MOAB_JOBARRAYINDEX} --file-name 'test'
+python retireimage.py --num-cores ${num_cores} --index ${MOAB_JOBARRAYINDEX} --min-label ${min_label} --max-label ${max_label} --ret-thresh ${ret_thresh} --prior ${prior} --weighting ${weighting} --file-name retThresh-${ret_thresh}-
