@@ -312,7 +312,7 @@ def main(inifile, eventTime, ID, outDir, pathToModel='/home/machinelearning/Grav
                     SQLCommand = SQLCommand + '''\"{0}\" = {1}, '''.format(Column,columnDict[Column])
             SQLCommand = SQLCommand[:-2] + ' WHERE \"uniqueID\" = \'' + scoresTable.uniqueID.iloc[0] + "'"
             engine.execute(SQLCommand)
-            features.to_sql('similarityindex', engine, index=False, , if_exists='append')
+            features.to_sql('similarityindex', engine, index=False, if_exists='append')
         elif HDF5:
             scoresTable.to_hdf('{0}/ML_GSpy_{1}.h5'.format(outDir, ID), 'gspy_ML_classification')
 

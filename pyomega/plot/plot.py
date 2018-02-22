@@ -4,7 +4,7 @@ from matplotlib import use
 use('agg')
 from matplotlib import (pyplot as plt, cm)
 from matplotlib.ticker import ScalarFormatter
-from gwpy.plotter import rcParams
+from gwpy.plotter.rc import rcParams
 import matplotlib as mpl
 mpl.rcParams.update(mpl.rcParamsDefault)
 

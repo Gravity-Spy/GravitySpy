@@ -2,10 +2,6 @@ panoptes-client
 SQLAlchemy
 cython
 six >= 1.5
-numpy >= 1.10
-scipy >= 0.16
-astropy >= 1.2.1
-matplotlib>=1.4.1
 lscsoft-glue>=1.55.2
 gitpython
 h5py
@@ -15,11 +11,12 @@ pykerberos
 python-cjson
 pyRXP
 scikit-image
-Theano
+Theano==0.9
 keras
 pandas
-gwpy
+gwpy>=0.7.5
 psycopg2
 https://github.com/ligovirgo/trigfind/archive/v0.4.tar.gz
 ligotimegps
+enum
 configparser

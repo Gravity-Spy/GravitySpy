@@ -64,12 +64,8 @@ setup_requires = [
 ]
 install_requires = [
     'SQLAlchemy',
-    'cython',
     'six',
-    'numpy',
-    'scipy',
-    'astropy',
-    'matplotlib',
+    'cython',
     'gitpython',
     'configparser',
     'h5py',
@@ -83,7 +79,7 @@ install_requires = [
     'Theano==0.9',
     'keras',
     'pandas',
-    'gwpy',
+    'gwpy>=0.7.5',
     'lscsoft_glue',
     'ligotimegps',
     'psycopg2',
@@ -107,7 +103,10 @@ extras_require = {
 # -- run setup ----------------------------------------------------------------
 
 packagenames = find_packages()
-scripts = glob.glob(os.path.join('bin', '*'))
+data_extensions = ('.h5', '.pklz')
+scripts = [fn for fn in glob.glob(os.path.join('bin', '*')) if
+           not fn.endswith(data_extensions)]
+print(scripts)
 
 setup(name=DISTNAME,
       provides=[PACKAGENAME],
