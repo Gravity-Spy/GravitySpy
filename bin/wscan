@@ -301,7 +301,7 @@ def main(inifile, eventTime, ID, outDir, pathToModel='/home/machinelearning/Grav
         if PostgreSQL:
             engine = create_engine(
                                    'postgresql://{0}:{1}'\
-                                   .format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD'])\
+                                   .format(os.environ['GRAVITYSPY_DATABASE_USER'],os.environ['QUEST_SQL_PASSWORD'])\
                                    + '@gravityspy.ciera.northwestern.edu:5432/gravityspy')
             columnDict = scoresTable.to_dict(orient='records')[0]
             SQLCommand = 'UPDATE glitches SET '

@@ -6,7 +6,7 @@ from sqlalchemy.engine import create_engine
 from panoptes_client import *
 from gwpy.segments import DataQualityDict, SegmentList, Segment
 
-engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
+engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],os.environ['QUEST_SQL_PASSWORD']))
 
 # Load classifications, current user DB status and golden images from DB
 glitches = pd.read_sql('glitches', engine)
