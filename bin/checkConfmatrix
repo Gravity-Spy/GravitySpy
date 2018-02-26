@@ -13,8 +13,8 @@ import collections
 import operator
 
 from sqlalchemy.engine import create_engine
-from pyomega.API.getLabelDict import getAnswers
-from pyomega.API import getGoldenImages
+from gravityspy.API.getLabelDict import getAnswers
+from gravityspy.API import getGoldenImages
 from scipy.sparse import coo_matrix
 
 def levelDict(x):

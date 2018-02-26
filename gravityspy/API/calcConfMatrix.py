@@ -11,13 +11,13 @@ import collections
 import operator
 
 from sqlalchemy.engine import create_engine
-from pyomega.API.getLabelDict import getAnswers
-from pyomega.API import getGoldenImages
+from gravityspy.API.getLabelDict import getAnswers
+from gravityspy.API import getGoldenImages
 from scipy.sparse import coo_matrix
 
 def main():
 
-    engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],os.environ['QUEST_SQL_PASSWORD']))
+    engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],os.environ['GRAVITYSPY_DATABASE_PASSWD']))
 
     # Load classifications, current user DB status and golden images from DB
     classifications = pd.read_sql('SELECT links_user, links_subjects, links_workflow, "annotations_value_choiceINT" FROM classificationsdev', engine)

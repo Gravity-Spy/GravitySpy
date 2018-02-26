@@ -5,7 +5,7 @@ __author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 
 import os
 import unittest2
-from pyomega.API import projectStructure
+from gravityspy.API import projectStructure
 
 workflowDictSubjectSets_unit = {1610: {'Blip': (1610, 6717, [1.0, 0.998]),
   'Whistle': (1610, 6795, [1.0, 0.99])},

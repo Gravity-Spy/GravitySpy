@@ -1,17 +1,19 @@
-import numpy as np
-
 from matplotlib import use
-use('agg')
-from matplotlib import (pyplot as plt, cm)
 from matplotlib.ticker import ScalarFormatter
-from gwpy.plotter.rc import rcParams
+from gwpy.plotter import Plot
+# from gwpy.plotter.rc import rcParams
+
+use('agg')
+import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.rcParams.update(mpl.rcParamsDefault)
 
-from gwpy.plotter import Plot
+import os
+import numpy as np
 
 
-def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges, detectorName, startTime, outDirtmp, IDstring, **kwargs):
+def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges,
+                    detectorName, startTime, outDirtmp, IDstring, **kwargs):
 
     # Set some plotting params
     myfontsize = 15
@@ -24,7 +26,8 @@ def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges, detectorNa
     elif detectorName == 'V1':
         title = "VIRGO"
     else:
-        raise ValueError('You have supplied a detector that is unknown at this time')
+        raise ValueError('You have supplied a detector '
+                         'that is unknown at this time.')
 
     if 1161907217 < startTime < 1164499217:
         title = title + ' - ER10'
@@ -33,9 +36,9 @@ def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges, detectorNa
     elif 1126400000 < startTime < 1137250000:
         title = title + ' - O1'
     else:
-        raise ValueError("Time outside science or engineering run\
-                   or more likely code not updated to reflect\
-                   new science run")
+        raise ValueError('Time outside science or engineering run '
+                         'or more likely code not updated to reflect '
+                         'new science run.')
 
     for i, spec in enumerate(specsgrams):
 
@@ -47,15 +50,18 @@ def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges, detectorNa
         ax.set_yscale('log', basey=2)
         ax.set_xscale('linear')
 
-        xticks = np.linspace(spec.xindex.min().value,spec.xindex.max().value,5)
+        xticks = np.linspace(spec.xindex.min().value,
+                             spec.xindex.max().value, 5)
         xticklabels = []
         dur = float(plotTimeRanges[i])
         [xticklabels.append(str(i)) for i in np.linspace(-dur/2, dur/2, 5)]
         ax.set_xticks(xticks)
         ax.set_xticklabels(xticklabels)
 
-        ax.set_xlabel('Time (s)', labelpad=0.1, fontsize=mylabelfontsize, color=myColor)
-        ax.set_ylabel('Frequency (Hz)', fontsize=mylabelfontsize, color=myColor)
+        ax.set_xlabel('Time (s)', labelpad=0.1, fontsize=mylabelfontsize,
+                      color=myColor)
+        ax.set_ylabel('Frequency (Hz)', fontsize=mylabelfontsize,
+                      color=myColor)
         ax.set_title(title, fontsize=mylabelfontsize, color=myColor)
         ax.title.set_position([.5, 1.05])
         ax.set_ylim(10, 2048)
@@ -66,15 +72,20 @@ def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges, detectorNa
         plt.tick_params(axis='y', which='major', labelsize=12)
 
         cbar = indFig.add_colorbar(cmap='viridis', label='Normalized energy',
-                            clim=plotNormalizedERange, pad="3%", width="5%")
+                                   clim=plotNormalizedERange,
+                                   pad="3%", width="5%")
         cbar.ax.tick_params(labelsize=12)
         cbar.ax.yaxis.label.set_size(myfontsize)
 
-        indFig.save(outDirtmp + detectorName + '_' + IDstring + '_spectrogram_' + str(dur) +'.png')
-
+        indFig.save(os.path.join(
+                                 outDirtmp,
+                                 detectorName + '_' + IDstring
+                                 + '_spectrogram_' + str(dur) +'.png'
+                                )
+                   )
 
     # Create one image containing all spectogram grams
-    superFig = Plot(figsize=(27,6))
+    superFig = Plot(figsize=(27, 6))
     superFig.add_subplot(141, projection='timeseries')
     superFig.add_subplot(142, projection='timeseries')
     superFig.add_subplot(143, projection='timeseries')
@@ -87,20 +98,27 @@ def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges, detectorNa
         iAx.set_yscale('log', basey=2)
         iAx.set_xscale('linear')
 
-        xticks = np.linspace(spec.xindex.min().value,spec.xindex.max().value,5)
+        xticks = np.linspace(spec.xindex.min().value,
+                             spec.xindex.max().value, 5)
         xticklabels = []
         dur = float(plotTimeRanges[iN])
         [xticklabels.append(str(i)) for i in np.linspace(-dur/2, dur/2, 5)]
         iAx.set_xticks(xticks)
         iAx.set_xticklabels(xticklabels)
 
-        iAx.set_xlabel('Time (s)', labelpad=0.1, fontsize=mylabelfontsize, color=myColor)
+        iAx.set_xlabel('Time (s)', labelpad=0.1, fontsize=mylabelfontsize,
+                       color=myColor)
         iAx.set_ylim(10, 2048)
         iAx.yaxis.set_major_formatter(ScalarFormatter())
         iAx.ticklabel_format(axis='y', style='plain')
         iN = iN + 1
 
-        superFig.add_colorbar(ax=iAx, cmap='viridis', label='Normalized energy', clim=plotNormalizedERange, pad="3%", width="5%")
+        superFig.add_colorbar(ax=iAx, cmap='viridis',
+                              label='Normalized energy',
+                              clim=plotNormalizedERange,
+                              pad="3%", width="5%")
 
-    superFig.suptitle(title, fontsize=mylabelfontsize, color=myColor,x=0.51)
-    superFig.save(outDirtmp + IDstring + '.png', bbox_inches='tight')
+    superFig.suptitle(title, fontsize=mylabelfontsize, color=myColor, x=0.51)
+
+    superFig.save(os.path.join(outDirtmp, IDstring + '.png'),
+                  bbox_inches='tight')

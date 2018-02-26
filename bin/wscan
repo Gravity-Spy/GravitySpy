@@ -32,12 +32,12 @@ from gwpy.timeseries import TimeSeries
 from gwpy.spectrogram import Spectrogram
 from gwpy.segments import Segment
 
-from pyomega import __version__
-from pyomega.plot.plot import plot_qtransform
-import pyomega.ML.make_pickle_for_linux as make_pickle
-import pyomega.ML.labelling_test_glitches as label_glitches
-import pyomega.API.projectStructure as Structure
-from pyomega.utils import log
+from gravityspy import __version__
+from gravityspy.plot.plot import plot_qtransform
+import gravityspy.ML.make_pickle_for_linux as make_pickle
+import gravityspy.ML.labelling_test_glitches as label_glitches
+import gravityspy.API.projectStructure as Structure
+from gravityspy.utils import log
 
 pdb.Pdb.complete = rlcompleter.Completer(locals()).complete
 
@@ -81,7 +81,7 @@ def parse_commandline():
 ##########################                     ################################
 ###############################################################################
 
-def main(inifile, eventTime, ID, outDir, pathToModel='/home/machinelearning/GravitySpy/pyomega/ML/trained_model/', uniqueID=True, runML=False, HDF5=False, PostgreSQL=False, verbose=False):
+def main(inifile, eventTime, ID, outDir, pathToModel='/home/machinelearning/GravitySpy/gravityspy/ML/trained_model/', uniqueID=True, runML=False, HDF5=False, PostgreSQL=False, verbose=False):
 
     if (runML == True) and (HDF5==False) and (PostgreSQL==False):
         raise ValueError('If you wish to run ML must select file format to save with. Most cases HDF5=True is what you want')

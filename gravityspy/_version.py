@@ -42,7 +42,7 @@ def get_config():
     cfg.style = "pep440"
     cfg.tag_prefix = "v"
     cfg.parentdir_prefix = ""
-    cfg.versionfile_source = "pyomega/_version.py"
+    cfg.versionfile_source = "gravityspy/_version.py"
     cfg.verbose = False
     return cfg
 

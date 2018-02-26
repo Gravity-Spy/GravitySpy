@@ -32,8 +32,8 @@ import os.path
 from setuptools import (setup, find_packages)
 
 # set basic metadata
-PACKAGENAME = 'pyomega'
-DISTNAME = 'pyomega'
+PACKAGENAME = 'gravityspy'
+DISTNAME = 'gravityspy'
 AUTHOR = 'Scott Coughlin'
 AUTHOR_EMAIL = 'scott.coughlin@ligo.org'
 LICENSE = 'GPLv3'
@@ -129,7 +129,7 @@ setup(name=DISTNAME,
           'http://software.ligo.org/lscsoft/source/dqsegdb-1.2.2.tar.gz',
           'https://github.com/ligovirgo/trigfind/archive/v0.4.tar.gz',
       ],
-      test_suite='pyomega.tests',
+      test_suite='gravityspy.tests',
       use_2to3=True,
       classifiers=[
           'Programming Language :: Python',

@@ -12,8 +12,8 @@ import pdb
 from sqlalchemy.engine import create_engine
 import time
 
-from pyomega.API import getGoldenImages
-from pyomega.API.getLabelDict import getAnswers
+from gravityspy.API import getGoldenImages
+from gravityspy.API.getLabelDict import getAnswers
 
 def parse_commandline():
     """
