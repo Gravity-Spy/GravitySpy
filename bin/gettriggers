@@ -323,7 +323,7 @@ if opts.HDF5:
 
 elif opts.PostgreSQL:
 
-    engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],os.environ['QUEST_SQL_PASSWORD']))
+    engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],os.environ['GRAVITYSPY_DATABASE_PASSWD']))
 
     if not opts.gpsStart:
         tmp = pd.read_sql('glitches',engine)

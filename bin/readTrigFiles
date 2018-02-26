@@ -222,10 +222,10 @@ else:
     raise ValueError('This is not being run on either LLO or LHO and thus will not work since Omicron triggers are only discoverable on those clusters')
 
 try:
-    engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],os.environ['QUEST_SQL_PASSWORD']))
+    engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],os.environ['GRAVITYSPY_DATABASE_PASSWD']))
     print 'You are connect to server gravityspy.ciera.northwestern.edu, DB gravityspy and table {0}'.format('O1GlitchClassificationUpdate')
 except:
-    ValueError('Remember to set export GRAVITYSPY_DATABASE_USER and export QUEST_SQL_PASSWORD in order to access the Gravity Spy Data which is the description and secret,respectively, found here: https://secrets.ligo.org/secrets/144/')
+    ValueError('Remember to set export GRAVITYSPY_DATABASE_USER and export GRAVITYSPY_DATABASE_PASSWD in order to access the Gravity Spy Data which is the description and secret,respectively, found here: https://secrets.ligo.org/secrets/144/')
 
 # Determine location of executables
 proc = subprocess.Popen(['which', 'wscan'],
