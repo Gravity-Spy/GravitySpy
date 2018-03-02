@@ -7,6 +7,8 @@ import pickle
 import pdb
 import argparse
 
+import params
+
 ### Argument handling ###
 
 argp = argparse.ArgumentParser()
@@ -17,8 +19,8 @@ argp.add_argument("-i", "--index", default=None, type=int, help="Index which ind
 argp.add_argument("--min-label", default=2, type=int, help="Minimum number of citizen labels that an image must receive before it is retired. Default=2")
 argp.add_argument("--max-label", default=50, type=int, help="Maximum number of citizen labels that an image must receive before it is retired as NOA. Default=50")
 argp.add_argument("--ret-thresh", default=0.9, help="Retirement threshold that must be achieved to retire a particular class. Can be a float, or a 22-length vector of floats. Default = 0.9")
-argp.add_argument("--prior", default='uniform', type=str, help="String indicating the prior choice for the subjects. Calls function from class priors.py. Default=uniform")
-argp.add_argument("--weighting", default='default', type=str, help="String indicating the weighting choice for the subjects. Calls function from class weightings.py. Default=default")
+argp.add_argument("--prior", default='uniform', type=str, help="String indicating the prior choice for the subjects. Calls function from class params.py. Default=uniform")
+argp.add_argument("--weighting", default='default', type=str, help="String indicating the weighting choice for the subjects. Calls function from class params.py. Default=default")
 args = argp.parse_args()
 
 if args.num_cores and args.index:
@@ -38,8 +40,9 @@ numClasses = len(classes)
 ret_thresh = float(args.ret_thresh)*np.ones(numClasses)
 
 # Flat priors b/c we do not know what category the image is in #FIXME make this work for other defined priors
+priors = params.Priors()
 if args.prior == 'uniform':
-    priors = np.ones((numClasses))/numClasses
+    prior = priors.uniform(numClasses)
 
 # Load info about classifications and glitches
 print '\nreading classifications...'
@@ -125,7 +128,15 @@ def get_post_contribution(x):
         # grab the posterior contribution for that class, weighted by classification weight
         posteriorToAdd = float(classification.weight)*post_contribution[row, :]
         if np.isnan(posteriorToAdd).any():
-            continue
+            # FIXME: fixed the bug I think, but we should check this
+            if idx == len(glitch.links_user)-1:
+                image_db.loc[x, 'numClassifications'] = image_db.loc[x, 'numLabel']
+                image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
+                image_db.loc[x, 'finalLabel'] = classes[np.asarray(posterior.divide(weight_ctr)).argmax()]
+                image_db.loc[x, 'tracks'] = [tracker]
+            return
+            else:
+                continue
         # concatenate the new posterior contribution to tracker
         tracker = np.concatenate((tracker, np.asarray(posteriorToAdd)))
         # keep track of weighting counter for normalization purposes
