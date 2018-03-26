@@ -2,11 +2,11 @@
 
 # ---- Import standard modules to the python path.
 
-from panoptes_client import *
+from panoptes_client import SubjectSet, Project, Workflow
 from scipy.sparse import coo_matrix
 from gwpy.table import EventTable
 
-import re, operator, pickle, copy, os
+import re, pickle
 import pandas as pd
 import numpy as np
 
@@ -24,6 +24,11 @@ def flatten(d, parent_key='', sep='_'):
     return dict(items)
 
 
+def workflow_with_most_answers(db):
+    maxcount = max(len(v) for v in db.values())
+    return [k for k, v in db.items() if len(v) == maxcount]
+
+
 class ZooProject(object):
     '''
     `ZooProject` inherits from the Project class
@@ -31,18 +36,7 @@ class ZooProject(object):
     wrapper functions to extracts helpful
     project information.
     '''
-    def __init__(self, zoo_project_id, cache_zoo_project=False,
-                 load_zoo_project_from_cache=False):
-
-        if load_zoo_project_from_cache:
-            print('Trying to load project from cache...')
-            inputFile = open('{0}.pkl'.format(zoo_project_id), 'rb')
-            # Pickle dictionary using protocol 0.
-            project = pickle.load(inputFile)
-            print('successful')
-            self.project_info =  project.project_info
-            self.workflow_info = project.workflow_info
-            return
+    def __init__(self, zoo_project_id):
 
         self.zoo_project_id = zoo_project_id
         tmp = Project.find(zoo_project_id)
@@ -52,22 +46,43 @@ class ZooProject(object):
         self.workflow_info = {}
         order = self.project_info['configuration_workflow_order']
         workflows = [int(str(iWorkflow)) for iWorkflow in order]
+        self.workflow_order = workflows
 
         # Save workflow information
         for iWorkflow in workflows:
             tmp1 = Workflow.find(iWorkflow)
             self.workflow_info[str(iWorkflow)] = flatten(tmp1.raw)
 
-        # For faster creation of the ZooProject object
-        # it is recommended to save Object to cache
-        # and to use the load_zoo_project_from_cache option
-        # for future use.
-        if cache_zoo_project:
-            print('Saving project to cache...')
-            output = open('{0}.pkl'.format(zoo_project_id), 'wb')
-            # Pickle dictionary using protocol 0.
-            pickle.dump(self, output)
-            
+
+    def cache_project(self):
+        """Parameters
+        ----------
+
+        Returns
+        -------
+        A dict with keys of workflow IDs and values list
+        of golden sets associated with that workflow
+        """
+        output = open('{0}.pkl'.format(self.zoo_project_id), 'wb')
+        # Pickle dictionary using protocol 0.
+        pickle.dump(self, output)
+        return
+
+    @classmethod
+    def load_project_from_cache(cls, cache_file):
+        """Parameters
+        ----------
+        cache_file : `str` needs a '.pkl' extension
+
+        Returns
+        -------
+        A dict with keys of workflow IDs and values list
+        of golden sets associated with that workflow
+        """
+        inputFile = open('{0}'.format(cache_file), 'rb')
+        # Pickle dictionary using protocol 0.
+        return pickle.load(inputFile)
+
 
     def get_golden_subject_sets(self):
         """Parameters
@@ -83,15 +98,17 @@ class ZooProject(object):
         for iWorkflow in self.workflow_info.keys():
             try:
                 workflowGoldenSetDict[iWorkflow] = \
-                    self.workflow_info[iWorkflow]['configuration_gold_standard_sets']
+                    self.workflow_info[iWorkflow]\
+                        ['configuration_gold_standard_sets']
             except:
                 # Workflow has no assosciated golden set
                 workflowGoldenSetDict[iWorkflow] = []
 
+        self.workflowGoldenSetDict = workflowGoldenSetDict
         return workflowGoldenSetDict
 
 
-    def get_golden_images(self):
+    def get_golden_images(self, workflow=None):
         """Parameters
         ----------
 
@@ -103,12 +120,17 @@ class ZooProject(object):
         workflowGoldenSetImagesDict = {}
         workflowGoldenSetDict = self.get_golden_subject_sets()
 
-        for iWorkflow in workflowGoldenSetDict.keys():
+        if workflow:
+            workflows = workflow
+        else:
+            workflows = workflowGoldenSetDict.keys()
+
+        for iWorkflow in workflows:
             goldenImages = {}
 
             for iGoldenSubjectSet in workflowGoldenSetDict[iWorkflow]:
                 tmp = SubjectSet.find(iGoldenSubjectSet)
-
+                tmpSubjects = tmp.subjects
 
                 while True:
                     try:
@@ -116,12 +138,13 @@ class ZooProject(object):
                         goldenImages[str(nextSubject.id)] = \
                             [str(nextSubject.raw['metadata']['subject_id']),\
                              str(nextSubject.raw['metadata']['#Label']),
-                             int(test.raw['id'])]
+                             int(nextSubject.id)]
                     except:
                         break
 
             workflowGoldenSetImagesDict[iWorkflow] = goldenImages
 
+        self.workflowGoldenSetImagesDict = workflowGoldenSetImagesDict
         return workflowGoldenSetImagesDict
 
 
@@ -153,6 +176,7 @@ class ZooProject(object):
                 answerDict[iAnswer] = []
             workflowDictAnswers[iWorkflow] = answerDict
 
+        self.workflowDictAnswers = workflowDictAnswers
         return workflowDictAnswers
 
 
@@ -186,6 +210,7 @@ class ZooProject(object):
                             if iSubject not in goldenset]
             workflowDictSubjectSets[iWorkflow] = subjectset_id
 
+        self.workflowDictSubjectSets = workflowDictSubjectSets
         return workflowDictSubjectSets
 
 
@@ -206,7 +231,8 @@ class GravitySpyProject(ZooProject):
         of golden sets associated with that workflow
         """
         level_structure = {}
-        workflowDictSubjectSets = self.get_subject_sets_per_workflow(workflow=workflow)
+        workflowDictSubjectSets = \
+            self.get_subject_sets_per_workflow(workflow=workflow)
 
         for iworkflow in workflowDictSubjectSets.keys():
             # If it is final workflow level 4 subject sets are also linked
@@ -225,12 +251,13 @@ class GravitySpyProject(ZooProject):
                     subjectset_displayname_id[str_tmp] = \
                         (iworkflow, iSubjectSet,
                             [float(iThres)
-                                for iThres 
+                                for iThres
                                     in re.findall("\d+\.\d+", displayname)
                             ]
                         )
             level_structure[iworkflow] = subjectset_displayname_id
 
+        self.level_structure = level_structure
         return level_structure
 
 
@@ -243,31 +270,27 @@ class GravitySpyProject(ZooProject):
         A dict with keys of workflow IDs and values list
         of golden sets associated with that workflow
         """
-        
+
         # Load classifications, and golden images from DB
-        classifications = EventTable.fetch('gravityspy', 'classificationsdev',
-                                           columns=['links_user',
-                                                    'links_subjects',
-                                                    'links_workflow',
-                                                    'annotations_value_choiceINT'])
-
-        classifications = classifications.to_pandas() 
-        golden_images = EventTable.fetch('gravityspy', 'goldenimages')
-        golden_images_df = golden_images.to_pandas()
-
         # Make sure choice is a valid index
-        classifications = classifications.loc[
-                              classifications.annotations_value_choiceINT != -1
-                                             ]
-
         # Make sure to evaluate only logged in users
-        classifications = classifications.loc[classifications.links_user != 0]
-
         # Ignore NONEOFTHEABOVE classificatios when constructing confusion
         # matrix
-        classifications = classifications.loc[
-                              classifications.annotations_value_choiceINT != 12
-                                             ]
+        # Make sure to the subject classified was a golden image
+        query = 'classificationsdev WHERE \"annotations_value_choiceINT\" != \
+            -1 AND \"links_user\" != 0 AND \
+            \"annotations_value_choiceINT\" != 12 AND \
+            CAST(links_subjects AS FLOAT) IN \
+            (SELECT \"links_subjects\" FROM goldenimages)'
+
+        columns = ['links_user', 'links_subjects', 'links_workflow',
+                   'annotations_value_choiceINT']
+        classifications = EventTable.fetch('gravityspy', query,
+                                           columns = columns)
+
+        classifications = classifications.to_pandas()
+        golden_images = EventTable.fetch('gravityspy', 'goldenimages')
+        golden_images_df = golden_images.to_pandas()
 
         # From answers Dict determine number of classes
         numClasses = len(self.get_answers(workflow=2360).values()[0])
@@ -286,7 +309,8 @@ class GravitySpyProject(ZooProject):
         test = test.count().links_subjects.to_frame().reset_index()
 
         # Create "Sparse Matrices" and perform a normalization task on them.
-        # Afterwards determine if the users diagonal is above the threshold set above
+        # Afterwards determine if the users diagonal
+        # is above the threshold set above
         confusion_matrices = pd.DataFrame()
         for iUser in test.groupby('links_user'):
             columns = iUser[1].annotations_value_choiceINT
@@ -296,27 +320,118 @@ class GravitySpyProject(ZooProject):
                                                              numClasses))
             conf_divided, a1, a2, a3 = \
                 np.linalg.lstsq(np.diagflat(tmp.sum(axis=1)),
-                                            tmp.todense(rcond=None))
+                                            tmp.todense())
+
+            conf_dict = {'userID' : iUser[0], 'conf_matrix' : [conf_divided],
+                  'alpha' : [np.diag(conf_divided)]}
+
             confusion_matrices = \
                 confusion_matrices.append(pd.DataFrame(
-                                                      {'userID' : iUser[0],
-                                                       'conf_matrix' : [conf_divided],
-                                                       'alpha' : [np.diag(conf_divided)]},
-                                                      index=[iUser[0]]))
+                                                       conf_dict,
+                                                       index=[iUser[0]]))
 
+        self.confusion_matrices = confusion_matrices
         return confusion_matrices
 
 
-    def determine_level(self, alpha=None):
+    def determine_level(self, alpha):
+        """Parameters
+        ----------
+        alpha = 1xN vector of proficiency scores
+        where N is the number of glitch classes
 
-        answers = self.get_answers(workflow=2360)
-        if not alpha:
-            numClasses = len(answers.values()[0])
+        Returns
+        -------
+        A dict with keys of workflow IDs and values list
+        of golden sets associated with that workflow
+        """
+        answers = self.get_answers()
+        workflow = workflow_with_most_answers(answers)[0]
+        answersDictRev =  dict(enumerate(sorted(answers[workflow].keys())))
+        answersDict = dict((str(v),k) for k,v in answersDictRev.iteritems())
+
+        answersidx = {}
+        for k, v in answers.iteritems():
+            answersidx[k] = [answersDict[k1] for k1 in v.keys() \
+                                if k1 not in ['NONEOFTHEABOVE']]
+
+        # Obtain workflow order
+        order = self.project_info['configuration_workflow_order']
+        workflows = [int(str(iWorkflow)) for iWorkflow in order]
+        levelWorkflowDict = dict(enumerate(workflows))
+        workflowLevelDict = dict((v, k + 1) for k,v in levelWorkflowDict.iteritems())
+
+        try:
+            alpha
+        except:
+            numClasses = len(answersDict.keys())
             alpha = .7*np.ones(numClasses)
             alpha[4] = 0.65
 
-        
+        if not hasattr(self, 'confusion_matrices'):
+            self.calculate_confusion_matrices()
 
-        # Retrieve Answers
-        answersDictRev =  dict(enumerate(sorted(answers['2360'].keys())))
-        answersDict = dict((str(v),k) for k,v in answersDictRev.iteritems())
+        level = []
+        for (iuser, ialpha) in zip(self.confusion_matrices.userID, 
+                                   self.confusion_matrices.alpha):
+
+            proficiencyidx = np.where(ialpha > alpha)[0]
+            # determine whether a user is proficient at >= number
+            # of answers on a level. If yes, the check next level
+            # until < at which point you know which level the user
+            # should be on
+
+            maxlevel = max(levelWorkflowDict.keys())
+            maxworkflow = str(levelWorkflowDict[maxlevel])
+            # first check if they should be on level 5 and end
+            if (set(answersidx[maxworkflow]) <= set(proficiencyidx)):
+                level.append([maxworkflow, maxlevel + 1, iuser])
+                continue
+
+            minlevel = min(levelWorkflowDict.keys())
+            minworkflow = str(levelWorkflowDict[minlevel])
+            # second check if they should be on level 1 and end
+            if (set(proficiencyidx) < set(answersidx[minworkflow])):
+                level.append([minworkflow, minlevel + 1, iuser])
+                continue
+            
+            for ilevel in range(maxlevel - 1):
+                # first check if they should be on level 5 and end
+                next_workflow = str(levelWorkflowDict[ilevel + 1])
+                curr_workflow = str(levelWorkflowDict[ilevel])
+
+                if (set(answersidx[curr_workflow]) <= set(proficiencyidx)) \
+                   and \
+                   (not set(answersidx[next_workflow]) \
+                       <= set(proficiencyidx)):
+                    curr_workflow = levelWorkflowDict[ilevel + 1]
+                    curr_level = workflowLevelDict[curr_workflow]
+                    level.append([curr_workflow, curr_level, iuser])
+
+        columns = ['curr_workflow', 'curr_level', 'userID']
+        return pd.DataFrame(level, columns = columns)
+
+
+    def check_level_by_classification(self):
+        # Obtain workflow order
+        order = self.project_info['configuration_workflow_order']
+        workflows = [int(str(iWorkflow)) for iWorkflow in order]
+        levelWorkflowDict = dict(enumerate(workflows))
+        workflowLevelDict = dict((v, k + 1) for k,v in levelWorkflowDict.iteritems())
+
+        query = 'classificationsdev GROUP BY links_user, links_workflow'
+        userlevels = EventTable.fetch('gravityspy', query,
+                         columns = ['links_user', 'links_workflow'])
+
+        userlevels = userlevels.to_pandas()
+        userlevels['Level'] = userlevels.links_workflow.apply(
+                                  lambda x: workflowLevelDict[x])
+
+        init_user_levels = userlevels.groupby('links_user').Level.max()
+
+        init_user_levels_dict = {'userID' : init_user_levels.index.tolist(),
+                                'workflowInit' : init_user_levels.tolist()}
+
+        userStatusInit = pd.DataFrame(init_user_levels_dict)
+        self.userStatusInit = userStatusInit
+        return userStatusInit

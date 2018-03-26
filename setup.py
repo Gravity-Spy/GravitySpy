@@ -82,7 +82,7 @@ install_requires = [
     'gwpy>=0.7.5',
     'lscsoft_glue',
     'ligotimegps',
-    'psycopg2',
+    'psycopg2-binary',
     'panoptes_client',
 ]
 tests_require = [
