@@ -63,6 +63,7 @@ setup_requires = [
     'pytest-runner',
 ]
 install_requires = [
+    'gwpy>=0.7.5',
     'SQLAlchemy',
     'six',
     'cython',
@@ -79,7 +80,6 @@ install_requires = [
     'Theano==0.9',
     'keras',
     'pandas',
-    'gwpy>=0.7.5',
     'lscsoft_glue',
     'ligotimegps',
     'psycopg2-binary',

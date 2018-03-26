@@ -1,10 +1,10 @@
 from matplotlib import use
+use('agg')
+import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
 from gwpy.plotter import Plot
 # from gwpy.plotter.rc import rcParams
 
-use('agg')
-import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.rcParams.update(mpl.rcParamsDefault)
 
