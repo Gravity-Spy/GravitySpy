@@ -14,7 +14,6 @@ import json
 import rlcompleter
 import pdb
 import operator
-import subprocess
 from configparser import ConfigParser
 
 from panoptes_client import *
@@ -61,7 +60,7 @@ def parse_commandline():
                       GPS time")
     parser.add_argument("--ID", help="The uniqueID string to be supplied with --uniqueID")
     parser.add_argument("--outDir", help="Outdir for images")
-    parser.add_argument("--pathToModel", default=subprocess.check_output(["which", "semantic_idx_model.h5"]).split('semantic_idx_model.h5')[0],
+    parser.add_argument("--pathToModel",
                       help="Path to folder containing trained model")
     parser.add_argument("--runML", action="store_true", default=False,
                       help="Run the ML classifer on the omega scans")
