@@ -62,6 +62,7 @@ setup_requires = [
     'setuptools',
     'pytest-runner',
 ]
+
 install_requires = [
     'gwpy>=0.7.5',
     'SQLAlchemy',
@@ -74,7 +75,6 @@ install_requires = [
     'pykerberos',
     'ujson',
     'pyRXP',
-    'enum',
     'tables',
     'scikit_image',
     'Theano==0.9',
@@ -85,9 +85,11 @@ install_requires = [
     'psycopg2-binary',
     'panoptes_client',
 ]
+
 tests_require = [
     'pytest'
 ]
+
 if sys.version_info < (2, 7):
     tests_require.append('unittest2')
 extras_require = {
@@ -100,13 +102,18 @@ extras_require = {
     ],
 }
 
+# enum34 required for python < 3.4
+try:
+    import enum  # pylint: disable=unused-import
+except ImportError:
+install_requires.append('enum34')
+
 # -- run setup ----------------------------------------------------------------
 
 packagenames = find_packages()
 data_extensions = ('.h5', '.pklz')
 scripts = [fn for fn in glob.glob(os.path.join('bin', '*')) if
            not fn.endswith(data_extensions)]
-print(scripts)
 
 setup(name=DISTNAME,
       provides=[PACKAGENAME],

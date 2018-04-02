@@ -10,7 +10,8 @@ import re, pickle
 import pandas as pd
 import numpy as np
 
-__all__ = ['ZooProject', 'flatten', 'GravitySpyProject']
+__all__ = ['ZooProject', 'flatten', 'GravitySpyProject',
+           'workflow_with_most_answers']
 
 # This function generically flatten a dict
 def flatten(d, parent_key='', sep='_'):
@@ -230,6 +231,9 @@ class GravitySpyProject(ZooProject):
         A dict with keys of workflow IDs and values list
         of golden sets associated with that workflow
         """
+        if hasattr(self, 'level_structure'):
+            return self.level_structure
+
         level_structure = {}
         workflowDictSubjectSets = \
             self.get_subject_sets_per_workflow(workflow=workflow)
@@ -238,9 +242,12 @@ class GravitySpyProject(ZooProject):
             # If it is final workflow level 4 subject sets are also linked
             # so need to filter for level 5 subject sets
             if int(iworkflow) == 2117:
-                IDfilter = IDfilter + ' (M)'
+                subjectset_id = [iid for iid in \
+                                workflowDictSubjectSets[iworkflow] \
+                                if iid not in workflowDictSubjectSets['2360']]
+            else:
+                subjectset_id = workflowDictSubjectSets[iworkflow]
 
-            subjectset_id = workflowDictSubjectSets[iworkflow]
             # Determine Display names of subject set
             subjectset_displayname_id = {}
             for iSubjectSet in subjectset_id:
@@ -270,7 +277,6 @@ class GravitySpyProject(ZooProject):
         A dict with keys of workflow IDs and values list
         of golden sets associated with that workflow
         """
-
         # Load classifications, and golden images from DB
         # Make sure choice is a valid index
         # Make sure to evaluate only logged in users

@@ -40,11 +40,11 @@ def label_glitches(image_data, model_adr, image_size=[140, 170], verbose=False):
     if verbose:
         print ('Retrieving the trained ML classifier')
     load_folder = model_adr
-    f = gzip.open(load_folder + '/model.pklz', 'rb')
-    json_string = cPickle.load(f)
-    f.close()
-    final_model = model_from_json(json_string)
-    final_model.load_weights(load_folder + '/model_weights.h5')
+    #f = gzip.open(load_folder + '/model.pklz', 'rb')
+    #json_string = cPickle.load(f)
+    #f.close()
+    #final_model = model_from_json(json_string)
+    final_model = load_model(load_folder + '/multi_view_classifier.h5')
 
     final_model.compile(loss='categorical_crossentropy',
                         optimizer='adadelta',
