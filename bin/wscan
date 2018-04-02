@@ -64,7 +64,8 @@ def parse_commandline():
                              "--uniqueID")
     parser.add_argument("--outDir", help="Outdir for images")
     parser.add_argument("--pathToModel",
-                        help="Path to folder containing trained model")
+                        help="Path to folder containing trained model",
+                        required=True)
     parser.add_argument("--runML", action="store_true", default=False,
                         help="Run the ML classifer on the omega scans")
     parser.add_argument("--verbose", action="store_true", default=False,
@@ -90,7 +91,12 @@ def main(inifile, eventTime, ID, outDir,
          verbose=False):
 
     if (runML == True) and (HDF5==False) and (PostgreSQL==False):
-        raise ValueError('If you wish to run ML must select file format to save with. Most cases HDF5=True is what you want')
+        raise ValueError('If you wish to run ML must select file format to '
+                         'save with. Most cases HDF5=True is what you want')
+
+    if not os.path.isdir(pathToModel):
+        raise ValueError('The provided training set model path does not '
+                         'exist.')
 
     logger = log.Logger('Gravity Spy: OmegaScan')
 
