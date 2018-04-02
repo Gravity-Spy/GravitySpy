@@ -5,15 +5,14 @@ from keras.layers import Dense
 from keras.utils import np_utils
 from keras.callbacks import ModelCheckpoint
 #from functions_fusion import square_early_concatenate_feature
-import sys, getopt
-import gzip, os
+import os
+
 
 '''
 By Sara Bahaadini
 This function reads the  pickle files of golden_set and train a ML classifier
 and write it into a model folder
 '''
-
 
 def main(batch_size, nb_epoch, all_data_for_train_flag, pickle_adr, save_address,
          number_of_classes, image_size, best_model_based_validset, verbose):
@@ -176,7 +175,7 @@ if __name__ == "__main__":
 
    # default values for batch size and number of iterations
    batch_size = 30
-   nb_epoch = 15
+   nb_epoch = 40
 
    # whether to use all data for training the model (1) or just the train set for training the model (0)
    all_data_for_train_flag = 1
@@ -188,7 +187,7 @@ if __name__ == "__main__":
    save_address = './multi_view_models/alldata5/'
    save_best_model = 0
    image_size = [140, 170]
-   verbose = 0
+   verbose = 1
 
    main(batch_size, nb_epoch, all_data_for_train_flag, pickle_adr, save_address,
         nb_classes, image_size, save_best_model, verbose)

@@ -50,7 +50,6 @@ from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Conv2D, MaxPooling2D
 
 
-
 def concatenate_views(image_set1, image_set2,image_set3, image_set4, image_size):
     img_rows = image_size[0]
     img_cols = image_size[1]
@@ -81,7 +80,7 @@ def create_model_folder(file_name, save_adr, verbose):
     if verbose:
         shutil.copy2(file_name, full_adr + '/')
         shutil.copy2('GS_utils.py', full_adr + '/')
-        shutil.copy2('glitch_dist_utils.py', full_adr + '/')
+        #shutil.copy2('glitch_dist_utils.py', full_adr + '/')
     return full_adr
 
 def listdir_nohidden(path):
