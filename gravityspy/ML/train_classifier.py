@@ -8,6 +8,9 @@ from functions_fusion import square_early_concatenate_feature
 import sys, getopt
 import gzip, os
 import cPickle
+import make_pickle_for_linux as make_pickle
+from gravityspy.utils import log
+import pandas as pd
 
 '''
 By Sara Bahaadini and Neda Rohani, IVPL, Northwestern University.
@@ -16,9 +19,64 @@ and write it into a model folder
 explanations for options are given in the code
 '''
 
+def train_gravityspy(path_to_trainingset, batch_size, nb_epoch, save_address,
+                     image_size=[140, 170], verbose=True):
+
+    logger = log.Logger('Gravity Spy: Training Model')
+
+    np.random.seed(1986)  # for reproducibility
+    logger.info('Random Seed is {0}'.format(1986))
+
+    img_rows, img_cols = image_size[0], image_size[1]
+
+    if not os.path.exists(save_address):
+        if verbose:
+            logger.info('making... ' + save_address)
+        os.makedirs(save_address)
+
+    classes = sorted(os.listdir(path_to_trainingset))
+    nb_classes = len(classes)
+    logger.info('The classes you are training on are {0}'.format(
+          classes))
+
+    image_dataDF = pd.DataFrame()
+    for iclass in classes:
+        logger.info('Converting {0} into b/w info'.format(iclass))
+        images = sorted(os.listdir(os.path.join(path_to_trainingset, iclass)))
+        images = [imageidx for imageidx in images \
+                  if 'L1_' in imageidx or 'H1_' in imageidx]
+        # Group each sample into sets of 4 different durations
+        samples = zip(*(iter(images),) * 4)
+        for isample in samples:
+            tmpDF = pd.DataFrame()
+            for idur in isample:
+                #logger.info('Converting {0}'.format(idur))
+                image_data = make_pickle.main(os.path.join(path_to_trainingset, 
+                                              iclass, idur), resolution=0.3)
+                information_on_image = idur.split('_')
+                tmpDF[information_on_image[-1]] = [image_data]
+            tmpDF['uniqueID'] = information_on_image[1]
+            tmpDF['Label'] = iclass
+            image_dataDF = image_dataDF.append(tmpDF)
+
+        logger.info('Finished converting {0} into b/w info'.format(iclass))
+
+    image_dataDF['0.5.png'] = image_dataDF['0.5.png'].apply(lambda x : x.reshape(-1, 1, img_rows, img_cols))
+    image_dataDF['1.0.png'] = image_dataDF['1.0.png'].apply(lambda x : x.reshape(-1, 1, img_rows, img_cols))
+    image_dataDF['2.0.png'] = image_dataDF['2.0.png'].apply(lambda x : x.reshape(-1, 1, img_rows, img_cols))
+    image_dataDF['4.0.png'] = image_dataDF['4.0.png'].apply(lambda x : x.reshape(-1, 1, img_rows, img_cols))
+    train_set_x_1 = image_dataDF['0.5.png'].tolist()
+    train_set_x_2 = image_dataDF['1.0.png'].tolist()
+    train_set_x_3 = image_dataDF['2.0.png'].tolist()
+    train_set_x_4 = image_dataDF['4.0.png'].tolist()
+
+    #cat_train_set_y_1 = np_utils.to_categorical(train_set_y_1, nb_classes)
+    concat_train = square_early_concatenate_feature(train_set_x_1, train_set_x_2,train_set_x_3, train_set_x_4, [img_rows, img_cols])
+
+
 
 def main(batch_size, nb_epoch, train_flag, pickle_adr, save_address,
-         number_of_classes, image_size=[140, 170], verbose):
+         number_of_classes, image_size=[140, 170], verbose=True):
 
     np.random.seed(1986)  # for reproducibility
 
