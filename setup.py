@@ -64,26 +64,17 @@ setup_requires = [
 ]
 
 install_requires = [
-    'gwpy>=0.7.5',
-    'SQLAlchemy',
-    'six',
-    'cython',
-    'gitpython',
+    'gwpy>=0.9',
     'configparser',
-    'h5py',
-    'jinja2',
-    'pykerberos',
-    'ujson',
-    'pyRXP',
-    'tables',
-    'scikit_image',
-    'Theano==0.9',
-    'keras',
-    'pandas',
-    'lscsoft_glue',
-    'ligotimegps',
-    'psycopg2-binary',
     'panoptes_client',
+    'pandas',
+    'h5py',
+    'psycopg2-binary',
+    'SQLAlchemy',
+    'scikit_image',
+    'keras==2.0.4',
+    'Theano==0.9',
+    'tables',
 ]
 
 tests_require = [
