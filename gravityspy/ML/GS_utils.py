@@ -25,15 +25,66 @@ K.set_image_dim_ordering('th')
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Convolution2D, MaxPooling2D, Conv2D
+from datetime import datetime
+from datetime import datetime
+from skimage import io
+from skimage.color import rgb2gray
+from skimage.transform import rescale
+from skimage.transform import resize
+import os
+import random, shutil
+import numpy as np
+import gzip
+import time
+import sys
+import matplotlib.pyplot as plt
+from keras import backend as K
+from keras.regularizers import l2
+import numpy
+import gzip
+import pickle
 
 
-def listdir_nohidden(path):
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Activation, Flatten
+from keras.layers import Conv2D, MaxPooling2D
 
-    for f in os.listdir(path):
 
-        if not f.startswith('.'):
+#4/2/2018
+def concatenate_views(image_set1, image_set2,image_set3, image_set4, image_size):
+    img_rows = image_size[0]
+    img_cols = image_size[1]
 
-            yield f
+    assert len(image_set1) == len(image_set2)
+    concat_images_set = np.zeros((len(image_set1), 1, img_rows * 2, img_cols))
+    for i in range(0, len(image_set1)):
+        concat_images_set[i, :, :, :] = np.append(image_set1[i, :, :, :], image_set2[i, :, :, :], axis=1)
+
+    assert len(image_set3) == len(image_set4)
+    concat_images_set2 = np.zeros((len(image_set3), 1, img_rows * 2, img_cols))
+    for i in range(0, len(image_set3)):
+        concat_images_set2[i, :, :, :] = np.append(image_set3[i, :, :, :], image_set4[i, :, :, :], axis=1)
+
+    out = np.append(concat_images_set,concat_images_set2, axis=3)
+    return out
+
+
+#4/2/2018
+def create_model_folder(file_name, save_adr, verbose):
+    folder_name = datetime.now().strftime("%Y%m%d-%H%M%S")
+    print ("storing results in folder: " + folder_name)
+
+    full_adr = save_adr + folder_name
+    if not os.path.exists(full_adr):
+        os.mkdir(full_adr)
+        print ('making full adress: '+full_adr)
+    if verbose:
+        shutil.copy2(file_name, full_adr + '/')
+        shutil.copy2('GS_utils.py', full_adr + '/')
+        #shutil.copy2('glitch_dist_utils.py', full_adr + '/')
+    return full_adr
+
+
 
 def my_load_dataset(dataset):
     with gzip.open(dataset, 'rb') as f:
@@ -55,7 +106,7 @@ def load_dataset_unlabelled_glitches(dataset,verbose):
         except:
             test_set = pickle.load(f)
     if verbose:
-        print 'my_load_dataset_test size test set shape', len(test_set)
+        print ('my_load_dataset_test size test set shape', len(test_set))
     #[[(test_set_x, test_set_y, test_set_name)] = test_set
     #rval = [(test_set_x, test_set_y, test_set_name)]
     return test_set
@@ -221,9 +272,42 @@ def load_data(dataset):
     rval = [(train_set_x, train_set_y), (valid_set_x, valid_set_y), (test_set_x, test_set_y)]
     return rval
 
-
-
+#4/2/2018
 def build_cnn(img_rows, img_cols):
+
+    W_reg = 1e-4
+    print('regularization parameter: ', W_reg)
+    model = Sequential()
+    model.add(Conv2D(16, (5, 5), padding='valid', input_shape=(1, img_rows, img_cols), kernel_regularizer=l2(W_reg)))
+    model.add(Activation("relu"))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.5))
+
+
+    model.add(Conv2D(32, (5, 5), padding='valid', kernel_regularizer=l2(W_reg)))
+    model.add(Activation("relu"))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.5))
+
+    model.add(Conv2D(64, (5, 5), padding='valid', kernel_regularizer=l2(W_reg)))
+    model.add(Activation("relu"))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.5))
+
+    model.add(Conv2D(64, (5, 5), padding='valid', kernel_regularizer=l2(W_reg)))
+    model.add(Activation("relu"))
+
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.5))
+
+    model.add(Flatten())
+    model.add(Dense(256, kernel_regularizer=l2(W_reg)))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.5))
+    print (model.summary())
+    return model
+
+'''def build_cnn(img_rows, img_cols):
     model = Sequential()
     #model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
     #model.add(Convolution2D(nb_filter=100, nb_row=5, nb_col=5,
@@ -256,7 +340,7 @@ def build_cnn(img_rows, img_cols):
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
 
-    return model
+    return model'''
 
 
 def build_partial_cnn1(img_rows, img_cols):
