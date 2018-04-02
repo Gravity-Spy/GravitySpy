@@ -3,10 +3,6 @@ use('agg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
 from gwpy.plotter import Plot
-# from gwpy.plotter.rc import rcParams
-
-import matplotlib as mpl
-mpl.rcParams.update(mpl.rcParamsDefault)
 
 import os
 import numpy as np
@@ -42,13 +38,13 @@ def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges,
 
     for i, spec in enumerate(specsgrams):
 
-        indFig = Plot(figsize=[8, 6])
-        indFig.add_spectrogram(spec)
+        indFig = spec.plot(figsize=[8, 6])
 
         ax = indFig.gca()
         ax.set_position([0.125, 0.1, 0.775, 0.8])
         ax.set_yscale('log', basey=2)
         ax.set_xscale('linear')
+        ax.grid(False)
 
         xticks = np.linspace(spec.xindex.min().value,
                              spec.xindex.max().value, 5)
