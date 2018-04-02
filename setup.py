@@ -106,7 +106,7 @@ extras_require = {
 try:
     import enum  # pylint: disable=unused-import
 except ImportError:
-install_requires.append('enum34')
+    install_requires.append('enum34')
 
 # -- run setup ----------------------------------------------------------------
 
