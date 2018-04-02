@@ -17,16 +17,17 @@ explanations for options are given in the code
 '''
 
 
-def main(batch_size,nb_epoch,train_flag,pickle_adr,save_address,number_of_classes,verbose):
+def main(batch_size, nb_epoch, train_flag, pickle_adr, save_address,
+         number_of_classes, image_size=[140, 170], verbose):
 
     np.random.seed(1986)  # for reproducibility
 
-    img_rows, img_cols = 47, 57
+    img_rows, img_cols = image_size[0], image_size[1]
     nb_classes = number_of_classes
 
     if verbose:
-        print 'save adress', save_address
-        print 'train flag', train_flag
+        print ('save adress', save_address)
+        print ('train flag', train_flag)
 
     if not os.path.exists(save_address):
         if verbose:
@@ -45,15 +46,15 @@ def main(batch_size,nb_epoch,train_flag,pickle_adr,save_address,number_of_classe
     dataset_name4 = 'img_2.0'
     ad4 = pickle_adr + dataset_name4 + '_class' + str(nb_classes) + '_norm.pkl.gz'
 
-    print 'batch size', batch_size
-    print 'iteration', nb_epoch
-    print 'flag mode', train_flag
-    print 'Reading the pickles from: ', pickle_adr
-    print 'pickle_1: ', ad1
-    print 'pickle_2: ', ad2
-    print 'pickle_3: ', ad3
-    print 'pickle_4: ', ad4
-    print 'saving the trained model in: ', save_address
+    print('batch size', batch_size)
+    print('iteration', nb_epoch)
+    print('flag mode', train_flag)
+    print('Reading the pickles from: ', pickle_adr)
+    print('pickle_1: ', ad1)
+    print('pickle_2: ', ad2)
+    print('pickle_3: ', ad3)
+    print('pickle_4: ', ad4)
+    print('saving the trained model in: ', save_address)
 
     datasets1 = my_load_dataset(ad1)
     test_set_x_1, test_set_y_1, test_set_name_1 = datasets1[2]
@@ -128,10 +129,8 @@ def main(batch_size,nb_epoch,train_flag,pickle_adr,save_address,number_of_classe
     final_model.add(cnn1)
     final_model.add(Dense(nb_classes, activation='softmax'))
 
-    #model_optimizer = RMSprop(lr=0.1)
     final_model.compile(loss='categorical_crossentropy',
                   optimizer='adadelta',
-                  # optimizer=model_optimizer,
                   metrics=['accuracy'])
 
     model_adr = save_address + '/models/'
@@ -156,8 +155,7 @@ def main(batch_size,nb_epoch,train_flag,pickle_adr,save_address,number_of_classe
         print('Test score:', score[0])
         print('Test accuracy:', score[1])
 
-        #print final_model.summary()
-        print 'done'
+        print('done')
     else:
         all_data_for_train = np.append(concat_train, concat_valid, axis=0)
         all_data_for_train = np.append(all_data_for_train, concat_test, axis=0)
@@ -181,7 +179,7 @@ def main(batch_size,nb_epoch,train_flag,pickle_adr,save_address,number_of_classe
 
 
 if __name__ == "__main__":
-   print 'Start ...'
+   print('Start ...')
    main(batch_size,nb_epoch,train_flag,pickle_adr,save_address,number_of_classes,verbose)
-   print 'Done!'
+   print('Done!')
 
