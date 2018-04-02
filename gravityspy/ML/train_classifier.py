@@ -168,12 +168,10 @@ def main(batch_size, nb_epoch, all_data_for_train_flag, pickle_adr, save_address
 
 if __name__ == "__main__":
    print('Start ...')
-   #main(batch_size,nb_epoch,train_flag,pickle_adr,save_address,number_of_classes,verbose)
    nb_classes = 22
    save_best_model = 0
    early_stopping = 0
 
-   # default values for batch size and number of iterations
    batch_size = 30
    nb_epoch = 40
 
