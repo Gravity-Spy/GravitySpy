@@ -329,8 +329,8 @@ def main(inifile, eventTime, ID, outDir,
             engine.execute(SQLCommand)
             features.to_sql('similarityindex', engine, index=False, if_exists='append')
         elif HDF5:
-            scoresTable.to_hdf('{0}/ML_GSpy_{1}.h5'.format(outDir, ID), 'gspy_ML_classification')
-            features.to_hdf('{0}/ML_GSpy_{1}.h5'.format(outDir, ID), 'featurespace', append=True)
+            scoresTable.to_hdf('{0}/ML_GSpy_{1}.h5'.format(outDir, ID), table=True, key='gspy_ML_classification')
+            features.to_hdf('{0}/ML_GSpy_{1}.h5'.format(outDir, ID), table=True, key='featurespace')
 
         system_call = "mv {0}*.png {1}".format(outDirtmp, finalPath)
         os.system(system_call)
