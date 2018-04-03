@@ -1,15 +1,11 @@
 
-
 import numpy as np
 import os
 from skimage import io
 from skimage.color import rgb2gray
-from skimage.transform import rescale
-from functools import reduce
 import datetime
 import optparse
 from GS_utils import my_save_dataset_test, my_read_image2, my_save_dataset_stratified, pre_process_img
-import matplotlib.pyplot as plt
 
 
 '''
@@ -65,8 +61,8 @@ def main():
     # if input dataset is the collection of unlabelled glitches it is "1",
     # if it is golden set set, it is "0".
     test_flag = opts.test_flag
-    # flag to specify whether to exclude None of the above class in the case of golden set
 
+    # flag to specify whether to exclude None of the above class in the case of golden set
     simi_flag = opts.simi_flag
     if test_flag:
         simi_flag = 0
@@ -114,7 +110,6 @@ def main():
             file2 = file2[66:532, 105:671, :]
             file4 = file4[66:532, 105:671, :]
 
-           # plt.show(file5)
             if not rgb_flag:
                 imgs_5.append(pre_process_img(rgb2gray(file5), resolution, rescale_flag))
                 imgs_2.append(pre_process_img(rgb2gray(file2), resolution, rescale_flag))
