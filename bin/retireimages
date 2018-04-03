@@ -13,8 +13,8 @@ import collections
 import operator
 
 from sqlalchemy.engine import create_engine
-from pyomega.API import projectStructure
-from pyomega.API import calcConfMatrix
+from gravityspy.API import projectStructure
+from gravityspy.API import calcConfMatrix
 
 engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],os.environ['GRAVITYSPY_DATABASE_PASSWD']))
 

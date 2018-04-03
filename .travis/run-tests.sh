@@ -7,7 +7,7 @@ else
     _strict=""
 fi
 
-coverage run -m py.test -v -r s ${_strict} pyomega/
+coverage run -m py.test -v -r s ${_strict} gravityspy/
 coverage run --append `which wscan` --help
 coverage run --append `which testgpu` --help
 coverage run --append `which trainingset_psql` --help

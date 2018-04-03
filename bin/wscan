@@ -12,9 +12,7 @@ import shutil
 import argparse
 import json
 import rlcompleter
-import pdb
 import operator
-import subprocess
 from configparser import ConfigParser
 
 from panoptes_client import *
@@ -32,14 +30,12 @@ from gwpy.timeseries import TimeSeries
 from gwpy.spectrogram import Spectrogram
 from gwpy.segments import Segment
 
-from pyomega import __version__
-from pyomega.plot.plot import plot_qtransform
-import pyomega.ML.make_pickle_for_linux as make_pickle
-import pyomega.ML.labelling_test_glitches as label_glitches
-import pyomega.API.projectStructure as Structure
-from pyomega.utils import log
-
-pdb.Pdb.complete = rlcompleter.Completer(locals()).complete
+from gravityspy import __version__
+from gravityspy.plot.plot import plot_qtransform
+from gravityspy.API.project import GravitySpyProject
+import gravityspy.ML.make_pickle_for_linux as make_pickle
+import gravityspy.ML.labelling_test_glitches as label_glitches
+from gravityspy.utils import log
 
 ###############################################################################
 ##########################                             ########################
@@ -52,24 +48,32 @@ def parse_commandline():
     """Parse the arguments given on the command-line.
     """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('-V', '--version', action='version', version=__version__)
-    parser.add_argument("--inifile", help="Name of ini file of params", required=True)
-    parser.add_argument("--eventTime", type=float, help="Trigger time of the glitch", required=True)
+    parser.add_argument('-V', '--version', action='version',
+                        version=__version__)
+    parser.add_argument("--inifile", help="Name of ini file of params",
+                        required=True)
+    parser.add_argument("--eventTime", type=float,
+                        help="Trigger time of the glitch", required=True)
     parser.add_argument("--uniqueID", action="store_true", default=True,
-                      help="Is this image being generated for the GravitySpy project,\
-                      if so you must assign a uniqueID string to label the images instead of \
-                      GPS time")
-    parser.add_argument("--ID", help="The uniqueID string to be supplied with --uniqueID")
+                        help="Is this image being generated for "
+                        "the GravitySpy project, if so you must assign a "
+                        "uniqueID string to label the images instead of "
+                        "GPS time")
+    parser.add_argument("--ID",
+                        help="The uniqueID string to be supplied with "
+                             "--uniqueID")
     parser.add_argument("--outDir", help="Outdir for images")
-    parser.add_argument("--pathToModel", default=subprocess.check_output(["which", "semantic_idx_model.h5"]).split('semantic_idx_model.h5')[0],
-                      help="Path to folder containing trained model")
+    parser.add_argument("--pathToModel",
+                        help="Path to folder containing trained model",
+                        required=True)
     parser.add_argument("--runML", action="store_true", default=False,
-                      help="Run the ML classifer on the omega scans")
-    parser.add_argument("--verbose", action="store_true", default=False, help="Run in Verbose Mode")
+                        help="Run the ML classifer on the omega scans")
+    parser.add_argument("--verbose", action="store_true", default=False,
+                        help="Run in Verbose Mode")
     parser.add_argument("--HDF5", action="store_true", default=False,
-                      help="Store triggers in local HDF5 table format")
+                        help="Store triggers in local HDF5 table format")
     parser.add_argument("--PostgreSQL", action="store_true", default=False,
-                      help="Store triggers in a remote PostgreSQL DB")
+                        help="Store triggers in a remote PostgreSQL DB")
     args = parser.parse_args()
 
 
@@ -81,10 +85,18 @@ def parse_commandline():
 ##########################                     ################################
 ###############################################################################
 
-def main(inifile, eventTime, ID, outDir, pathToModel='/home/machinelearning/GravitySpy/pyomega/ML/trained_model/', uniqueID=True, runML=False, HDF5=False, PostgreSQL=False, verbose=False):
+def main(inifile, eventTime, ID, outDir,
+         pathToModel='/home/machinelearning/GravitySpy/gravityspy/ML/trained_model/',
+         uniqueID=True, runML=False, HDF5=False, PostgreSQL=False,
+         verbose=False):
 
     if (runML == True) and (HDF5==False) and (PostgreSQL==False):
-        raise ValueError('If you wish to run ML must select file format to save with. Most cases HDF5=True is what you want')
+        raise ValueError('If you wish to run ML must select file format to '
+                         'save with. Most cases HDF5=True is what you want')
+
+    if not os.path.isdir(pathToModel):
+        raise ValueError('The provided training set model path does not '
+                         'exist.')
 
     logger = log.Logger('Gravity Spy: OmegaScan')
 
@@ -199,6 +211,8 @@ def main(inifile, eventTime, ID, outDir, pathToModel='/home/machinelearning/Grav
     plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges, detectorName, startTime, outDirtmp, IDstring)
 
     if runML:
+        # load the API gravityspy project cached class
+        gspyproject = GravitySpyProject.load_project_from_cache('1104.pkl')
         # Since we created the images in a special temporary directory we can run os.listdir to get there full
         # names so we can convert the images into ML readable format.
         list_of_images = [ifile for ifile in os.listdir(outDirtmp) if 'spectrogram' in ifile]
@@ -207,7 +221,7 @@ def main(inifile, eventTime, ID, outDir, pathToModel='/home/machinelearning/Grav
         image_dataDF = pd.DataFrame()
         for idx, image in enumerate(list_of_images):
             logger.info('Converting {0}'.format(image))
-            image_data = make_pickle.main(outDirtmp + image, resolution=0.1)
+            image_data = make_pickle.main(outDirtmp + image, resolution=0.3)
             image_dataDF[image] = [image_data]
 
         image_dataDF['uniqueID'] = ID
@@ -219,7 +233,7 @@ def main(inifile, eventTime, ID, outDir, pathToModel='/home/machinelearning/Grav
         logger.info('Labelling image...')
         scores, MLlabel = label_glitches.label_glitches(image_data=image_dataDF,
                                               model_adr='{0}'.format(pathToModel),
-                                              image_size=[47, 57],
+                                              image_size=[140, 170],
                                               verbose=verbose)
 
         confidence = float(scores[0][MLlabel])
@@ -253,10 +267,10 @@ def main(inifile, eventTime, ID, outDir, pathToModel='/home/machinelearning/Grav
         # We must determine the columns that will be saved for this image.
         # First and foremost we want to determine the possible classes the image could be
         # get all the info about the workflows
-        workflowDictSubjectSets = Structure.main('1104', 'O2')
+        workflowDictSubjectSets = gspyproject.get_level_structure(IDfilter='O2')
 
         # Must determine classes from dict
-        classes = sorted(workflowDictSubjectSets[2117].keys())
+        classes = sorted(workflowDictSubjectSets['2117'].keys())
 
         # Add on columns that are Gravity Spy specific
         classes.extend(["uniqueID","Label","workflow","subjectset","Filename1","Filename2","Filename3","Filename4","UploadFlag", "qvalue"])
@@ -275,11 +289,12 @@ def main(inifile, eventTime, ID, outDir, pathToModel='/home/machinelearning/Grav
         # Determine subject set and workflow this should go to.
         for iWorkflow in workflowDictSubjectSets.keys():
             if Label in workflowDictSubjectSets[iWorkflow].keys():
-                 if workflowDictSubjectSets[iWorkflow][Label][2][1] <= confidence  <= workflowDictSubjectSets[iWorkflow][Label][2][0]:
-                     workflowNum = workflowDictSubjectSets[iWorkflow][Label][0]
+                 if workflowDictSubjectSets[iWorkflow][Label][2][1] <= \
+                        confidence <= \
+                             workflowDictSubjectSets[iWorkflow][Label][2][0]:
+                     workflowNum = int(workflowDictSubjectSets[iWorkflow][Label][0])
                      subjectSetNum = workflowDictSubjectSets[iWorkflow][Label][1]
                      break
-
 
         subject1 = '{0}/{1}_{2}_spectrogram_0.5.png'.format(finalPath, detectorName, ID)
         subject2 = '{0}/{1}_{2}_spectrogram_1.0.png'.format(finalPath, detectorName, ID)
@@ -301,7 +316,7 @@ def main(inifile, eventTime, ID, outDir, pathToModel='/home/machinelearning/Grav
         if PostgreSQL:
             engine = create_engine(
                                    'postgresql://{0}:{1}'\
-                                   .format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD'])\
+                                   .format(os.environ['GRAVITYSPY_DATABASE_USER'],os.environ['GRAVITYSPY_DATABASE_PASSWD'])\
                                    + '@gravityspy.ciera.northwestern.edu:5432/gravityspy')
             columnDict = scoresTable.to_dict(orient='records')[0]
             SQLCommand = 'UPDATE glitches SET '
@@ -314,7 +329,8 @@ def main(inifile, eventTime, ID, outDir, pathToModel='/home/machinelearning/Grav
             engine.execute(SQLCommand)
             features.to_sql('similarityindex', engine, index=False, if_exists='append')
         elif HDF5:
-            scoresTable.to_hdf('{0}/ML_GSpy_{1}.h5'.format(outDir, ID), 'gspy_ML_classification')
+            scoresTable.to_hdf('{0}/ML_GSpy_{1}.h5'.format(outDir, ID), table=True, key='gspy_ML_classification')
+            features.to_hdf('{0}/ML_GSpy_{1}.h5'.format(outDir, ID), table=True, key='featurespace')
 
         system_call = "mv {0}*.png {1}".format(outDirtmp, finalPath)
         os.system(system_call)

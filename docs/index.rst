@@ -12,7 +12,7 @@ For full details see `Zevin et al. (Classical and Quantum Gravity, 2016) <https:
 Installing GravitySpy
 ---------------------
 
-The easiest method to install pyomega is using `pip <https://pip.pypa.io/en/stable/>`_ directly from the `GitHub repository <https://github.com/Gravity-Spy/GravitySpy.git>`_:
+The easiest method to install gravityspy is using `pip <https://pip.pypa.io/en/stable/>`_ directly from the `GitHub repository <https://github.com/Gravity-Spy/GravitySpy.git>`_:
 
 .. code-block:: bash
 

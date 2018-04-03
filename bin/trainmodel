@@ -7,8 +7,8 @@ from matplotlib import use
 use('agg')
 from matplotlib import (pyplot as plt, cm)
 
-import pyomega.ML.make_pickle_for_linux as make_pickle
-import pyomega.ML.train_classifier as train_classifier
+import gravityspy.ML.make_pickle_for_linux as make_pickle
+import gravityspy.ML.train_classifier as train_classifier
 
 # Definite Command line arguments here
 

@@ -54,7 +54,6 @@ clean:
 
 .PHONY: html
 html: apidoc
-	gravityspyDBs
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
@@ -225,6 +224,6 @@ pseudoxml:
 
 .PHONY: apidoc
 apidoc:
-	sphinx-apidoc -o api/ ../pyomega --no-toc --separate --no-headings --force
+	sphinx-apidoc -o api/ ../gravityspy --no-toc --separate --no-headings --force
 	@echo
 	@echo "APIdoc run is complete."
