@@ -4,12 +4,10 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.utils import np_utils
 from keras.callbacks import ModelCheckpoint
-#from functions_fusion import square_early_concatenate_feature
 import os
 
 
 '''
-By Sara Bahaadini
 This function reads the  pickle files of golden_set and train a ML classifier
 and write it into a model folder
 '''
@@ -179,10 +177,11 @@ if __name__ == "__main__":
    all_data_for_train_flag = 1
 
    # the path where the pickles are there (default)
-   pickle_adr = '/home/sara/information_science_journal/MLforGravitySpyJournal_from_neda_pc/pickles/pickle_2017-05-25_res0.3/'
+   #pickle_adr = '/home/sara/information_science_journal/MLforGravitySpyJournal_from_neda_pc/pickles/pickle_2017-05-25_res0.3/'
+   pickle_adr = '/media/sara/DATA/GravitySpy/April_2_2018/pickles/pickle_2018-04-03_res0.3/'
 
    # the path where the trained model is saved
-   save_address = './multi_view_models/alldata5/'
+   save_address = './multi_view_models/April2/'
    save_best_model = 0
    image_size = [140, 170]
    verbose = 1

@@ -58,7 +58,7 @@ def main():
     dataset_path = '/media/sara/DATA/GravitySpy/April_2_2018/trainingsetv1d1/'
 
     save_address = opts.save_address
-    save_address = '//media/sara/DATA/GravitySpy/April_2_2018/pickles/'
+    save_address = '//media/sara/DATA/GravitySpy/April_3_2018/pickles/'
     today = datetime.date.today()
     save_address = save_address + 'pickle_' + str(today) + '_res' + str(resolution) + '/'
 
