@@ -72,7 +72,7 @@ install_requires = [
     'psycopg2-binary',
     'SQLAlchemy',
     'scikit_image',
-    'keras==2.0.4',
+    'keras==2.0.8',
     'Theano==0.9',
     'tables',
 ]

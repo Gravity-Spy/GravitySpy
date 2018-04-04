@@ -25,10 +25,9 @@ def main(filename, resolution=0.3, normalization_factor=255.0, verbose=False):
     image_data = io.imread(filename)
     image_data = image_data[66:532, 105:671, :]
     image_data = rgb2gray(image_data)
-    image_data = rescale(image_data, [resolution, resolution], mode='constant')
+    image_data = rescale(image_data, resolution, mode='constant', preserve_range='True')
     dim = np.int(reduce(lambda x, y: x * y, image_data.shape))
     image_data = np.reshape(image_data, (dim))
     image_data = np.array(image_data, dtype='f')
-    image_data = np.divide(image_data, normalization_factor)
 
     return image_data
