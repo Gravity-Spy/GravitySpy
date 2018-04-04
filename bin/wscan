@@ -221,7 +221,8 @@ def main(inifile, eventTime, ID, outDir,
         image_dataDF = pd.DataFrame()
         for idx, image in enumerate(list_of_images):
             logger.info('Converting {0}'.format(image))
-            image_data = make_pickle.main(outDirtmp + image, resolution=0.3)
+            image_data = make_pickle.main(os.path.join(outDirtmp, image),
+                                          resolution=0.3)
             image_dataDF[image] = [image_data]
 
         image_dataDF['uniqueID'] = ID
