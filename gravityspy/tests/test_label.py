@@ -16,7 +16,7 @@ TEST_IMAGES_PATH = os.path.join(os.path.split(__file__)[0], 'data',
 'images')
 MODEL_PATH = os.path.join(os.path.split(__file__)[0], '..', '..', 'bin')
 
-SCORE = 0.8142456412315369 
+SCORE = 0.9997797608375549 
 
 FEATURES = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 136.32681274414062, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -49,7 +49,7 @@ class GravitySpyTests(unittest2.TestCase):
             image_data = make_pickle.main(os.path.join(
                                                        TEST_IMAGES_PATH,
                                                        image),
-                                          resolution=0.1)
+                                          resolution=0.3)
 
             image_dataDF[image] = [image_data]
 
@@ -58,11 +58,12 @@ class GravitySpyTests(unittest2.TestCase):
                                                         image_dataDF,
                                                         '{0}'.format(
                                                               MODEL_PATH),
-                                                        [47, 57],
+                                                        [140, 170],
                                                         False)
 
         confidence = float(scores[0][MLlabel])
         self.assertEqual(confidence, SCORE)
+
 
     def test_feature_space(self):
         list_of_images = []
@@ -86,6 +87,7 @@ class GravitySpyTests(unittest2.TestCase):
         self.assertListEqual(features.tolist(), FEATURES)
 
 
+    """
     def test_model(self):
         # Take test image and make pickle
         make_pickle.main(TEST_IMAGES_PATH + '/folder1/',
@@ -108,6 +110,6 @@ class GravitySpyTests(unittest2.TestCase):
                                               TEST_IMAGES_PATH + '/folder1/folder2/labeled/',
                                               0)
         print scores
-
+    """
 if __name__ == '__main__':
     unittest2.main()
