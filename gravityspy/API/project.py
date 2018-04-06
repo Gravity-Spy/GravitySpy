@@ -80,9 +80,12 @@ class ZooProject(object):
         A dict with keys of workflow IDs and values list
         of golden sets associated with that workflow
         """
-        inputFile = open('{0}'.format(cache_file), 'rb')
-        # Pickle dictionary using protocol 0.
-        return pickle.load(inputFile)
+        with open('{0}'.format(cache_file), 'rb') as pickle_file:
+            # Pickle dictionary using protocol 0.
+            try:
+                return pickle.load(pickle_file, encoding='latin1')
+            except:
+                return pickle.load(pickle_file)
 
 
     def get_golden_subject_sets(self):
