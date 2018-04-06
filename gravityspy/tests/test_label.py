@@ -85,7 +85,7 @@ class GravitySpyTests(unittest2.TestCase):
                                               image_size=[140, 170],
                                               verbose=False)
 
-        numpy.testing.assert_array_almost_equal(features, FEATURES)
+        numpy.testing.assert_array_almost_equal(features, FEATURES, decimal=3)
 
 
 if __name__ == '__main__':
