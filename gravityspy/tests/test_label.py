@@ -11,6 +11,7 @@ import gravityspy.ML.labelling_test_glitches as label_glitches
 import gravityspy.ML.train_classifier as train_classifier
 
 import pandas as pd
+import numpy
 
 TEST_IMAGES_PATH = os.path.join(os.path.split(__file__)[0], 'data',
 'images')
@@ -18,7 +19,7 @@ MODEL_PATH = os.path.join(os.path.split(__file__)[0], '..', '..', 'bin')
 
 SCORE = 0.9997797608375549 
 
-FEATURES = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+FEATURES = numpy.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 136.32681274414062, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 0.0, 0.0, 0.0, 0.0, 143.1021728515625, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 0.0, 0.0, 0.0, 0.0, 0.0, 74.27071380615234, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -32,7 +33,7 @@ FEATURES = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 125.55241394042969, 0.0, 0.0, 0.0, 0.0, 0.0,
 0.0, 0.0, 0.0, 154.26510620117188, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 34.673343658447266, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
+0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
 
 class GravitySpyTests(unittest2.TestCase):
     """`TestCase` for the GravitySpy
@@ -84,32 +85,8 @@ class GravitySpyTests(unittest2.TestCase):
                                               image_size=[140, 170],
                                               verbose=False)
 
-        self.assertListEqual(features.tolist(), FEATURES)
+        numpy.testing.assert_array_almost_equal(features, FEATURES)
 
 
-    """
-    def test_model(self):
-        # Take test image and make pickle
-        make_pickle.main(TEST_IMAGES_PATH + '/folder1/',
-                         TEST_IMAGES_PATH + '/folder1/folder2/pickleddata/', 1, 1)
-        # Pickle Test Training Set
-        make_pickle.main(TEST_IMAGES_PATH + '/TrainingSet/',
-                         TEST_IMAGES_PATH + '/pickleddata/', 0, 1)
-        # Make model using all images
-        train_classifier.main(10, 10, 0, TEST_IMAGES_PATH + '/pickleddata/', TEST_IMAGES_PATH + '/model/', 2, 1)
-        scores, MLlabel = label_glitches.main(TEST_IMAGES_PATH + '/folder1/folder2/pickleddata/',
-                                              TEST_IMAGES_PATH + '/model/',
-                                              TEST_IMAGES_PATH + '/folder1/folder2/labeled/',
-                                              0)
-        print scores
-
-        # Make model using validation, test and train samples
-        train_classifier.main(10, 10, 1, TEST_IMAGES_PATH + '/pickleddata/', TEST_IMAGES_PATH + '/model/', 2, 1)
-        scores, MLlabel = label_glitches.main(TEST_IMAGES_PATH + '/folder1/folder2/pickleddata/',
-                                              TEST_IMAGES_PATH + '/model/',
-                                              TEST_IMAGES_PATH + '/folder1/folder2/labeled/',
-                                              0)
-        print scores
-    """
 if __name__ == '__main__':
     unittest2.main()
