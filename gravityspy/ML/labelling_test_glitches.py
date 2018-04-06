@@ -1,7 +1,6 @@
-from GS_utils import load_dataset_unlabelled_glitches
+from GS_utils import load_dataset_unlabelled_glitches, concatenate_views
 import numpy as np
 from keras.utils import np_utils
-from functions_fusion import square_early_concatenate_feature
 import sys, gzip, cPickle, os
 from getopt import GetoptError, getopt
 from keras.models import model_from_json, load_model
@@ -83,7 +82,7 @@ def label_glitches(image_data, model_adr, image_size=[140, 170], verbose=False):
     test_set_unlabelled_x_3 = image_data.filter(regex=("1.0.png")).iloc[0].iloc[0].reshape(-1, 1, img_rows, img_cols)
     test_set_unlabelled_x_4 = image_data.filter(regex=("2.0.png")).iloc[0].iloc[0].reshape(-1, 1, img_rows, img_cols)
 
-    concat_test_unlabelled = square_early_concatenate_feature(test_set_unlabelled_x_1,
+    concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
                             test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols])
 
     score3_unlabelled = final_model.predict_proba(concat_test_unlabelled, verbose=0)
