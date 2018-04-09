@@ -13,8 +13,8 @@ import datetime
 import collections
 import operator
 
-from pyomega.API.getLabelDict import getAnswers
-from pyomega.API import getGoldenImages
+from gravityspy.API.getLabelDict import getAnswers
+from gravityspy.API import getGoldenImages
 
 ########################
 ####### Functions ######

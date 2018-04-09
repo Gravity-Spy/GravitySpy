@@ -32,8 +32,8 @@ import os.path
 from setuptools import (setup, find_packages)
 
 # set basic metadata
-PACKAGENAME = 'pyomega'
-DISTNAME = 'pyomega'
+PACKAGENAME = 'gravityspy'
+DISTNAME = 'gravityspy'
 AUTHOR = 'Scott Coughlin'
 AUTHOR_EMAIL = 'scott.coughlin@ligo.org'
 LICENSE = 'GPLv3'
@@ -62,32 +62,25 @@ setup_requires = [
     'setuptools',
     'pytest-runner',
 ]
+
 install_requires = [
-    'SQLAlchemy',
-    'six',
-    'cython',
-    'gitpython',
+    'gwpy>=0.9',
     'configparser',
-    'h5py',
-    'jinja2',
-    'pykerberos',
-    'ujson',
-    'pyRXP',
-    'enum',
-    'tables',
-    'scikit_image',
-    'Theano==0.9',
-    'keras',
-    'pandas',
-    'gwpy>=0.7.5',
-    'lscsoft_glue',
-    'ligotimegps',
-    'psycopg2',
     'panoptes_client',
+    'pandas',
+    'h5py',
+    'psycopg2-binary',
+    'SQLAlchemy',
+    'scikit_image',
+    'keras==2.0.8',
+    'Theano==0.9',
+    'tables',
 ]
+
 tests_require = [
     'pytest'
 ]
+
 if sys.version_info < (2, 7):
     tests_require.append('unittest2')
 extras_require = {
@@ -100,13 +93,18 @@ extras_require = {
     ],
 }
 
+# enum34 required for python < 3.4
+try:
+    import enum  # pylint: disable=unused-import
+except ImportError:
+    install_requires.append('enum34')
+
 # -- run setup ----------------------------------------------------------------
 
 packagenames = find_packages()
 data_extensions = ('.h5', '.pklz')
 scripts = [fn for fn in glob.glob(os.path.join('bin', '*')) if
            not fn.endswith(data_extensions)]
-print(scripts)
 
 setup(name=DISTNAME,
       provides=[PACKAGENAME],
@@ -129,7 +127,7 @@ setup(name=DISTNAME,
           'http://software.ligo.org/lscsoft/source/dqsegdb-1.2.2.tar.gz',
           'https://github.com/ligovirgo/trigfind/archive/v0.4.tar.gz',
       ],
-      test_suite='pyomega.tests',
+      test_suite='gravityspy.tests',
       use_2to3=True,
       classifiers=[
           'Programming Language :: Python',
