@@ -9,7 +9,7 @@ import numpy as np
 
 
 def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges,
-                    detectorName, startTime, outDirtmp, IDstring, **kwargs):
+                    detectorName, startTime, outDirtmp, **kwargs):
 
     # Set some plotting params
     myfontsize = 15
@@ -35,6 +35,8 @@ def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges,
         raise ValueError('Time outside science or engineering run '
                          'or more likely code not updated to reflect '
                          'new science run.')
+
+    indFigAll = []
 
     for i, spec in enumerate(specsgrams):
 
@@ -72,6 +74,7 @@ def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges,
                                    pad="3%", width="5%")
         cbar.ax.tick_params(labelsize=12)
         cbar.ax.yaxis.label.set_size(myfontsize)
+        indFigAll.append(indFig)
 
         indFig.save(os.path.join(
                                  outDirtmp,
@@ -118,3 +121,5 @@ def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges,
 
     superFig.save(os.path.join(outDirtmp, IDstring + '.png'),
                   bbox_inches='tight')
+
+    return indFigAll, superFig

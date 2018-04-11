@@ -113,22 +113,27 @@ def main(inifile, eventTime, ID, outDir,
     alwaysPlotFlag = cp.getint('parameters', 'alwaysPlotFlag')
     sampleFrequency = cp.getint('parameters', 'sampleFrequency')
     blockTime = cp.getint('parameters', 'blockTime')
-    searchFrequencyRange = json.loads(cp.get('parameters', 'searchFrequencyRange'))
+    searchFrequencyRange = json.loads(cp.get('parameters',
+                                             'searchFrequencyRange'))
     searchQRange = json.loads(cp.get('parameters', 'searchQRange'))
-    searchMaximumEnergyLoss = cp.getfloat('parameters', 'searchMaximumEnergyLoss')
+    searchMaximumEnergyLoss = cp.getfloat('parameters',
+                                          'searchMaximumEnergyLoss')
     searchWindowDuration = cp.getfloat('parameters', 'searchWindowDuration')
     whiteNoiseFalseRate = cp.getfloat('parameters', 'whiteNoiseFalseRate')
     plotTimeRanges = json.loads(cp.get('parameters', 'plotTimeRanges'))
     plotFrequencyRange = json.loads(cp.get('parameters', 'plotFrequencyRange'))
-    plotNormalizedERange = json.loads(cp.get('parameters', 'plotNormalizedERange'))
+    plotNormalizedERange = json.loads(cp.get('parameters',
+                                             'plotNormalizedERange'))
     frameCacheFile = cp.get('channels', 'frameCacheFile')
     frameType = cp.get('channels', 'frameType')
     channelName = cp.get('channels', 'channelName')
     detectorName = channelName.split(':')[0]
     det = detectorName.split('1')[0]
 
-    logger.info('You have chosen the following Q range: {0}'.format(searchQRange))
-    logger.info('You have chosen the following search range: {0}'.format(searchFrequencyRange))
+    logger.info('You have chosen the following Q range: '
+                '{0}'.format(searchQRange))
+    logger.info('You have chosen the following search range: '
+                '{0}'.format(searchFrequencyRange))
 
     ###########################################################################
     #                           create output directory                       #
@@ -138,7 +143,7 @@ def main(inifile, eventTime, ID, outDir,
     if outDir is None:
         outDirtmp = './scans'
     else:
-        outDirtmp = outDir + '/' + ID + '/' + ID
+        outDirtmp = os.path.join(outDir, ID, ID)
     outDirtmp += '/'
 
     # report status
@@ -190,32 +195,48 @@ def main(inifile, eventTime, ID, outDir,
         durForPlot = iTimeWindow/2
         try:
             outseg = Segment(centerTime - durForPlot, centerTime + durForPlot)
-            qScan = data.q_transform(qrange=tuple(searchQRange), frange=tuple(searchFrequencyRange),
+            qScan = data.q_transform(qrange=tuple(searchQRange),
+                                 frange=tuple(searchFrequencyRange),
                                  gps=centerTime, search=0.5, tres=0.002,
                                  fres=0.5, outseg=outseg, whiten=True)
             qValue = qScan.q
-            qScan = qScan.crop(centerTime-iTimeWindow/2, centerTime+iTimeWindow/2)
+            qScan = qScan.crop(centerTime-iTimeWindow/2,
+                               centerTime+iTimeWindow/2)
         except:
-            outseg = Segment(centerTime - 2*durForPlot, centerTime + 2*durForPlot)
-            qScan = data.q_transform(qrange=tuple(searchQRange), frange=tuple(searchFrequencyRange),
+            outseg = Segment(centerTime - 2*durForPlot,
+                             centerTime + 2*durForPlot)
+            qScan = data.q_transform(qrange=tuple(searchQRange),
+                                 frange=tuple(searchFrequencyRange),
                                  gps=centerTime, search=0.5, tres=0.002,
                                  fres=0.5, outseg=outseg, whiten=True)
             qValue = qScan.q
-            qScan = qScan.crop(centerTime-iTimeWindow/2, centerTime+iTimeWindow/2)
+            qScan = qScan.crop(centerTime-iTimeWindow/2,
+                               centerTime+iTimeWindow/2)
         specsgrams.append(qScan)
 
     logger.info('The most significant q value is {0}'.format(qValue))
 
     # Plot q_scans
     logger.info('Plotting q scans...')
-    plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges, detectorName, startTime, outDirtmp, IDstring)
+    indFigAll, superFig = plot_qtransform(specsgrams,
+                          plotNormalizedERange, plotTimeRanges,
+                          detectorName, startTime, outDirtmp, IDstring)
+
+    indFig.save(os.path.join(
+                             outDirtmp,
+                             detectorName + '_' + IDstring
+                             + '_spectrogram_' + str(dur) +'.png'
+                            )
+               )
 
     if runML:
         # load the API gravityspy project cached class
         gspyproject = GravitySpyProject.load_project_from_cache('1104.pkl')
-        # Since we created the images in a special temporary directory we can run os.listdir to get there full
+        # Since we created the images in a
+        # special temporary directory we can run os.listdir to get there full
         # names so we can convert the images into ML readable format.
-        list_of_images = [ifile for ifile in os.listdir(outDirtmp) if 'spectrogram' in ifile]
+        list_of_images = [ifile for ifile in os.listdir(outDirtmp) 
+                          if 'spectrogram' in ifile]
 
         logger.info('Converting image to ML readable...')
         image_dataDF = pd.DataFrame()
@@ -274,11 +295,14 @@ def main(inifile, eventTime, ID, outDir,
         classes = sorted(workflowDictSubjectSets['2117'].keys())
 
         # Add on columns that are Gravity Spy specific
-        classes.extend(["uniqueID","Label","workflow","subjectset","Filename1","Filename2","Filename3","Filename4","UploadFlag", "qvalue"])
+        classes.extend(["uniqueID", "Label", "workflow", "subjectset",
+                        "Filename1", "Filename2", "Filename3", "Filename4",
+                        "UploadFlag", "qvalue"])
 
         # Determine label
         Label = classes[MLlabel]
-        logger.info('This image has received the following label: {0} with {1} percent confidence'.format(Label, confidence))
+        logger.info('This image has received the following label: '
+                    '{0} with {1} percent confidence'.format(Label, confidence))
 
         # determine confidence values from ML
         scores = scores[0].tolist()
@@ -339,4 +363,5 @@ def main(inifile, eventTime, ID, outDir,
 
 if __name__ == '__main__':
     args = parse_commandline()
-    main(args.inifile, args.eventTime, args.ID, args.outDir, args.pathToModel, args.uniqueID, args.runML, args.HDF5, args.PostgreSQL, args.verbose)
+    main(args.inifile, args.eventTime, args.ID, args.outDir, args.pathToModel,
+         args.uniqueID, args.runML, args.HDF5, args.PostgreSQL, args.verbose)
