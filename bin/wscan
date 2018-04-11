@@ -335,7 +335,7 @@ def main(inifile, eventTime, ID, outDir,
 
         system_call = "mv {0}*.png {1}".format(outDirtmp, finalPath)
         os.system(system_call)
-        shutil.rmtree(outDir + ID)
+        shutil.rmtree(os.path.join(outDir, ID))
 
 if __name__ == '__main__':
     args = parse_commandline()
