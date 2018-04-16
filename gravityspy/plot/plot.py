@@ -9,7 +9,7 @@ import numpy as np
 
 
 def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges,
-                    detectorName, startTime, outDirtmp, **kwargs):
+                    detectorName, startTime, **kwargs):
 
     # Set some plotting params
     myfontsize = 15
@@ -76,13 +76,6 @@ def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges,
         cbar.ax.yaxis.label.set_size(myfontsize)
         indFigAll.append(indFig)
 
-        indFig.save(os.path.join(
-                                 outDirtmp,
-                                 detectorName + '_' + IDstring
-                                 + '_spectrogram_' + str(dur) +'.png'
-                                )
-                   )
-
     # Create one image containing all spectogram grams
     superFig = Plot(figsize=(27, 6))
     superFig.add_subplot(141, projection='timeseries')
@@ -118,8 +111,5 @@ def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges,
                               pad="3%", width="5%")
 
     superFig.suptitle(title, fontsize=mylabelfontsize, color=myColor, x=0.51)
-
-    superFig.save(os.path.join(outDirtmp, IDstring + '.png'),
-                  bbox_inches='tight')
 
     return indFigAll, superFig

@@ -220,14 +220,19 @@ def main(inifile, eventTime, ID, outDir,
     logger.info('Plotting q scans...')
     indFigAll, superFig = plot_qtransform(specsgrams,
                           plotNormalizedERange, plotTimeRanges,
-                          detectorName, startTime, outDirtmp, IDstring)
+                          detectorName, startTime)
 
-    indFig.save(os.path.join(
-                             outDirtmp,
-                             detectorName + '_' + IDstring
-                             + '_spectrogram_' + str(dur) +'.png'
-                            )
-               )
+    for idx, indFig in enumerate(indFigAll):
+        dur = float(plotTimeRanges[idx])
+        indFig.save(os.path.join(
+                                 outDirtmp,
+                                 detectorName + '_' + IDstring
+                                 + '_spectrogram_' + str(dur) +'.png'
+                                )
+                   )
+
+    superFig.save(os.path.join(outDirtmp, IDstring + '.png'),
+                  bbox_inches='tight')
 
     if runML:
         # load the API gravityspy project cached class

@@ -7,7 +7,7 @@ import os
 import unittest2
 from gravityspy.plot.plot import plot_qtransform
 from gwpy.timeseries import TimeSeries
-from gwpy.segment import Segment
+from gwpy.segments import Segment
 
 TIMESERIES_PATH = os.path.join(os.path.split(__file__)[0], 'data',
 'timeseries', 'scratchy_timeseries_test.h5')
@@ -22,20 +22,19 @@ searchQRange = [4, 64]
 searchFrequencyRange = [10, 2048]
 specsgrams = []
 startTime = centerTime
-IDstring = '123abcd123'
 
 for iTimeWindow in plotTimeRanges:
     durForPlot = iTimeWindow/2
     try:
         outseg = Segment(centerTime - durForPlot, centerTime + durForPlot)
-        qScan = data.q_transform(qrange=tuple(searchQRange), frange=tuple(searchFrequencyRange),
+        qScan = TIMESERIES.q_transform(qrange=tuple(searchQRange), frange=tuple(searchFrequencyRange),
                              gps=centerTime, search=0.5, tres=0.002,
                              fres=0.5, outseg=outseg, whiten=True)
         qValue = qScan.q
         qScan = qScan.crop(centerTime-iTimeWindow/2, centerTime+iTimeWindow/2)
     except:
         outseg = Segment(centerTime - 2*durForPlot, centerTime + 2*durForPlot)
-        qScan = data.q_transform(qrange=tuple(searchQRange), frange=tuple(searchFrequencyRange),
+        qScan = TIMESERIES.q_transform(qrange=tuple(searchQRange), frange=tuple(searchFrequencyRange),
                              gps=centerTime, search=0.5, tres=0.002,
                              fres=0.5, outseg=outseg, whiten=True)
         qValue = qScan.q
@@ -48,8 +47,8 @@ class GravitSpyTests(unittest2.TestCase):
     """
     def test_plot(self):
         # Plot q_scans
-        plot = plot_qtransform(specsgrams, plotNormalizedERange,
-                   plotTimeRanges, detectorName, startTime, outDirtmp, IDstring)
+        indFigAll, superFig = plot_qtransform(specsgrams, plotNormalizedERange,
+                   plotTimeRanges, detectorName, startTime)
 
 
 if __name__ == '__main__':
