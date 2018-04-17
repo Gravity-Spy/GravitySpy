@@ -21,15 +21,15 @@ The easiest method to install gravityspy is using `pip <https://pip.pypa.io/en/s
 How to run GravitySpy
 ---------------------
 
-The main product of this package is the command-line executable `wscan`, which runs an end-to-end search for statistical coincidences, and produces a list of viable data-quality flags that can be used as vetoes in a search, as well as an HTML summary.
+The main product of this package is the command-line executable `wscan`, which takes an excess noise time makes an omega scan of the event and classifies the image.
 
 To run an analysis:
 
 .. code-block:: bash
 
-   $ wscan --inifile my-wini-config-file.ini --eventTime <eventTime> --outDir . --uniqueID --ID 123abc1234 --HDF5 --runML 
+   $ wscan --inifile my-wini-config-file.ini --eventTime <eventTime> --outDir ./public_html/GravitySpy/Test/ --uniqueID --ID 123abc1234 --HDF5 --runML --pathToModel ../bin
 
-where ``<eventtime>`` is the GPS tiem stamp assosciated with an Omicron trigger, and ``./my-wini-config-file.ini`` is the path of your configuration file.
+where ``<eventtime>`` is the GPS time stamp assosciated with an Omicron trigger or other time of known excess noise, and ``./my-wini-config-file.ini`` is the path of your configuration file. In the folder Production, is an example of an ini file.
 
 For a full list of command-line argument and options, run
 
@@ -39,8 +39,8 @@ For a full list of command-line argument and options, run
 
 For more details see :ref:`command-line`.
 
-The many databses of GravitySpy
--------------------------------
+The many databases of GravitySpy
+--------------------------------
 
 For more details see :ref:`DBs`
 
@@ -53,6 +53,7 @@ Please consult these pages for more details on using GravitySpy:
    :maxdepth: 1
 
    command-line/index
+   examples/index
    DBs/index
 
 Indices and tables
