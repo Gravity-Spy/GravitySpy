@@ -15,6 +15,12 @@ __all__ = ['ZooProject', 'flatten', 'GravitySpyProject',
 
 # This function generically flatten a dict
 def flatten(d, parent_key='', sep='_'):
+    """Parameters
+    ----------
+
+    Returns
+    -------
+    """
     items = []
     for k, v in d.items():
         new_key = parent_key + sep + k if parent_key else k
@@ -26,6 +32,12 @@ def flatten(d, parent_key='', sep='_'):
 
 
 def workflow_with_most_answers(db):
+    """Parameters
+    ----------
+
+    Returns
+    -------
+    """
     maxcount = max(len(v) for v in db.values())
     return [k for k, v in db.items() if len(v) == maxcount]
 

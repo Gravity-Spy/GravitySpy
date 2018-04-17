@@ -14,100 +14,6 @@ own postgresSQL user privileges. Here we discuss all the possible DBs
 
 For LIGO users please see `Gravity Spy Authentication <https://secrets.ligo.org/secrets/144/>`_ for information concerning authentication to access certain Gravity Spy DBs.
 
-O1GlitchClassificationUpdate
-============================
-
-
-This table contains infomration concerning the O1 glitch classification paper
-
-* `1080Lines` : object
-* `1400Ripples` : object
-* `Air_Compressor` : object
-* `Blip` : object
-* `Chirp` : object
-* `Extremely_Loud` : object
-* `Filename1` : object
-* `Filename2` : object
-* `Filename3` : object
-* `Filename4` : object
-* `Helix` : object
-* `ImageStatus` : object
-    * Testing Training
-* `Koi_Fish` : object
-* `Label` : object
-    * 0 1 10 1080Lines 11 12 13 14 1400Ripples 15 16 17 18 2 3 4 5 6 7 8 9 A Air_Compressor B Blip C Chirp D E Extremely_Loud F G Helix HighF Koi_Fish Light_Modulation Line Loud Low_Frequency_Burst Low_Frequency_Lines Needle No_Glitch Noise None_of_the_Above Paired_Doves Power_Line Repeating Repeating_Blips Scattered Scattered_Light Scattering Scratchy SineGaussian Tomte Violin_Mode Wandering_Line Whistle
-* `Light_Modulation` : object
-* `Low_Frequency_Burst` : object
-* `Low_Frequency_Lines` : object
-* `No_Glitch` : object
-* `None_of_the_Above` : object
-* `Paired_Doves` : object
-* `Pipeline` : object
-    * DBNN GravitySpy LAL PCAT WDF
-* `Power_Line` : object
-* `Repeating_Blips` : object
-* `Scattered_Light` : object
-* `Scratchy` : object
-* `Tomte` : object
-* `UploadFlag` : object
-* `Violin_Mode` : object
-* `WDF_duration` : object
-    * 
-* `WDF_iPeakF` : object
-    * 
-* `WDF_iPeakT` : object
-    * 
-* `WDF_snr` : object
-    * 
-* `Wandering_Line` : object
-* `Whistle` : object
-* `amplitude` : float64
-* `bandwidth` : float64
-* `central_freq` : float64
-* `channel` : object
-    * GDS-CALIB_STRAIN
-* `chisq` : int64
-* `chisq_dof` : int64
-* `confidence` : int64
-* `duration` : float64
-* `event_id` : int64
-* `ifo` : object
-    * H1 L1
-* `param_one_name` : object
-    * phase
-* `param_one_value` : float64
-* `peakGPS` : float64
-* `peak_frequency` : float64
-* `peak_time` : int64
-* `peak_time_ns` : int64
-* `process_id` : int64
-* `search` : object
-    * Omicron
-* `snr` : float64
-* `start_time` : int64
-* `start_time_ns` : int64
-* `subjectset` : object
-* `uniqueID` : object
-* `workflow` : object
-
-classifications
-===============
-
-
-This table contains information about classification performed by users before the addition of the two new classes. Therefore, columns such as `annotations_value_choiceINT` = 1 being a `Blip` is true in this DB but not in classificationsdev
-
-* `annotations_value_choiceINT` : int64
-* `created_at` : datetime64[ns]
-* `id` : int64
-* `links_project` : int64
-* `links_subjects` : int64
-* `links_user` : int64
-* `links_workflow` : int64
-* `metadata_finished_at` : datetime64[ns]
-* `metadata_started_at` : datetime64[ns]
-* `metadata_workflow_version` : float64
-* `uniqueID` : object
-
 classificationsdev
 ==================
 
@@ -140,7 +46,7 @@ This table contains information about classification performed by users after th
 * `Blip` : float64
 * `Chirp` : float64
 * `DQFlag` : object
-    * H1:DCH-ALS_UNSHUTTERED:1 H1:DCH-ASC_AS_B_RF36_GLITCHING:1 H1:DCH-BAD_CALIBRATION_COIL_DRIVER:1 H1:DCH-BROKEN_ITMY_OPLEV:1 H1:DCH-CAL_NON_O2_STANDARD_CONFIG:1 H1:DCH-COMPUTER_REBOOT:1 H1:DCH-EARTHQUAKE_CS_Z_BLRMS_GT_320:1 H1:DCH-ETMX_L2_UL_DAC_OVERFLOW:1 H1:DCH-ETMX_L3_OPLEV_SUM_HIGH_BLRMS:1 H1:DCH-ETMX_MAINSMON_BL_GT_30:1 H1:DCH-ETMY_ELECTRONICS_GLITCHING:1 H1:DCH-ETMY_L3_OPLEV_BLRMS_GT65:2 H1:DCH-ETMY_SATURATION:2 H1:DCH-ETMY_SATURATION_SNR200:1 H1:DCH-ETMY_VIOLIN_MODE_2NDHARMONIC_RINGING:1 H1:DCH-EX_MAG_EBAY_SUSRACK_GLITCHING:1 H1:DCH-EX_MAG_EBAY_SUSRACK_GLITCHING_GRD_ISC_LOCK_NOMINAL:1 H1:DCH-HAM1_HEPI_OMICRON_GT_40:1 H1:DCH-HIGH_VIOLINS:1 H1:DCH-ITMX_R0_OVERFLOW:1 H1:DCH-ITMY_STS2_Z_BLRMS_GT_600:1 H1:DCH-LVEA_EX_EY_EXCURSIONS:1 H1:DCH-MISSING_H1_HOFT_C00:2 H1:DCH-OMC_DCPD_A_SATURATION:1 H1:DCH-PSL_ISS_OMICRON_SNR_GT_45:1 H1:DCH-RF45_AM_STABILIZATION:4 H1:DCH-RF45_AM_STABILIZATION:5 H1:DCH-RF45_SEVERE_GLITCHING:2 H1:DCH-SEVERE_HAM1_HEPI_OMICRON_GT_40:1 H1:DCH-SNOW_PLOW:2 H1:DMT-ANY_PI_HIGH_RMS:1 H1:DMT-ETMY_ESD_DAC_OVERFLOW:1 H1:DMT-ITMY_L2_DAC_OVERFLOW:1 H1:DMT-OMC_DCPD_ADC_OVERFLOW:1 H1:DMT-PCALY_STATE_CHANGE:1 H1:DMT-PRE_LOCKLOSS_4:1 H1:ODC-INJECTION_BURST:2 H1:ODC-INJECTION_CBC:2 H1:ODC-INJECTION_DETCHAR:2 H1:ODC-INJECTION_STOCHASTIC:2 L1:DCH-60HZ_EY_PERIODIC_GLITCHING:1 L1:DCH-BAD_VCO_OFFSET:2 L1:DCH-CS_MIC_BLRMS_GT_250:1 L1:DCH-EARTHQUAKE_CS_Z_BLRMS_GT_190:1 L1:DCH-ETMY_SATURATION:1 L1:DCH-ETMY_SATURATION_SNR200:1 L1:DCH-EX_MAG_OMICRON_GT_400:1 L1:DCH-EY_MIC_BLRMS_GT_200:1 L1:DCH-GUARDIAN_FAILURE:1 L1:DCH-HIGH_VIOLINS:1 L1:DCH-HVETO_WHISTLES:1 L1:DCH-PCAL_GLITCHES_GT_20P:1 L1:DCH-SEVERE_60_200_HZ_NOISE:1 L1:DCH-SEVERE_SCATTERING:1 L1:DCH-SEVERE_THUNDERSTORM:1 L1:DMT-ETMX_ESD_DAC_OVERFLOW:1 L1:DMT-ETMY_ESD_DAC_OVERFLOW:1 L1:DMT-OMC_DCPD_ADC_OVERFLOW:1 L1:DMT-PRE_LOCKLOSS_4:1 L1:ODC-INJECTION_BURST:2 L1:ODC-INJECTION_CBC:2 L1:ODC-INJECTION_DETCHAR:2 L1:ODC-INJECTION_STOCHASTIC:2 NoFlag
+    * H1:DCH-ASC_AS_B_RF36_GLITCHING:1 H1:DCH-BAD_CALIBRATION_COIL_DRIVER:1 H1:DCH-BROKEN_ITMY_OPLEV:1 H1:DCH-CAL_NON_O2_STANDARD_CONFIG:1 H1:DCH-COMPUTER_REBOOT:1 H1:DCH-EARTHQUAKE_CS_Z_BLRMS_GT_320:1 H1:DCH-ETMX_L2_UL_DAC_OVERFLOW:1 H1:DCH-ETMX_L3_OPLEV_SUM_HIGH_BLRMS:1 H1:DCH-ETMX_MAINSMON_BL_GT_30:1 H1:DCH-ETMY_ELECTRONICS_GLITCHING:1 H1:DCH-ETMY_L3_OPLEV_BLRMS_GT65:2 H1:DCH-ETMY_SATURATION:2 H1:DCH-ETMY_SATURATION_SNR200:1 H1:DCH-ETMY_VIOLIN_MODE_2NDHARMONIC_RINGING:1 H1:DCH-EX_MAG_EBAY_SUSRACK_GLITCHING:1 H1:DCH-EX_MAG_EBAY_SUSRACK_GLITCHING_GRD_ISC_LOCK_NOMINAL:1 H1:DCH-HAM1_HEPI_OMICRON_GT_40:1 H1:DCH-HIGH_VIOLINS:1 H1:DCH-ITMX_R0_OVERFLOW:1 H1:DCH-ITMY_STS2_Z_BLRMS_GT_600:1 H1:DCH-MISSING_H1_HOFT_C00:2 H1:DCH-OMC_DCPD_A_SATURATION:1 H1:DCH-PSL_ISS_OMICRON_SNR_GT_45:1 H1:DCH-RF45_AM_STABILIZATION:4 H1:DCH-RF45_AM_STABILIZATION:5 H1:DCH-RF45_SEVERE_GLITCHING:2 H1:DCH-SEVERE_HAM1_HEPI_OMICRON_GT_40:1 H1:DCH-SNOW_PLOW:2 H1:DMT-ANY_PI_HIGH_RMS:1 H1:DMT-ETMY_ESD_DAC_OVERFLOW:1 H1:DMT-ITMY_L2_DAC_OVERFLOW:1 H1:DMT-OMC_DCPD_ADC_OVERFLOW:1 H1:DMT-PCALY_STATE_CHANGE:1 H1:DMT-PRE_LOCKLOSS_4:1 H1:ODC-INJECTION_BURST:2 H1:ODC-INJECTION_CBC:2 H1:ODC-INJECTION_DETCHAR:2 H1:ODC-INJECTION_STOCHASTIC:2 L1:DCH-60HZ_EY_PERIODIC_GLITCHING:1 L1:DCH-BAD_VCO_OFFSET:2 L1:DCH-CS_MIC_BLRMS_GT_250:1 L1:DCH-EARTHQUAKE_CS_Z_BLRMS_GT_190:1 L1:DCH-ETMY_SATURATION:1 L1:DCH-ETMY_SATURATION_SNR200:1 L1:DCH-EX_MAG_OMICRON_GT_400:1 L1:DCH-EY_MIC_BLRMS_GT_200:1 L1:DCH-GUARDIAN_FAILURE:1 L1:DCH-HIGH_VIOLINS:1 L1:DCH-HVETO_WHISTLES:1 L1:DCH-PCAL_GLITCHES_GT_20P:1 L1:DCH-SEVERE_60_200_HZ_NOISE:1 L1:DCH-SEVERE_SCATTERING:1 L1:DCH-SEVERE_THUNDERSTORM:1 L1:DMT-ETMY_ESD_DAC_OVERFLOW:1 L1:DMT-OMC_DCPD_ADC_OVERFLOW:1 L1:DMT-PRE_LOCKLOSS_4:1 L1:ODC-INJECTION_BURST:2 L1:ODC-INJECTION_CBC:2 L1:ODC-INJECTION_DETCHAR:2 L1:ODC-INJECTION_STOCHASTIC:2 NoFlag
 * `Extremely_Loud` : float64
 * `Filename1` : object
 * `Filename2` : object
@@ -171,15 +77,20 @@ This table contains information about classification performed by users after th
 * `bandwidth` : float64
 * `central_freq` : float64
 * `channel` : object
-    * GDS-CALIB_STRAIN
+    * GDS-CALIB_STRAIN Hrec_hoft_16384Hz
 * `chisq` : int64
 * `chisq_dof` : int64
-* `citizenScore` : object
+* `citizenScore` : float64
 * `confidence` : int64
 * `duration` : float64
 * `event_id` : int64
 * `ifo` : object
-    * H1 L1
+    * H1 L1 V1
+* `imgUrl1` : object
+* `imgUrl2` : object
+* `imgUrl3` : object
+* `imgUrl4` : object
+* `links_subjects` : object
 * `param_one_name` : object
     * phase
 * `param_one_value` : float64
@@ -188,6 +99,7 @@ This table contains information about classification performed by users after th
 * `peak_time` : int64
 * `peak_time_ns` : int64
 * `process_id` : int64
+* `qvalue` : float64
 * `search` : object
     * OMICRON Omicron
 * `snr` : float64
@@ -207,8 +119,8 @@ This table contains information about which subjects are considered golden and t
 * `links_subjects` : int64
 * `uniqueID` : object
 
-trainingset
-===========
+trainingsetv1d1
+===============
 
 
 In order to obtain the training set described here: https://dcc.ligo.org/LIGO-P1700227
@@ -235,41 +147,41 @@ There are three ways.
 * Third, copying the path laid out here @ LHO cluster
     * `/home/scott.coughlin/public_html/GravitySpy/TrainingSet2/H1L1`. I recommend this only in the short term because it will be deprecated very soon and the preferred way will be using the software above because it is robust, has correctly labelled samples, and will be automatically updated to reflect when the trainingset changes/improves. In this folder there are 22 folders that all contain the images for that class.
 
-* `1080Lines` : float64
-* `1400Ripples` : float64
-* `Air_Compressor` : float64
-* `Blip` : float64
-* `Chirp` : float64
+* `1080Lines` : object
+* `1400Ripples` : object
+* `Air_Compressor` : object
+* `Blip` : object
+* `Chirp` : object
 * `DQFlag` : object
     * H1:DCH-ASC_AS_B_RF36_GLITCHING:1 H1:DCH-BAD_CALIBRATION_COIL_DRIVER:1 H1:DCH-ETMY_ELECTRONICS_GLITCHING:1 H1:DCH-ETMY_SATURATION:2 H1:DCH-ETMY_SATURATION_SNR200:1 H1:DCH-ETMY_VIOLIN_MODE_2NDHARMONIC_RINGING:1 H1:DCH-MISSING_H1_HOFT_C00:2 H1:DCH-OMC_DCPD_A_SATURATION:1 H1:DCH-RF45_AM_STABILIZATION:4 H1:DCH-RF45_SEVERE_GLITCHING:2 H1:DCH-SNOW_PLOW:2 H1:DMT-ANY_PI_HIGH_RMS:1 H1:DMT-ETMY_ESD_DAC_OVERFLOW:1 H1:DMT-OMC_DCPD_ADC_OVERFLOW:1 H1:DMT-PRE_LOCKLOSS_4:1 H1:ODC-INJECTION_BURST:2 H1:ODC-INJECTION_CBC:2 L1:DCH-BAD_VCO_OFFSET:2 L1:DCH-ETMY_SATURATION:1 L1:DCH-ETMY_SATURATION_SNR200:1 L1:DCH-PCAL_GLITCHES_GT_20P:1 L1:DCH-SEVERE_60_200_HZ_NOISE:1 L1:DMT-ETMY_ESD_DAC_OVERFLOW:1 L1:DMT-OMC_DCPD_ADC_OVERFLOW:1 L1:DMT-PRE_LOCKLOSS_4:1 L1:ODC-INJECTION_BURST:2 L1:ODC-INJECTION_CBC:2 NoFlag
-* `Extremely_Loud` : float64
+* `Extremely_Loud` : object
 * `Filename1` : object
 * `Filename2` : object
 * `Filename3` : object
 * `Filename4` : object
-* `Helix` : float64
+* `Helix` : object
 * `ImageStatus` : object
     * Training
-* `Koi_Fish` : float64
+* `Koi_Fish` : object
 * `Label` : object
     * 1080Lines 1400Ripples Air_Compressor Blip Chirp Extremely_Loud Helix Koi_Fish Light_Modulation Low_Frequency_Burst Low_Frequency_Lines No_Glitch None_of_the_Above Paired_Doves Power_Line Repeating_Blips Scattered_Light Scratchy Tomte Violin_Mode Wandering_Line Whistle
-* `Light_Modulation` : float64
-* `Low_Frequency_Burst` : float64
-* `Low_Frequency_Lines` : float64
-* `No_Glitch` : float64
-* `None_of_the_Above` : float64
-* `Paired_Doves` : float64
-* `Power_Line` : float64
-* `Repeating_Blips` : float64
+* `Light_Modulation` : object
+* `Low_Frequency_Burst` : object
+* `Low_Frequency_Lines` : object
+* `No_Glitch` : object
+* `None_of_the_Above` : object
+* `Paired_Doves` : object
+* `Power_Line` : object
+* `Repeating_Blips` : object
 * `SampleType` : object
     * Testing Training Validation
-* `Scattered_Light` : float64
-* `Scratchy` : float64
-* `Tomte` : float64
-* `UploadFlag` : float64
-* `Violin_Mode` : float64
-* `Wandering_Line` : float64
-* `Whistle` : float64
+* `Scattered_Light` : object
+* `Scratchy` : object
+* `Tomte` : object
+* `UploadFlag` : object
+* `Violin_Mode` : object
+* `Wandering_Line` : object
+* `Whistle` : object
 * `amplitude` : float64
 * `bandwidth` : float64
 * `central_freq` : float64
@@ -299,11 +211,11 @@ There are three ways.
 * `snr` : float64
 * `start_time` : int64
 * `start_time_ns` : int64
-* `subjectset` : float64
+* `subjectset` : object
 * `tsne_x` : float64
 * `tsne_y` : float64
 * `uniqueID` : object
-* `workflow` : float64
+* `workflow` : object
 
 userStatus
 ==========

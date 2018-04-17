@@ -89,7 +89,6 @@ extras_require = {
         'numpydoc',
         'sphinx_rtd_theme',
         'sphinxcontrib_programoutput',
-        'sphinxcontrib_epydoc',
     ],
 }
 

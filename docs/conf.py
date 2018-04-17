@@ -15,6 +15,9 @@
 import sys
 import os
 
+from matplotlib import use
+use('agg')
+
 from gravityspy import __version__ as gravityspy_version
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -38,6 +41,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'numpydoc',
     'sphinxcontrib.programoutput',
+    'matplotlib.sphinxext.plot_directive',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -85,6 +89,19 @@ language = None
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+
+# -- plot_directive -----------------------------
+
+# -- numpydoc -----------------------------------
+
+# fix numpydoc autosummary
+numpydoc_show_class_members = False
+
+# use blockquotes (numpydoc>=0.8 only)
+numpydoc_use_blockquotes = True
+
+# auto-insert plot directive in examples
+numpydoc_use_plots = True
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
