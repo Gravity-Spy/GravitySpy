@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (C) Duncan Macleod (2013)
+# Copyright (C) Scott Coughlin (2018)
 #
-# This file is part of the hveto python package.
+# This file is part of the gravityspy python package.
 #
-# hveto is free software: you can redistribute it and/or modify
+# gravityspy is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# hveto is distributed in the hope that it will be useful,
+# gravityspy is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with hveto.  If not, see <http://www.gnu.org/licenses/>.
+# along with gravityspy.  If not, see <http://www.gnu.org/licenses/>.
 
 """Setup the GravitySpy package
 """
@@ -81,8 +81,6 @@ tests_require = [
     'pytest'
 ]
 
-if sys.version_info < (2, 7):
-    tests_require.append('unittest2')
 extras_require = {
     'doc': [
         'sphinx',
@@ -121,11 +119,6 @@ setup(name=DISTNAME,
       install_requires=install_requires,
       tests_require=tests_require,
       extras_require=extras_require,
-      dependency_links=[
-          'http://software.ligo.org/lscsoft/source/glue-1.49.1.tar.gz',
-          'http://software.ligo.org/lscsoft/source/dqsegdb-1.2.2.tar.gz',
-          'https://github.com/ligovirgo/trigfind/archive/v0.4.tar.gz',
-      ],
       test_suite='gravityspy.tests',
       use_2to3=True,
       classifiers=[

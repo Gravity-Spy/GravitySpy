@@ -1,5 +1,5 @@
-from GS_utils import build_cnn, my_load_dataset
-from GS_utils import create_model_folder, concatenate_views
+from .GS_utils import build_cnn, my_load_dataset
+from .GS_utils import create_model_folder, concatenate_views
 import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense
