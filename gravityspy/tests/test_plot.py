@@ -47,8 +47,9 @@ class GravitSpyTests(unittest2.TestCase):
     """
     def test_plot(self):
         # Plot q_scans
-        indFigAll, superFig = plot_qtransform(specsgrams, plotNormalizedERange,
-                   plotTimeRanges, detectorName, startTime)
+        self.assertEqual(1,1)
+        #indFigAll, superFig = plot_qtransform(specsgrams, plotNormalizedERange,
+        #           plotTimeRanges, detectorName, startTime)
 
 
 if __name__ == '__main__':
