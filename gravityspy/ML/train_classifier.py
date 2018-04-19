@@ -1,5 +1,5 @@
-from GS_utils import build_cnn, my_load_dataset
-from GS_utils import create_model_folder, concatenate_views
+from .GS_utils import build_cnn, my_load_dataset
+from .GS_utils import create_model_folder, concatenate_views
 import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense
@@ -25,9 +25,11 @@ def pickle_trainingset(path_to_trainingset, save_address='pickleddata',
     path_to_trainingset : `str` pwd to trainingset
                  where format of training set folder
                  is "somedirectoryname"/"classname/"images"
+
     save_address : `str` path to folder you would like to save
                  the pixelated training data
                  optional Default `pickleddata`
+
     verbose : `boolean`, default False
 
     Returns
@@ -88,18 +90,29 @@ def make_model(data, model_folder='model', batch_size=22, nb_epoch=10,
     """Parameters
     ----------
     data : `str` file path to pickled trianing set data
+
     model_folder : `str` path to folder you would like to save
                  the model
                  optional Default `model`
+
     batch_size : `int` default 22
+
     nb_epoch : `int` default 40
+
     nb_classes : `int` default 22
+
     fraction_validation : `float` default .125 
+
     fraction_testing : `float` default None
+
     all_data_for_train_flag : `int` default 1
+
     best_model_based_validset : `int` default 0
+
     image_size : `int` default [140, 170]
+
     random_seed : `int`  default 1986
+
     verbose : `boolean`, default False
 
     Returns

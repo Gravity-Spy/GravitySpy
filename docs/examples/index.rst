@@ -33,11 +33,11 @@ Very brief installation! Create a virtualenv on the clusters and `pip install`
 Pre-Existing VirtualEnv
 =======================
 
-On CIT
+On CIT, LLO and LHO
 
 .. code-block:: bash
 
-   $ . /home/gravityspy/opt/GravitySpy/bin/activate
+   $ source /home/gravityspy/.gravityspy_profile
 
 =======================
 The `glitches` database
@@ -45,7 +45,6 @@ The `glitches` database
 
 .. code-block:: bash
 
-   $ kinit albert.einstein
    $ ipython
 
     >>> from gwpy.table import EventTable
@@ -68,30 +67,29 @@ publication quality plots easy.
 Here we mimic the `histogram <https://gwpy.github.io/docs/latest/examples/table/histogram.html?highlight=hist>`_ functionality
 
 .. plot::
-   :include-source:
+    :context: reset
+    :include-source:
 
+    >>> import matplotlib.pyplot as plt
+    >>> plt.switch_backend('agg')
     >>> from gwpy.table import EventTable
-    >>> from gwpy.segments import DataQualityFlag
-    >>> aftercommissionseg_l1 = DataQualityFlag.query('H1:DMT-ANALYSIS_READY:1',1178841618, 1186963218)
-    >>> beforecommissionseg_l1 = DataQualityFlag.query('H1:DMT-ANALYSIS_READY:1', '2016-11-30', 1178841618)
-    >>> blips_O2 = EventTable.fetch('gravityspy','glitches',selection='"Label "="Blip" & "peakGPS" > 1137250000 & "Blip" > 0.95')
-    >>> koi_O2 = EventTable.fetch('gravityspy','glitches',selection='"Label "="Koi_Fish" & "peakGPS" > 1137250000 & "Koi_Fish" > 0.95')
-    >>> aftercomiss_koi_l1 = koi_O2[(koi_O2['peakGPS']>1178841618) & (koi_O2['ifo']=='L1')] 
-    >>> beforecomiss_koi_l1 = koi_O2[(koi_O2['peakGPS']<1178841618) & (koi_O2['ifo']=='L1')]
-    >>> beforecomiss_blips_l1 = blips_O2[(blips_O2['peakGPS']<1178841618) & (blips_O2['ifo']=='L1')]
-    >>> aftercomiss_blips_l1 = blips_O2[(blips_O2['peakGPS']>1178841618) & (blips_O2['ifo']=='L1')]
-    >>> plot = aftercomiss_blips_l1.hist('snr', logbins=True, bins=50, histtype='stepfilled', label='After Commissioning')              
+    >>> blips_O2_L1 = EventTable.fetch('gravityspy', 'glitches', selection = ['"Label" = "Blip"', '"peakGPS" > 1137250000', '"Blip" > 0.95', 'ifo=L1'])
+    >>> koi_O2_L1 = EventTable.fetch('gravityspy', 'glitches', selection = ['"Label" = "Koi_Fish"', '"peakGPS" > 1137250000', '"Koi_Fish" > 0.95', 'ifo=L1'])
+    >>> aftercomiss_koi_l1 = koi_O2_L1[koi_O2_L1['peakGPS']>1178841618]
+    >>> beforecomiss_koi_l1 = koi_O2_L1[koi_O2_L1['peakGPS']<1178841618]
+    >>> beforecomiss_blips_l1 = blips_O2_L1[blips_O2_L1['peakGPS']<1178841618]
+    >>> aftercomiss_blips_l1 = blips_O2_L1[blips_O2_L1['peakGPS']>1178841618]
+    >>> plot = aftercomiss_blips_l1.hist('snr', logbins=True, bins=50, histtype='stepfilled', label='After Commissioning')
     >>> ax = plot.gca()
     >>> ax.hist(aftercomiss_koi_l1['snr'], logbins=True, bins=50, histtype='stepfilled', label='After Commissioning Koi')
-    >>> ax.hist(beforecomiss_blips_l1['snr'], weights=float(abs(aftercommissionseg_l1.active)/abs(beforecommissionseg_l1.active)), logbins=True, bins=50, histtype='stepfilled', label='Before Commissioning')
-    >>> ax.hist(beforecomiss_koi_l1['snr'], weights=float(abs(aftercommissionseg_l1.active)/abs(beforecommissionseg_l1.active)), logbins=True, bins=50, histtype='stepfilled', label='Before Commissioning Koi') 
+    >>> ax.hist(beforecomiss_blips_l1['snr'], logbins=True, bins=50, histtype='stepfilled', label='Before Commissioning')
+    >>> ax.hist(beforecomiss_koi_l1['snr'], logbins=True, bins=50, histtype='stepfilled', label='Before Commissioning Koi') 
     >>> ax.set_xlabel('Signal-to-noise ratio (SNR)')
     >>> ax.set_ylabel('Rate')                       
     >>> ax.set_title('Blips and Kois before and after comissioning L1')
     >>> ax.autoscale(axis='x', tight=True)                             
     >>> ax.set_xlim([0,1000])             
     >>> plot.add_legend()    
-    >>> plot.show()   
 
 =====================================
 Utilizing `hveto` (and soon Karoo GP)
@@ -118,12 +116,11 @@ The `trainingset` database
 
 .. code-block:: bash
 
-   $ kinit albert.einstein
    $ ipython
 
     >>> from gwpy.table import EventTable
-    >>> trainingset = EventTable.fetch('gravityspy','trainingset')
-    >>> trainingset.download(nproc=8, TrainingSet=1, LabelledSamples=1)
+    >>> trainingset = EventTable.fetch('gravityspy','trainingsetv1d1')
+    >>> trainingset.download(nproc=4, TrainingSet=1, LabelledSamples=1, download_path='TrainingSet')
 
 ================
 Training a model 
@@ -132,16 +129,15 @@ Training a model
 .. code-block:: bash
 
     $ ipython
-    $ kinit albert.einstein
     >>> from gwpy.table import EventTable
     >>> from astropy.table import vstack
-    >>> blips = EventTable.fetch('gravityspy', 'trainingset', selection='Label=Blip')
-    >>> whistle = EventTable.fetch('gravityspy', 'trainingset', selection='Label=Whistle')
+    >>> blips = EventTable.fetch('gravityspy', 'trainingsetv1d1', selection='Label=Blip')
+    >>> whistle = EventTable.fetch('gravityspy', 'trainingsetv1d1', selection='Label=Whistle')
     >>> # Downselect to 100 samples (otherwise the download takes too long)
-    >>> blips = blips[0:100]
-    >>> whistle = whistle[0:100]
+    >>> blips = blips[0:50]
+    >>> whistle = whistle[0:50]
     >>> trainingset = vstack([whistle, blips])
-    >>> trainingset.download(nproc=4, TrainingSet=1)
+    >>> trainingset.download(nproc=4, TrainingSet=1, download_path='TrainingSet')
 
 The download script utilize `gwpy` very nice `Multi-Processing Tool <https://github.com/gwpy/gwpy/blob/develop/gwpy/utils/mp.py>`_. This tool is also currently being used to help speed up the creation of omega scans and turn things into a pythonic only `Omega Scan <https://github.com/scottcoughlin2014/PyOmega>`_. This Pythonic omega scan utilizes the gwpy implementation of `q_transform <https://gwpy.github.io/docs/latest/examples/timeseries/qscan.html?highlight=q_transform>`_ 
 
@@ -153,5 +149,4 @@ LSC has some great hardware resources. Marco Cavaglia and Stuart Anderson have p
 
 .. code-block:: bash
 
-    $ export KERAS_BACKEND=theano
-    $ THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 trainmodel --path-to-golden /home/gravityspy/LAAC/TrainingSet/ --path-to-pickle ./pickleddata/ --path-to-trained-model ./model --number-of-classes 2 --batch-size 50
+    $ THEANO_FLAGS=mode=FAST_RUN,device=cuda,floatX=float32 trainmodel --path-to-trainingset=./TrainingSet --number-of-classes=2 --nb-epoch=7 

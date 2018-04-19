@@ -22,14 +22,15 @@ def main(image_data, model_adr, image_size=[140, 170], verbose=False):
                  the image and whose row entries are
                  the b/w pixel values at some resoltion
                  determined by `make_pickle`
+
     model_adr : `str` path to folder containing model
+
     image_size : `list`, default [140, 170]
+
     verbose : `boolean`, default False
 
     Returns
     -------
-    A dict with keys of workflow IDs and values list
-    of golden sets associated with that workflow
     """
 
     dw = label_glitches(pickle_adr, model_adr, image_size, verbose)
@@ -46,14 +47,15 @@ def label_glitches(image_data, model_adr, image_size=[140, 170], verbose=False):
                  the image and whose row entries are
                  the b/w pixel values at some resoltion
                  determined by `make_pickle`
+
     model_adr : `str` path to folder containing model
+
     image_size : `list`, default [140, 170]
+
     verbose : `boolean`, default False
 
     Returns
     -------
-    A dict with keys of workflow IDs and values list
-    of golden sets associated with that workflow
     """
 
     # the path where the trained is saved there
@@ -98,14 +100,15 @@ def get_feature_space(image_data, semantic_model_adr, image_size=[140, 170], ver
                  the image and whose row entries are
                  the b/w pixel values at some resoltion
                  determined by `make_pickle`
+
     semantic_model_adr : `str` path to folder containing similarity model
+
     image_size : `list`, default [140, 170]
+
     verbose : `boolean`, default False
 
     Returns
     -------
-    A dict with keys of workflow IDs and values list
-    of golden sets associated with that workflow
     """
 
     img_rows, img_cols = image_size[0], image_size[1]

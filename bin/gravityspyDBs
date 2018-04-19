@@ -63,10 +63,6 @@ For LIGO users please see `Gravity Spy Authentication <https://secrets.ligo.org/
 """
 
 
-O1GlitchClassificationUpdateTableSubHeader = """
-This table contains infomration concerning the O1 glitch classification paper
-"""
-
 TrainingSetTableSubHeader = """
 In order to obtain the training set described here: https://dcc.ligo.org/LIGO-P1700227
 
@@ -93,10 +89,6 @@ There are three ways.
     * `/home/scott.coughlin/public_html/GravitySpy/TrainingSet2/H1L1`. I recommend this only in the short term because it will be deprecated very soon and the preferred way will be using the software above because it is robust, has correctly labelled samples, and will be automatically updated to reflect when the trainingset changes/improves. In this folder there are 22 folders that all contain the images for that class.
 """
 
-classificationsTableSubHeader = """
-This table contains information about classification performed by users before the addition of the two new classes. Therefore, columns such as `annotations_value_choiceINT` = 1 being a `Blip` is true in this DB but not in classificationsdev
-"""
-
 classificationsdevTableSubHeader = """
 This table contains information about classification performed by users after the addition of the two new classes. Therefore, columns such as `annotations_value_choiceINT` = 3 being a `Blip` is true in this DB but not in classifications. Versioning controls for this type of thing will be implemented in the near future
 """
@@ -113,9 +105,7 @@ userStatusTableSubHeader = """
 This table contains information about what level agiven user should be on.
 """
 
-TableSubHeaderDict = {'trainingset' : TrainingSetTableSubHeader,
-                      'O1GlitchClassificationUpdate' : O1GlitchClassificationUpdateTableSubHeader,
-                      'classifications' : classificationsTableSubHeader,
+TableSubHeaderDict = {'trainingsetv1d1' : TrainingSetTableSubHeader,
                       'classificationsdev' : classificationsdevTableSubHeader,
                       'glitches' : glitchesTableSubHeader,
                       'goldenimages' : goldenimagesTableSubHeader,
@@ -134,7 +124,7 @@ engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5
 with open('DBs/index.rst', 'w') as f:
     f.write(BeginningText)
     for table in sorted(engine.table_names()):
-        if table not in ['goldenimages', 'classifications', 'O1GlitchClassificationUpdate', 'classificationsdev', 'userStatus', 'glitches', 'trainingset']:
+        if table not in ['goldenimages', 'classificationsdev', 'userStatus', 'glitches', 'trainingsetv1d1']:
             continue
 
         TableHeader = """

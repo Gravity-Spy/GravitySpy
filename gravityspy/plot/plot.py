@@ -9,7 +9,7 @@ import numpy as np
 
 
 def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges,
-                    detectorName, startTime, outDirtmp, IDstring, **kwargs):
+                    detectorName, startTime, **kwargs):
 
     # Set some plotting params
     myfontsize = 15
@@ -35,6 +35,8 @@ def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges,
         raise ValueError('Time outside science or engineering run '
                          'or more likely code not updated to reflect '
                          'new science run.')
+
+    indFigAll = []
 
     for i, spec in enumerate(specsgrams):
 
@@ -72,13 +74,7 @@ def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges,
                                    pad="3%", width="5%")
         cbar.ax.tick_params(labelsize=12)
         cbar.ax.yaxis.label.set_size(myfontsize)
-
-        indFig.save(os.path.join(
-                                 outDirtmp,
-                                 detectorName + '_' + IDstring
-                                 + '_spectrogram_' + str(dur) +'.png'
-                                )
-                   )
+        indFigAll.append(indFig)
 
     # Create one image containing all spectogram grams
     superFig = Plot(figsize=(27, 6))
@@ -116,5 +112,4 @@ def plot_qtransform(specsgrams, plotNormalizedERange, plotTimeRanges,
 
     superFig.suptitle(title, fontsize=mylabelfontsize, color=myColor, x=0.51)
 
-    superFig.save(os.path.join(outDirtmp, IDstring + '.png'),
-                  bbox_inches='tight')
+    return indFigAll, superFig
