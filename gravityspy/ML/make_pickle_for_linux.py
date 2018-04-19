@@ -6,20 +6,22 @@ import getopt, sys, os
 
 
 def main(filename, resolution=0.3, verbose=False):
-    """Parameters
-    ----------
-    filename : `str`,
-        the file you would like to pixelize
+    """Convert image from RGB to Gray, downsample
 
-    resolution : `float`, optional, default: 0.3
+    Parameters
+        filename (str):
+            the file you would like to pixelize
 
-    verbose : `bool`, optional, default: False
+        resolution (float, optional):
+            default: 0.3
+
+        verbose (bool, optional):
+            default: False
 
     Returns
-    -------
-    image_data : `np.array`
-        this images is taken from rgb to gray scale
-        and then downsampled by the resolution.
+        image_data (`np.array):
+            this images is taken from rgb to gray scale
+            and then downsampled by the resolution.
     """
 
     np.random.seed(1986)  # for reproducibility
