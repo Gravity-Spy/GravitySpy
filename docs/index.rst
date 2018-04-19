@@ -8,6 +8,22 @@ Welcome to GravitySpy's documentation!
 
 `Gravity Spy <https://gravityspy.org>`_ is an innovative citizen-science meets Machine Learning meets gravitational wave physics project. This repository is meant to faciliate the creation of new similar citizen science projects on `Zooniverse <https://zooniverse.org>`_
 
+The module level docstrings attempt to follow the following format : `Google Style Sphinx <http://www.sphinx-doc.org/en/master/ext/example_google.html>`_
+
+
+Installing GravitySpy
+---------------------
+
+The easiest method to install gravityspy is using `pip <https://pip.pypa.io/en/stable/>`_ directly from the `GitHub repository <https://github.com/Gravity-Spy/GravitySpy.git>`_:
+
+Gravity Spy software has been tested on py35 and py27. Work is in progress to have unit tests verify gravity spy on py27 and py34 py35 and py36. 
+
+.. code-block:: bash
+
+   $ pip install git+https://github.com/Gravity-Spy/GravitySpy.git
+
+For more details see :ref:`install`.
+
 Publications
 ------------
 
@@ -28,17 +44,6 @@ If you use Gravity Spy in your scientific publications or projects, we ask that 
 * C. Jackson, C. Østerlund, K. Crowston, M. Harandi, S. Allen, S. Bahaadini, S. Coughlin, V. Kalogera, A. Katsaggelos, S. Larson, N. Rohani, J. Smith, L. Trouille, and M. Zevin. [Making High-Performing Contributors: An Experiment With Training in an Online Production Community], submitted to IEEE Transactions on Learning Technologies, 2018.
 
 * S. Bahaadini, V. Noroozi, N. Rohani, S. Coughlin, M. Zevin, & A. Katsaggelos. DIRECT: Deep DIscRiminative Embedding for ClusTering of LIGO Data, submitted to IEEE International Conference on Image Processing, 2018.
-
-Installing GravitySpy
----------------------
-
-The easiest method to install gravityspy is using `pip <https://pip.pypa.io/en/stable/>`_ directly from the `GitHub repository <https://github.com/Gravity-Spy/GravitySpy.git>`_:
-
-Gravity Spy software has been tested on py35 and py27. Work is in progress to have unit tests verify gravity spy on py27 and py34 py35 and py36. 
-
-.. code-block:: bash
-
-   $ pip install git+https://github.com/Gravity-Spy/GravitySpy.git
 
 How to classify unlabeled excess noise
 --------------------------------------
@@ -95,6 +100,7 @@ Please consult these pages for more details on using GravitySpy:
 .. toctree::
    :maxdepth: 1
 
+   install/index
    wscan/index
    trainmodel/index
    examples/index
