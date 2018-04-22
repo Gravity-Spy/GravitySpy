@@ -1,15 +1,13 @@
-from .GS_utils import build_cnn, my_load_dataset
-from .GS_utils import create_model_folder, concatenate_views
-import numpy as np
+from .GS_utils import build_cnn, concatenate_views
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.utils import np_utils
 from keras.callbacks import ModelCheckpoint
-import sys, getopt
-import gzip, os
-import cPickle
-import make_pickle_for_linux as make_pickle
 from gravityspy.utils import log
+
+import numpy as np
+import os
+import make_pickle_for_linux as make_pickle
 import pandas as pd
 
 '''
@@ -93,6 +91,15 @@ def make_model(data, model_folder='model', batch_size=22, nb_epoch=10,
                best_model_based_validset=0, image_size=[140, 170],
                random_seed=1986, verbose=True):
     """Train a Convultional Neural Net (CNN).
+
+    This module uses `keras <https://keras.io/>`_ to interface
+    with the creation of a neural net and currently uses
+    `theano <http://deeplearning.net/software/theano/>`_ as the backend
+    for doing the heavy gpu lifting.
+
+    The optimizer :class:`keras.optimizers.Adadelta`
+
+    The loss function being optimized is `softmax <https://en.wikipedia.org/wiki/Softmax_function>`_
 
     Parameters:
         data (str):

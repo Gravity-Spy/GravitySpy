@@ -1,12 +1,9 @@
-from GS_utils import load_dataset_unlabelled_glitches, concatenate_views
-import numpy as np
-from keras.utils import np_utils
-import sys, gzip, cPickle, os
-from getopt import GetoptError, getopt
-from keras.models import model_from_json, load_model
+from .GS_utils import concatenate_views
+from keras.models import load_model
 from scipy.misc import imresize
-import glob
 
+import numpy as np
+import os
 
 '''
 By Sara Bahaadini and Neda Rohani, IVPL, Northwestern University.
