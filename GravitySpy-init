@@ -1,10 +1,10 @@
 #!/bin/bash -e
 
-#rm -rf ~/opt/GravitySpy-py27
-#virtualenv-2.7 ~/opt/GravitySpy-py27
+rm -rf ~/opt/GravitySpy-py27
+virtualenv-2.7 ~/opt/GravitySpy-py27
 . ~/opt/GravitySpy-py27/bin/activate
-#python -m pip install --upgrade --quiet pip setuptools
-#pip install .
+python -m pip install --upgrade --quiet pip setuptools
+pip install .
 pip install cython
 
 export PATH=$PATH:/usr/local/cuda/bin/

@@ -1,12 +1,9 @@
-from GS_utils import load_dataset_unlabelled_glitches, concatenate_views
-import numpy as np
-from keras.utils import np_utils
-import sys, gzip, cPickle, os
-from getopt import GetoptError, getopt
-from keras.models import model_from_json, load_model
+from .GS_utils import concatenate_views
+from keras.models import load_model
 from scipy.misc import imresize
-import glob
 
+import numpy as np
+import os
 
 '''
 By Sara Bahaadini and Neda Rohani, IVPL, Northwestern University.
@@ -15,7 +12,8 @@ file in a .csv file
 '''
 
 def main(image_data, model_adr, image_size=[140, 170], verbose=False):
-    """Parameters
+    """
+    Parameters
     ----------
     image_data : `pd.DataFrame` this is a DF with
                  columns whose names are the same as
@@ -37,25 +35,34 @@ def main(image_data, model_adr, image_size=[140, 170], verbose=False):
     dwslice = dw[0][1:]
     dwslice = np.array(map(float, dwslice))
 
-    return dw[0],np.argmax(dwslice)    
+    return dw[0],np.argmax(dwslice)
+
 
 def label_glitches(image_data, model_adr, image_size=[140, 170], verbose=False):
-    """Parameters
-    ----------
-    image_data : `pd.DataFrame` this is a DF with
-                 columns whose names are the same as
-                 the image and whose row entries are
-                 the b/w pixel values at some resoltion
-                 determined by `make_pickle`
+    """Obtain 1XNclasses confidence vector and label for image
 
-    model_adr : `str` path to folder containing model
+    Parameters:
 
-    image_size : `list`, default [140, 170]
+        image_data (`pd.DataFrame`):
+            This is a DF with columns whose names are the same as
+            the image and whose row entries are
+            the b/w pixel values at some resoltion
+            determined by `make_pickle`
 
-    verbose : `boolean`, default False
+        model_adr (str, optional):
+            Path to folder containing model
 
-    Returns
-    -------
+        image_size (list, optional):
+            Default [140, 170]
+
+        verbose (bool, optional):
+            Default False
+
+    Returns:
+
+        score3_unlabelled (np.array):
+            confidence scores per class (b/t 0 and 1)
+            index_label (int): ml label
     """
 
     # the path where the trained is saved there
@@ -63,7 +70,7 @@ def label_glitches(image_data, model_adr, image_size=[140, 170], verbose=False):
 
     np.random.seed(1986)  # for reproducibility
 
-    img_rows, img_cols = image_size[0], image_size[1] 
+    img_rows, img_cols = image_size[0], image_size[1]
 
     # load a model and weights
     if verbose:
@@ -92,25 +99,32 @@ def label_glitches(image_data, model_adr, image_size=[140, 170], verbose=False):
     return score3_unlabelled, np.argmax(score3_unlabelled)
 
 
-def get_feature_space(image_data, semantic_model_adr, image_size=[140, 170], verbose=False):
-    """Parameters
-    ----------
-    image_data : `pd.DataFrame` this is a DF with
-                 columns whose names are the same as
-                 the image and whose row entries are
-                 the b/w pixel values at some resoltion
-                 determined by `make_pickle`
+def get_feature_space(image_data, semantic_model_adr, image_size=[140, 170],
+                      verbose=False):
+    """Obtain N dimensional feature space of sample
 
-    semantic_model_adr : `str` path to folder containing similarity model
+    Parameters:
 
-    image_size : `list`, default [140, 170]
+        image_data (`pd.DataFrame`):
+            This is a DF with columns whose names are the same as
+            the image and whose row entries are
+            the b/w pixel values at some resoltion
+            determined by `make_pickle`
 
-    verbose : `boolean`, default False
+        semantic_model_adr (str):
+            Path to folder containing similarity model
 
-    Returns
-    -------
+        image_size (list, optional):
+            default [140, 170]
+
+        verbose (bool, optional):
+            default False
+
+    Returns:
+
+        np.array:
+            a 200 dimensional feature space vector
     """
-
     img_rows, img_cols = image_size[0], image_size[1]
     semantic_idx_model = load_model(semantic_model_adr + '/semantic_idx_model.h5')
     test_data = image_data.filter(regex=("1.0.png")).iloc[0].iloc[0].reshape(-1, 1, img_rows, img_cols)
