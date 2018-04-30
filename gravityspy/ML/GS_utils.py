@@ -67,7 +67,7 @@ def build_cnn(img_rows, img_cols):
     """This is where we use Keras to build a covolutional neural network (CNN)
 
     The CNN built here is described in the
-    `Table 5 <https://www.sciencedirect.com/science/article/pii/S0020025518301634#tbl0004>`_ 
+    `Table 5 <https://www.sciencedirect.com/science/article/pii/S0020025518301634#tbl0004>`_
 
     There are 5 layers. For each layer the logic is as follows
 
@@ -122,3 +122,80 @@ def build_cnn(img_rows, img_cols):
     model.add(Dropout(0.5))
     print (model.summary())
     return model
+
+
+def cosine_distance(vects):
+    """Calculate the cosine distance of an array
+
+    Parameters:
+
+        vect (array):
+    """
+    x, y = vects
+    x = K.maximum(x, K.epsilon())
+    y = K.maximum(y, K.epsilon())
+    x = K.l2_normalize(x, axis=-1)
+    y = K.l2_normalize(y, axis=-1)
+    return 1.0 - K.sum(x * y, axis=1, keepdims=True)
+
+
+def siamese_acc(thred):
+    """Calculate simaese accuracy
+
+    Parameters:
+        thred (float):
+            It is something
+    """
+    def inner_siamese_acc(y_true, y_pred):
+        pred_res = y_pred < thred
+        acc = K.mean(K.cast(K.equal(K.cast(pred_res, dtype='int32'), y_true), dtype='float32'))
+        return acc
+
+    return inner_siamese_acc
+
+
+def create_pairs3_gen(data, class_indices, batch_size):
+    """ Create the pairs
+
+    Parameters:
+        data (float):
+            It is something
+        class_indices (list):
+            It is something
+        batch_size (int):
+            It is something
+    """
+    pairs1 = []
+    pairs2 = []
+    labels = []
+    number_of_classes = len(class_indices)
+    counter = 0
+    while True:
+        for d in range(len(class_indices)):
+            for i in range(len(class_indices[d])):
+                counter += 1
+                # positive pair
+                j = random.randrange(0, len(class_indices[d]))
+                z1, z2 = class_indices[d][i], class_indices[d][j]
+
+                pairs1.append(data[z1])
+                pairs2.append(data[z2])
+                labels.append(1)
+
+                # negative pair
+                inc = random.randrange(1, number_of_classes)
+                other_class_id = (d + inc) % number_of_classes
+                j = random.randrange(0, len(class_indices[other_class_id])-1)
+                z1, z2 = class_indices[d][i], class_indices[other_class_id][j]
+
+                pairs1.append(data[z1])
+                pairs2.append(data[z2])
+                labels.append(0)
+
+                if counter == batch_size:
+                    #yield np.array(pairs), np.array(labels)
+                    yield [np.asarray(pairs1, np.float32), np.asarray(pairs2, np.float32)], np.asarray(labels, np.int32)
+                    counter = 0
+                    pairs1 = []
+                    pairs2 = []
+                    labels = []

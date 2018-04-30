@@ -213,29 +213,25 @@ def make_model(data, model_folder='model', batch_size=22, nb_epoch=10,
                                                            len(image_dataDF)))
 
     # concatenate the pixels
-    train_set_x_1 = np.vstack(image_dataDF['0.5.png'].as_matrix())
-    validation_x_1 = np.vstack(validationDF['0.5.png'].as_matrix())
+    train_set_x_1 = np.vstack(image_dataDF['0.5.png'].as_matrix()).reshape(
+                                                     -1, 1, img_rows, img_cols)
+    validation_x_1 = np.vstack(validationDF['0.5.png'].as_matrix()).reshape(
+                                                     -1, 1, img_rows, img_cols)
 
-    train_set_x_2 = np.vstack(image_dataDF['1.0.png'].as_matrix())
-    validation_x_2 = np.vstack(validationDF['1.0.png'].as_matrix())
+    train_set_x_2 = np.vstack(image_dataDF['1.0.png'].as_matrix()).reshape(
+                                                     -1, 1, img_rows, img_cols)
+    validation_x_2 = np.vstack(validationDF['1.0.png'].as_matrix()).reshape(
+                                                     -1, 1, img_rows, img_cols)
 
-    train_set_x_3 = np.vstack(image_dataDF['2.0.png'].as_matrix())
-    validation_x_3 = np.vstack(validationDF['2.0.png'].as_matrix())
+    train_set_x_3 = np.vstack(image_dataDF['2.0.png'].as_matrix()).reshape(
+                                                     -1, 1, img_rows, img_cols)
+    validation_x_3 = np.vstack(validationDF['2.0.png'].as_matrix()).reshape(
+                                                     -1, 1, img_rows, img_cols)
 
-    train_set_x_4 = np.vstack(image_dataDF['4.0.png'].as_matrix())
-    validation_x_4 = np.vstack(validationDF['4.0.png'].as_matrix())
-
-    train_set_x_1 = train_set_x_1.reshape(-1, 1, img_rows, img_cols)
-    validation_x_1 = validation_x_1.reshape(-1, 1, img_rows, img_cols)
-
-    train_set_x_2 = train_set_x_2.reshape(-1, 1, img_rows, img_cols)
-    validation_x_2 = validation_x_2.reshape(-1, 1, img_rows, img_cols)
-
-    train_set_x_3 = train_set_x_3.reshape(-1, 1, img_rows, img_cols)
-    validation_x_3 = validation_x_3.reshape(-1, 1, img_rows, img_cols)
-
-    train_set_x_4 = train_set_x_4.reshape(-1, 1, img_rows, img_cols)
-    validation_x_4 = validation_x_4.reshape(-1, 1, img_rows, img_cols)
+    train_set_x_4 = np.vstack(image_dataDF['4.0.png'].as_matrix()).reshape(
+                                                     -1, 1, img_rows, img_cols)
+    validation_x_4 = np.vstack(validationDF['4.0.png'].as_matrix()).reshape(
+                                                     -1, 1, img_rows, img_cols)
 
     if fraction_testing:
         testing_x_1 = np.vstack(testingDF['0.5.png'].as_matrix()).reshape(

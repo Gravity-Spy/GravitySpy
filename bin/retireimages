@@ -13,14 +13,16 @@ import collections
 import operator
 
 from sqlalchemy.engine import create_engine
-from gravityspy.API import projectStructure
-from gravityspy.API import calcConfMatrix
+from gravityspy.API.project import GravitySpyProject
 
 engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],os.environ['GRAVITYSPY_DATABASE_PASSWD']))
 
+gspyproject = GravitySpyProject.load_project_from_cache('1104.pkl')
 # Obtain number of classes from API
-workflowDictSubjectSets = projectStructure.main('1104','O2')
-classes = sorted(workflowDictSubjectSets[2117].keys())
+workflowDictSubjectSets = gspyproject.get_level_structure(IDfilter='O2')
+
+# Must determine classes from dict
+classes = sorted(workflowDictSubjectSets['2117'].keys())
 
 # From ansers Dict determine number of classes
 numClasses = len(classes)
@@ -46,7 +48,7 @@ combined_data = classifications.merge(glitches)
 combined_data.drop_duplicates(['links_subjects','links_user'],inplace=True)
 
 # Create imageDB
-columnsForImageDB = sorted(workflowDictSubjectSets[2117].keys())
+columnsForImageDB = sorted(workflowDictSubjectSets['2117'].keys())
 columnsForImageDB.extend(['uniqueID','links_subjects'])
 image_db = combined_data[columnsForImageDB].drop_duplicates(['links_subjects'])
 image_db.set_index(['links_subjects'],inplace=True)
@@ -56,7 +58,7 @@ image_db['finalScore'] = 0.0
 image_db['finalLabel'] = ''
 
 # Load confusion matrices
-confusion_matrices = calcConfMatrix.main() 
+confusion_matrices = gspyproject.calculate_confusion_matrices() 
 
 # Add posterior contribution from user to every image/subject
 retired_db = pd.DataFrame()
