@@ -1,35 +1,22 @@
 #!/bin/bash -e
 
+
+####
 rm -rf ~/opt/GravitySpy-py27
 virtualenv-2.7 ~/opt/GravitySpy-py27
 . ~/opt/GravitySpy-py27/bin/activate
 python -m pip install --upgrade --quiet pip setuptools
 pip install .
-pip install cython
 
-export PATH=$PATH:/usr/local/cuda/bin/
+rm -rf ~/opt/GravitySpy-py34
+virtualenv-3.4 ~/opt/GravitySpy-py34
+. ~/opt/GravitySpy-py34/bin/activate
+python -m pip install --upgrade --quiet pip
+pip install .
 
-git clone https://github.com/Theano/libgpuarray.git
-cd libgpuarray
-rm -rf build Build
-mkdir Build
-cd Build
-cmake3 .. -DCMAKE_INSTALL_PREFIX=~/opt/GravitySpy-py27 -DCMAKE_BUILD_TYPE=Release
-make
-make install
-
-cd ..
-
-# Run the following export and add them in your ~/.bashrc file
-export CPATH=$CPATH:~/opt/GravitySpy-py27/include
-export LIBRARY_PATH=$LIBRARY_PATH:~/opt/GravitySpy-py27/lib
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/opt/GravitySpy-py27/lib
-
-python setup.py build
-python setup.py install
-
-#deactivate
-#virtualenv-3.4 ~/opt/GravitySpy-py34
-#. ~/opt/GravitySpy-py34/bin/activate
-#python -m pip install --upgrade --quiet pip
-#pip install .
+rm -rf ~/opt/GravitySpy-py36
+source /opt/rh/rh-python36/enable
+virtualenv ~/opt/GravitySpy-py36
+. ~/opt/GravitySpy-py36/bin/activate
+python -m pip install --upgrade --quiet pip
+pip install .
