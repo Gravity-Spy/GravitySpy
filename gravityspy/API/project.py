@@ -304,12 +304,13 @@ class GravitySpyProject(ZooProject):
             CAST(links_subjects AS FLOAT) IN \
             (SELECT \"links_subjects\" FROM goldenimages)'
 
-        columns = ['links_user', 'links_subjects', 'links_workflow',
+        columns = ['id', 'links_user', 'links_subjects', 'links_workflow',
                    'annotations_value_choiceINT']
         classifications = EventTable.fetch('gravityspy', query,
                                            columns = columns)
 
         classifications = classifications.to_pandas()
+        classifications = classifications.sort_values('id')
         golden_images = EventTable.fetch('gravityspy', 'goldenimages')
         golden_images_df = golden_images.to_pandas()
 
@@ -355,6 +356,63 @@ class GravitySpyProject(ZooProject):
         return confusion_matrices
 
 
+    def calculate_confusion_matrices_per_classification(self):
+        """Parameters
+        ----------
+
+        Returns
+        -------
+        A dict with keys of workflow IDs and values list
+        of golden sets associated with that workflow
+        """
+        # Load classifications, and golden images from DB
+        # Make sure choice is a valid index
+        # Make sure to evaluate only logged in users
+        # Ignore NONEOFTHEABOVE classificatios when constructing confusion
+        # matrix
+        # Make sure to the subject classified was a golden image
+        query = 'classificationsdev WHERE \"annotations_value_choiceINT\" != \
+            -1 AND \"links_user\" != 0 AND \
+            \"annotations_value_choiceINT\" != 12 AND \
+            CAST(links_subjects AS FLOAT) IN \
+            (SELECT \"links_subjects\" FROM goldenimages)'
+
+        columns = ['id', 'links_user', 'links_subjects', 'links_workflow',
+                   'annotations_value_choiceINT']
+        classifications = EventTable.fetch('gravityspy', query,
+                                           columns = columns)
+
+        classifications = classifications.to_pandas()
+        classifications = classifications.sort_values('id')
+        golden_images = EventTable.fetch('gravityspy', 'goldenimages')
+        golden_images_df = golden_images.to_pandas()
+
+        # From answers Dict determine number of classes
+        numClasses = len(self.get_answers(workflow=2360).values()[0])
+
+        # merge the golden image DF with th classification (this merge is on
+        # links_subject (i.e. the zooID of the image classified)
+        image_and_classification = classifications.merge(golden_images_df,
+                                                         on=['links_subjects'])
+
+        # groupby users to get there gold classifications
+        tmp = image_and_classification.groupby('links_user')[['annotations_value_choiceINT','GoldLabel', 'id']]
+        user_confusion_matrices = {}
+        for key, item in tmp:
+            user_confusion_matrices[key] = {}
+            userlabels = tmp.get_group(key)
+            rows = []
+            cols = []
+            entry = []
+            for ilabel in userlabels.itertuples():
+                rows.append(ilabel[2])
+                cols.append(ilabel[1])
+                entry.append(1)
+                user_confusion_matrices[key][ilabel[3]] = coo_matrix(
+                (entry, (rows, cols)), shape=(numClasses,numClasses))
+        return user_confusion_matrices
+
+
     def determine_level(self, alpha):
         """Parameters
         ----------
@@ -393,7 +451,7 @@ class GravitySpyProject(ZooProject):
             self.calculate_confusion_matrices()
 
         level = []
-        for (iuser, ialpha) in zip(self.confusion_matrices.userID, 
+        for (iuser, ialpha) in zip(self.confusion_matrices.userID,
                                    self.confusion_matrices.alpha):
 
             proficiencyidx = np.where(ialpha > alpha)[0]
@@ -415,7 +473,7 @@ class GravitySpyProject(ZooProject):
             if (set(proficiencyidx) < set(answersidx[minworkflow])):
                 level.append([minworkflow, minlevel + 1, iuser])
                 continue
-            
+
             for ilevel in range(maxlevel - 1):
                 # first check if they should be on level 5 and end
                 next_workflow = str(levelWorkflowDict[ilevel + 1])
