@@ -18,13 +18,16 @@ def parse_commandline():
        "THEANO_FLAGS=mode=FAST_RUN,device=cuda,floatX=float32 trainmodel "
        "--path-to-trainingset='somedir' --number-of-classes='somenum'")
     parser.add_argument("--path-to-trainingset",
-                        help="folder where labeled images live", required=True)
+                        help="folder where labeled images live", default=None)
     parser.add_argument("--number-of-classes", type=int,
                         help="How many classes do you have", required=True)
-    parser.add_argument("--path-to-pickle",
+    parser.add_argument("--trainingset-pickle-file",
                         help="folder where the entire pickled training set "
                              "will live. This pickle file should be read in "
-                             "by pandas", default='pickeleddata')
+                             "by pandas",
+                              default=os.path.join('pickeleddata',
+                                                   'trainingset.pkl')
+                       )
     parser.add_argument("--path-to-trained-model",
                         help="folder where the final trained model will go.",
                         default='model')
@@ -44,17 +47,30 @@ def parse_commandline():
                         help="Run in Verbose Mode")
     args = parser.parse_args()
 
+    if (not args.path_to_trainingset) and (
+        not os.path.isfile(args.trainingset_pickle_file)
+        ):
+        raise parser.error('If you are not providing a path to the '
+                           'trainingset you must specify '
+                           'a pickle file containing the already '
+                           'pixelized training set')
+
+    if args.path_to_trainingset:
+        if not os.path.isdir(args.path_to_trainingset):
+            raise parser.error('Training Set path does not exist.')
+
     return args
 
 # Parse commandline
 args = parse_commandline()
 
 # Pixelate and pickle the traiing set images
-train_classifier.pickle_trainingset(
-    path_to_trainingset=args.path_to_trainingset,
-    save_address=args.path_to_pickle,
-    verbose=args.verbose
-    )
+if args.path_to_trainingset:
+    train_classifier.pickle_trainingset(
+        path_to_trainingset=args.path_to_trainingset,
+        save_address=args.path_to_pickle,
+        verbose=args.verbose
+        )
 
 # Check if teting percentage is 0, set to None
 if not args.fraction_testing:
@@ -64,7 +80,7 @@ else:
 
 # Train model
 train_classifier.make_model(
-    data=os.path.join(args.path_to_pickle, 'trainingset.pkl'),
+    data=args.trainingset_pickle_file,
     model_folder=args.path_to_trained_model,
     batch_size=args.batch_size,
     nb_epoch=args.nb_epoch,
