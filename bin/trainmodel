@@ -68,7 +68,7 @@ args = parse_commandline()
 if args.path_to_trainingset:
     train_classifier.pickle_trainingset(
         path_to_trainingset=args.path_to_trainingset,
-        save_address=args.path_to_pickle,
+        save_address=args.trainingset_pickle_file,
         verbose=args.verbose
         )
 

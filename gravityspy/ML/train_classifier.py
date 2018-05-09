@@ -16,7 +16,7 @@ This function reads the  pickle files of golden_set and train a ML classifier
 and write it into a model folder
 '''
 
-def pickle_trainingset(path_to_trainingset, save_address='pickleddata',
+def pickle_trainingset(path_to_trainingset, save_address='pickleddata/trainingset.pkl',
                        verbose=False):
     """Pre-processes the training set images and save to pickle.
 
@@ -46,10 +46,10 @@ def pickle_trainingset(path_to_trainingset, save_address='pickleddata',
     logger = log.Logger('Gravity Spy: Pickling '
                         'Trainingset')
 
-    if not os.path.exists(save_address):
+    if not os.path.exists(os.path.dirname(save_address)):
         if verbose:
-            logger.info('making... ' + save_address)
-        os.makedirs(save_address)
+            logger.info('making... ' + os.path.dirname(save_address))
+        os.makedirs(os.path.dirname(save_address))
 
     classes = sorted(os.listdir(path_to_trainingset))
     nb_classes = len(classes)
@@ -80,7 +80,7 @@ def pickle_trainingset(path_to_trainingset, save_address='pickleddata',
 
         logger.info('Finished converting {0} into b/w info'.format(iclass))
 
-    picklepath = os.path.join(save_address, 'trainingset.pkl')
+    picklepath = os.path.join(save_address)
     logger.info('Saving pickled data to {0}'.format(picklepath))
     image_dataDF.to_pickle(picklepath)
     return image_dataDF
