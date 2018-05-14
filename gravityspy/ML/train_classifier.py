@@ -4,6 +4,8 @@ from keras.layers import Dense
 from keras.utils import np_utils
 from keras.callbacks import ModelCheckpoint
 from gravityspy.utils import log
+from gwpy.table import EventTable
+from gwpy.timeseries import TimeSeries
 
 import numpy as np
 import os
@@ -15,8 +17,82 @@ By Sara Bahaadini
 This function reads the  pickle files of golden_set and train a ML classifier
 and write it into a model folder
 '''
+def fetch_data(ifo, eventTime, blockTime=8, samplefrequency=4096):
+    """Pre-processes the training set images and save to pickle.
 
-def pickle_trainingset(path_to_trainingset, save_address='pickleddata/trainingset.pkl',
+    Parameters:
+
+        path_to_trainingset (str):
+            Path to trainingset where format of training set folder
+            is "somedirectoryname"/"classname/"images"
+
+        save_address (str, optional):
+            Defaults to `pickleddata`
+            Path to folder you would like to save the pixelated training data
+    Returns:
+
+        A pickled `pandas.DataFrame`:
+            with rows of samples
+            and columns containing the pixelated 0.5, 1.0, 2.0,
+            and 4.0 duration images as well as a column with the True
+            Label and a column with an ID that uniquely identifies that sample
+    """
+    # find closest sample time to event time
+    centerTime = np.floor(eventTime) + \
+               np.round((eventTime - np.floor(eventTime)) * \
+                     sampleFrequency) / sampleFrequency
+
+    # determine segment start and stop times
+    startTime = round(centerTime - blockTime / 2)
+    stopTime = startTime + blockTime
+
+    try:
+        channelName = '{0}:GDS-CALIB_STRAIN'.format(ifo)
+        data = TimeSeries.get(channelName, startTime, stopTime).astype('float64')
+    else:
+        TimeSeries.fetch_open_data(ifo, startTime, stopTime)
+
+    if data.sample_rate.decompose().value != sampleFrequency:
+        data = data.resample(sampleFrequency)
+
+    import pdb
+    pdb.set_trace()
+    return data
+
+
+def pickle_training_set_raw_data(save_address='pickleddata/train_raw_data.pkl',
+                                 ):
+    """Pre-processes the training set images and save to pickle.
+
+    Parameters:
+
+        path_to_trainingset (str):
+            Path to trainingset where format of training set folder
+            is "somedirectoryname"/"classname/"images"
+
+        save_address (str, optional):
+            Defaults to `pickleddata`
+            Path to folder you would like to save the pixelated training data
+    Returns:
+
+        A pickled `pandas.DataFrame`:
+            with rows of samples
+            and columns containing the pixelated 0.5, 1.0, 2.0,
+            and 4.0 duration images as well as a column with the True
+            Label and a column with an ID that uniquely identifies that sample
+    """
+    os.environ['GWPY_CACHE'] = 1
+    image_dataDF = pd.DataFrame()
+    trainingset_table = EventTable.fetch('gravityspy',
+                                         'trainingsetv1d1')
+    for iIfo, iTrigger in zip(trainingset_table['ifo'],
+                              trainingset_table['peakGPS']):
+        data = fetch_data(iIfo,, iTrigger)
+    import pdb
+    pdb.set_trace()
+
+def pickle_trainingset(path_to_trainingset,
+                       save_address='pickleddata/trainingset.pkl',
                        verbose=False):
     """Pre-processes the training set images and save to pickle.
 
