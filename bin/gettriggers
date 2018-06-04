@@ -49,12 +49,16 @@ def parse_commandline():
     parser.add_option("--freqLow", help="lower frequency bound cut off "
                                         "for the glitches. [Default: 10]",
                                    type=int, default=10)
+    parser.add_option("--frame-file",
+                      help="A file containing graviational wave data")
     parser.add_option("--maxSNR", help="This flag gives you the option to "
                                        "supply a upper limit to the SNR of "
                                        "the glitches [Optional Input]",
                                    type=float)
     parser.add_option("--outDir", help="Outdir of omega scan and omega scan "
                                        "webpage (i.e. your html directory)")
+    parser.add_option("--omicron-trigger-file",
+                      help="A file containing Omicron Triggers ")
     parser.add_option("--inifile", help="Path to ini file")
     parser.add_option("--pathToModel", default='./ML/trained_model/',
                                        help="Path to trained model")
@@ -303,7 +307,32 @@ elif 'la' in fullhostname:
 else:
     detector = opts.detector
 
-logger.info('You are obtaining triggers on {0}'.format(detector))
+omicron_trigger_file = args.omicron_triggeomicron_trigger_filer_file
+frame_file = args.frame_file
+
+if os.path.isfile(omicron_trigger_file)
+    read_from_trigger_file = True
+else:
+    read_from_trigger_file = False
+
+if os.path.isfile(frame_file)
+    read_from_frame_file = True
+else:
+    read_from_frame_file = False
+
+if read_from_trigger_file:
+    logger.info('You have selected to analyze the following supplied '
+                'omicron triggers {0}'.format(omicron_trigger_file))
+else:
+    logger.info('You are obtaining omicron triggers on the fly '
+                'for the following detector: {0}'.format(detector))
+
+if read_from_frame_file:
+    logger.info('You have selected to analyze the following supplied '
+                'data file {0}'.format(frame_file))
+else:
+    logger.info('You are obtaining data on the fly '
+                'for the following detector: {0}'.format(detector))
 
 # Determine location of executables
 proc = subprocess.Popen(['which', 'wscan'],
@@ -351,23 +380,25 @@ dqflag = cp.get('dqflag', 'dqflags')
 logger.info('You have chosen the following dqflag: {0}'.format(dqflag))
 
 if opts.HDF5:
-    # Determine start and stop time of trigger query.
-    if not opts.gpsStart:
-        tmp = pd.read_hdf('triggers.h5')
-        gpsStart = tmp.peak_time.max()
-    else:
-        gpsStart = opts.gpsStart
-
-    if not opts.gpsEnd:
-        gpsEnd = gpsStart + 28800
-    else:
-        gpsEnd = opts.gpsEnd
-
-    # Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
-
     write_subfile(pathToWscanExec)
 
-    omicrontriggers = get_triggers(gpsStart,gpsEnd,detector, dqflag)
+    if read_from_trigger_file:
+        omicrontriggers = EventTable.read(omicron_trigger_file,
+                                          tablename='sngl_burst')
+    else:
+        # Determine start and stop time of trigger query.
+        if not opts.gpsStart:
+            tmp = pd.read_hdf('triggers.h5')
+            gpsStart = tmp.peak_time.max()
+        else:
+            gpsStart = opts.gpsStart
+
+        if not opts.gpsEnd:
+            gpsEnd = gpsStart + 28800
+        else:
+            gpsEnd = opts.gpsEnd
+
+        omicrontriggers = get_triggers(gpsStart,gpsEnd,detector, dqflag)
 
     oTriggers = omicrontriggers.to_pandas()
     oTriggers.sort_values('peak_time',ascending=False,inplace=True)
