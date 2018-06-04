@@ -210,10 +210,20 @@ def write_subfile(pathToWscanExec):
         subfile.write('universe = vanilla\n')
         subfile.write('executable = {0}\n'.format(pathToWscanExec))
         subfile.write('\n')
+        arguments = 'arguments = "--inifile {0} --eventTime $(eventTime) '\
+                    '--outDir {1} --pathToModel {2} --uniqueID --ID $(ID) '\
+                    '--runML'.format(opts.inifile, opts.outDir,
+                                     opts.pathToModel)
+
         if opts.PostgreSQL:
-            subfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML --PostgreSQL"\n'.format(opts.inifile,opts.outDir,opts.pathToModel))
+            arguments += ' --PostgreSQL'
         elif opts.HDF5:
-            subfile.write('arguments = "--inifile {0} --eventTime $(eventTime) --outDir {1} --pathToModel {2} --uniqueID --ID $(ID) --runML --HDF5"\n'.format(opts.inifile,opts.outDir,opts.pathToModel))
+            arguments += ' --HDF5' 
+        if read_from_frame_file:
+            arguments += ' --frame-file {0}'.format(opts.frame_file)
+        arguments += '"\n'
+
+        subfile.write(arguments)
         subfile.write('getEnv=True\n')
         subfile.write('\n')
         subfile.write('accounting_group_user = scott.coughlin\n')#.format(opts.username))
@@ -307,15 +317,15 @@ elif 'la' in fullhostname:
 else:
     detector = opts.detector
 
-omicron_trigger_file = args.omicron_triggeomicron_trigger_filer_file
-frame_file = args.frame_file
+omicron_trigger_file = opts.omicron_trigger_file
+frame_file = opts.frame_file
 
-if os.path.isfile(omicron_trigger_file)
+if os.path.isfile(omicron_trigger_file):
     read_from_trigger_file = True
 else:
     read_from_trigger_file = False
 
-if os.path.isfile(frame_file)
+if os.path.isfile(frame_file):
     read_from_frame_file = True
 else:
     read_from_frame_file = False
@@ -385,6 +395,8 @@ if opts.HDF5:
     if read_from_trigger_file:
         omicrontriggers = EventTable.read(omicron_trigger_file,
                                           tablename='sngl_burst')
+        omicrontriggers.convert_unicode_to_bytestring()
+        omicrontriggers['peakGPS'] = omicrontriggers['peak_time'] + (0.000000001)*omicrontriggers['peak_time_ns']
     else:
         # Determine start and stop time of trigger query.
         if not opts.gpsStart:
@@ -403,25 +415,38 @@ if opts.HDF5:
     oTriggers = omicrontriggers.to_pandas()
     oTriggers.sort_values('peak_time',ascending=False,inplace=True)
     oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
-    oTrigger['peakGPSforDag'] = oTriggers.peakGPS.apply(repr)
+    oTriggers['peakGPSforDag'] = oTriggers.peakGPS.apply(repr)
     oTriggers[['peak_time','peak_time_ns','peakGPSforDag','uniqueID','event_id']].apply(write_dagfile,axis=1)
     oTriggers.drop('peakGPSforDag', axis=1, inplace=True)
-    oTriggers.to_hdf('triggers.h5','gspy_triggers',append=True)
+    groupname = 'omicron'
+    if read_from_trigger_file:
+        oTriggers.process_id = oTriggers.process_id.apply(int)
+        oTriggers.event_id = oTriggers.event_id.apply(int)
+        groupname =  omicron_trigger_file.split('/')[-1].split('.')[0]
+    oTriggers.to_hdf('triggers.h5','triggers/{0}'.format(groupname), append=True)
 
 elif opts.PostgreSQL:
 
     engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],os.environ['GRAVITYSPY_DATABASE_PASSWD']))
 
-    if not opts.gpsStart:
-        tmp = pd.read_sql('glitches',engine)
-        gpsStart = tmp.loc[tmp.ifo == detector,'peak_time'].max() + 1
+    if read_from_trigger_file:
+        omicrontriggers = EventTable.read(omicron_trigger_file,
+                                          tablename='sngl_burst')
+        omicrontriggers['peakGPS'] = omicrontriggers['peak_time'] + (0.000000001)*omicrontriggers['peak_time_ns']
     else:
-        gpsStart = opts.gpsStart
 
-    if not opts.gpsEnd:
-        gpsEnd = gpsStart + 120*86400
-    else:
-        gpsEnd = opts.gpsEnd
+        if not opts.gpsStart:
+            tmp = pd.read_sql('glitches',engine)
+            gpsStart = tmp.loc[tmp.ifo == detector,'peak_time'].max() + 1
+        else:
+            gpsStart = opts.gpsStart
+
+        if not opts.gpsEnd:
+            gpsEnd = gpsStart + 120*86400
+        else:
+            gpsEnd = opts.gpsEnd
+
+        omicrontriggers = get_triggers(gpsStart, gpsEnd, detector, dqflag)
 
     # Take the detector and the channel from the command line and combine them into one string. This is needed for some input later on.
 
@@ -430,7 +455,6 @@ elif opts.PostgreSQL:
         write_subfile_upload(pathToUploadExec, detector)
         write_subfile_gspysearch(pathTogspysearchExec)
         listOfParentJobs = []
-    omicrontriggers = get_triggers(gpsStart, gpsEnd, detector, dqflag)
 
     oTriggers = omicrontriggers.to_pandas()
     oTriggers = oTriggers.loc[oTriggers.peakGPS > gpsStart]

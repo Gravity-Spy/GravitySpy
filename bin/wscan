@@ -54,6 +54,9 @@ def parse_commandline():
                         required=True)
     parser.add_argument("--eventTime", type=float,
                         help="Trigger time of the glitch", required=True)
+    parser.add_argument("--frame-file",
+                        help="Provide path to frame file that contains "
+                        "gravitational wave data you would like to process.")
     parser.add_argument("--uniqueID", action="store_true", default=True,
                         help="Is this image being generated for "
                         "the GravitySpy project, if so you must assign a "
@@ -88,7 +91,7 @@ def parse_commandline():
 def main(inifile, eventTime, ID, outDir,
          pathToModel='/home/machinelearning/GravitySpy/gravityspy/ML/trained_model/',
          uniqueID=True, runML=False, HDF5=False, PostgreSQL=False,
-         verbose=False):
+         frame_file='', verbose=False):
 
     if (runML == True) and (HDF5==False) and (PostgreSQL==False):
         raise ValueError('If you wish to run ML must select file format to '
@@ -179,8 +182,14 @@ def main(inifile, eventTime, ID, outDir,
     stopTime = startTime + blockTime
 
     # Read in the data
-    logger.info('Fetching Data...')
-    data = TimeSeries.get(channelName, startTime, stopTime).astype('float64')
+    if frame_file:
+        logger.info("Reading data from frame file...")
+        data = TimeSeries.read(frame_file, channelName,
+                               start=startTime, end=stopTime).astype('float64')
+    else:
+        logger.info('Fetching Data...')
+        data = TimeSeries.get(channelName,
+                              startTime, stopTime).astype('float64')
 
     # resample data
     logger.info('Resampling Data...')
@@ -369,4 +378,5 @@ def main(inifile, eventTime, ID, outDir,
 if __name__ == '__main__':
     args = parse_commandline()
     main(args.inifile, args.eventTime, args.ID, args.outDir, args.pathToModel,
-         args.uniqueID, args.runML, args.HDF5, args.PostgreSQL, args.verbose)
+         args.uniqueID, args.runML, args.HDF5, args.PostgreSQL,
+         args.frame_file, args.verbose)
