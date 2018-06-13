@@ -413,16 +413,16 @@ if opts.HDF5:
         omicrontriggers = get_triggers(gpsStart,gpsEnd,detector, dqflag)
 
     oTriggers = omicrontriggers.to_pandas()
-    oTriggers.sort_values('peak_time',ascending=False,inplace=True)
-    oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
-    oTriggers['peakGPSforDag'] = oTriggers.peakGPS.apply(repr)
-    oTriggers[['peak_time','peak_time_ns','peakGPSforDag','uniqueID','event_id']].apply(write_dagfile,axis=1)
-    oTriggers.drop('peakGPSforDag', axis=1, inplace=True)
     groupname = 'omicron'
     if read_from_trigger_file:
         oTriggers.process_id = oTriggers.process_id.apply(int)
         oTriggers.event_id = oTriggers.event_id.apply(int)
         groupname =  omicron_trigger_file.split('/')[-1].split('.')[0]
+    oTriggers.sort_values('peak_time',ascending=False,inplace=True)
+    oTriggers['uniqueID'] = oTriggers.peakGPS.apply(id_generator)
+    oTriggers['peakGPSforDag'] = oTriggers.peakGPS.apply(repr)
+    oTriggers[['peak_time','peak_time_ns','peakGPSforDag','uniqueID','event_id']].apply(write_dagfile,axis=1)
+    oTriggers.drop('peakGPSforDag', axis=1, inplace=True)
     oTriggers.to_hdf('triggers.h5','triggers/{0}'.format(groupname), append=True)
 
 elif opts.PostgreSQL:
