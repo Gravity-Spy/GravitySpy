@@ -49,14 +49,12 @@ def fetch_data(ifo, eventTime, blockTime=8, samplefrequency=4096):
     try:
         channelName = '{0}:GDS-CALIB_STRAIN'.format(ifo)
         data = TimeSeries.get(channelName, startTime, stopTime).astype('float64')
-    else:
+    except:
         TimeSeries.fetch_open_data(ifo, startTime, stopTime)
 
     if data.sample_rate.decompose().value != sampleFrequency:
         data = data.resample(sampleFrequency)
 
-    import pdb
-    pdb.set_trace()
     return data
 
 
@@ -87,9 +85,8 @@ def pickle_training_set_raw_data(save_address='pickleddata/train_raw_data.pkl',
                                          'trainingsetv1d1')
     for iIfo, iTrigger in zip(trainingset_table['ifo'],
                               trainingset_table['peakGPS']):
-        data = fetch_data(iIfo,, iTrigger)
-    import pdb
-    pdb.set_trace()
+        data = fetch_data(iIfo, iTrigger)
+
 
 def pickle_trainingset(path_to_trainingset,
                        save_address='pickleddata/trainingset.pkl',

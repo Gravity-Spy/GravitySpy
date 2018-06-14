@@ -4,7 +4,7 @@
 __author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 
 import os
-import unittest2
+os.environ["KERAS_BACKEND"] = "theano"
 
 import gravityspy.ML.make_pickle_for_linux as make_pickle
 import gravityspy.ML.labelling_test_glitches as label_glitches
@@ -35,7 +35,7 @@ FEATURES = numpy.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 34.673343658447266, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
 
-class GravitySpyTests(unittest2.TestCase):
+class TestGravitySpyML(object):
     """`TestCase` for the GravitySpy
     """
     def test_label(self):
@@ -63,7 +63,7 @@ class GravitySpyTests(unittest2.TestCase):
                                                         False)
 
         confidence = float(scores[0][MLlabel])
-        self.assertEqual(confidence, SCORE)
+        assert confidence == SCORE
 
 
     def test_feature_space(self):
@@ -86,7 +86,3 @@ class GravitySpyTests(unittest2.TestCase):
                                               verbose=False)
 
         numpy.testing.assert_array_almost_equal(features, FEATURES, decimal=3)
-
-
-if __name__ == '__main__':
-    unittest2.main()
