@@ -17,75 +17,86 @@ By Sara Bahaadini
 This function reads the  pickle files of golden_set and train a ML classifier
 and write it into a model folder
 '''
-def fetch_data(ifo, eventTime, blockTime=8, samplefrequency=4096):
-    """Pre-processes the training set images and save to pickle.
+def fetch_data(ifo, event_time, duration=8, sample_frequency=4096,
+               verbose=False):
+    """Fetch raw data around a glitch
 
     Parameters:
 
-        path_to_trainingset (str):
-            Path to trainingset where format of training set folder
-            is "somedirectoryname"/"classname/"images"
+        ifo (str):
 
-        save_address (str, optional):
-            Defaults to `pickleddata`
-            Path to folder you would like to save the pixelated training data
+        event_time (str):
+
+        duration (int, optional):
+
+        sample_frequency (int, optional):
+
+        verbose (bool, optional):
+
     Returns:
 
-        A pickled `pandas.DataFrame`:
-            with rows of samples
-            and columns containing the pixelated 0.5, 1.0, 2.0,
-            and 4.0 duration images as well as a column with the True
-            Label and a column with an ID that uniquely identifies that sample
+        a `gwpy.timeseries.TimeSeries`
     """
     # find closest sample time to event time
-    centerTime = np.floor(eventTime) + \
-               np.round((eventTime - np.floor(eventTime)) * \
-                     sampleFrequency) / sampleFrequency
+    center_time = (np.floor(event_time) +
+                  np.round((event_time - np.floor(event_time)) *
+                         sample_frequency) / sample_frequency)
 
     # determine segment start and stop times
-    startTime = round(centerTime - blockTime / 2)
-    stopTime = startTime + blockTime
+    start_time = round(center_time - duration / 2)
+    stop_time = start_time + duration
 
     try:
-        channelName = '{0}:GDS-CALIB_STRAIN'.format(ifo)
-        data = TimeSeries.get(channelName, startTime, stopTime).astype('float64')
+        channel_name = '{0}:GDS-CALIB_STRAIN'.format(ifo)
+        data = TimeSeries.get(channel_name, start_time,
+                              stop_time, verbose=verbose).astype('float64')
     except:
-        TimeSeries.fetch_open_data(ifo, startTime, stopTime)
+        TimeSeries.fetch_open_data(ifo, start_time, stop_time, verbose=verbose)
 
-    if data.sample_rate.decompose().value != sampleFrequency:
-        data = data.resample(sampleFrequency)
+    if data.sample_rate.decompose().value != sample_frequency:
+        data = data.resample(sample_frequency)
 
     return data
 
 
-def pickle_training_set_raw_data(save_address='pickleddata/train_raw_data.pkl',
-                                 ):
-    """Pre-processes the training set images and save to pickle.
+def training_set_raw_data(filename, format, duration=8, sample_frequency=4096,
+                          verbose=False):
+    """Obtain the raw timeseries for the whole training set
 
     Parameters:
 
-        path_to_trainingset (str):
-            Path to trainingset where format of training set folder
-            is "somedirectoryname"/"classname/"images"
+        filename (str):
 
-        save_address (str, optional):
-            Defaults to `pickleddata`
-            Path to folder you would like to save the pixelated training data
+        format (str):
+
+        duration (int, optional):
+
+        sample_frequency (int, optional):
+
+        verbose (bool, optional):
+
     Returns:
 
-        A pickled `pandas.DataFrame`:
-            with rows of samples
-            and columns containing the pixelated 0.5, 1.0, 2.0,
-            and 4.0 duration images as well as a column with the True
-            Label and a column with an ID that uniquely identifies that sample
+        A file containing the raw timeseries data of the training set
     """
-    os.environ['GWPY_CACHE'] = 1
-    image_dataDF = pd.DataFrame()
+    logger = log.Logger('Gravity Spy: Obtaining TimeSeries'
+                        ' Data For Trainingset')
     trainingset_table = EventTable.fetch('gravityspy',
-                                         'trainingsetv1d1')
-    for iIfo, iTrigger in zip(trainingset_table['ifo'],
-                              trainingset_table['peakGPS']):
-        data = fetch_data(iIfo, iTrigger)
+                                         'trainingsetv1d1',
+                                         columns=['peakGPS', 'ifo',
+                                                  'Label'])
+    for ifo, gps, label in zip(trainingset_table['ifo'],
+                               trainingset_table['peakGPS'],
+                               trainingset_table['Label']):
+        logger.info('Obtaining sample {0} with gps {1} from '
+                    '{2}'.format(label, gps, ifo))
+        data = fetch_data(ifo, gps, duration=duration,
+                          sample_frequency=sample_frequency,
+                          verbose=verbose)
+        logger.info('Writing Sample To File..')
+        data.write(filename, format=format,
+                   append=True,
+                   path='/data/{0}/{1}/'.format(label,gps))
 
 
 def pickle_trainingset(path_to_trainingset,
