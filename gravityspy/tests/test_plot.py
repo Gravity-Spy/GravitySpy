@@ -4,7 +4,8 @@
 __author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 
 import os
-import unittest2
+import matplotlib
+matplotlib.use('agg')
 from gravityspy.plot.plot import plot_qtransform
 from gwpy.timeseries import TimeSeries
 from gwpy.segments import Segment
@@ -42,15 +43,11 @@ for iTimeWindow in plotTimeRanges:
     specsgrams.append(qScan)
 
 
-class GravitSpyTests(unittest2.TestCase):
+class TestGravitySpyPlot(object):
     """`TestCase` for the GravitySpy
     """
     def test_plot(self):
         # Plot q_scans
-        self.assertEqual(1,1)
+        assert 1 == 1
         #indFigAll, superFig = plot_qtransform(specsgrams, plotNormalizedERange,
         #           plotTimeRanges, detectorName, startTime)
-
-
-if __name__ == '__main__':
-    unittest2.main()

@@ -4,6 +4,8 @@ from keras.layers import Dense
 from keras.utils import np_utils
 from keras.callbacks import ModelCheckpoint
 from gravityspy.utils import log
+from gwpy.table import EventTable
+from gwpy.timeseries import TimeSeries
 
 import numpy as np
 import os
@@ -15,8 +17,90 @@ By Sara Bahaadini
 This function reads the  pickle files of golden_set and train a ML classifier
 and write it into a model folder
 '''
+def fetch_data(ifo, event_time, duration=8, sample_frequency=4096,
+               verbose=False):
+    """Fetch raw data around a glitch
 
-def pickle_trainingset(path_to_trainingset, save_address='pickleddata/trainingset.pkl',
+    Parameters:
+
+        ifo (str):
+
+        event_time (str):
+
+        duration (int, optional):
+
+        sample_frequency (int, optional):
+
+        verbose (bool, optional):
+
+    Returns:
+
+        a `gwpy.timeseries.TimeSeries`
+    """
+    # find closest sample time to event time
+    center_time = (np.floor(event_time) +
+                  np.round((event_time - np.floor(event_time)) *
+                         sample_frequency) / sample_frequency)
+
+    # determine segment start and stop times
+    start_time = round(center_time - duration / 2)
+    stop_time = start_time + duration
+
+    try:
+        channel_name = '{0}:GDS-CALIB_STRAIN'.format(ifo)
+        data = TimeSeries.get(channel_name, start_time,
+                              stop_time, verbose=verbose).astype('float64')
+    except:
+        TimeSeries.fetch_open_data(ifo, start_time, stop_time, verbose=verbose)
+
+    if data.sample_rate.decompose().value != sample_frequency:
+        data = data.resample(sample_frequency)
+
+    return data
+
+
+def training_set_raw_data(filename, format, duration=8, sample_frequency=4096,
+                          verbose=False):
+    """Obtain the raw timeseries for the whole training set
+
+    Parameters:
+
+        filename (str):
+
+        format (str):
+
+        duration (int, optional):
+
+        sample_frequency (int, optional):
+
+        verbose (bool, optional):
+
+    Returns:
+
+        A file containing the raw timeseries data of the training set
+    """
+    logger = log.Logger('Gravity Spy: Obtaining TimeSeries'
+                        ' Data For Trainingset')
+    trainingset_table = EventTable.fetch('gravityspy',
+                                         'trainingsetv1d1',
+                                         columns=['peakGPS', 'ifo',
+                                                  'Label'])
+    for ifo, gps, label in zip(trainingset_table['ifo'],
+                               trainingset_table['peakGPS'],
+                               trainingset_table['Label']):
+        logger.info('Obtaining sample {0} with gps {1} from '
+                    '{2}'.format(label, gps, ifo))
+        data = fetch_data(ifo, gps, duration=duration,
+                          sample_frequency=sample_frequency,
+                          verbose=verbose)
+        logger.info('Writing Sample To File..')
+        data.write(filename, format=format,
+                   append=True,
+                   path='/data/{0}/{1}/'.format(label,gps))
+
+
+def pickle_trainingset(path_to_trainingset,
+                       save_address='pickleddata/trainingset.pkl',
                        verbose=False):
     """Pre-processes the training set images and save to pickle.
 

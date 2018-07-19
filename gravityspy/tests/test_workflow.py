@@ -4,7 +4,6 @@
 __author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 
 import os
-import unittest2
 from gravityspy.API.project import GravitySpyProject
 
 
@@ -95,15 +94,11 @@ classes_unit = ['1080Lines',
  'Wandering_Line',
  'Whistle']
 
-class GravitSpyTests(unittest2.TestCase):
+class GravitSpyTests(object):
     """`TestCase` for the GravitySpy
     """
     def test_structure(self):
         workflowDictSubjectSets = GravitySpyProject.load_project_from_cache(PICKLE_PATH).get_level_structure(IDfilter='O2')
-        self.assertEqual(workflowDictSubjectSets_unit, workflowDictSubjectSets)
+        assert workflowDictSubjectSets_unit == workflowDictSubjectSets
         classes = sorted(workflowDictSubjectSets['2117'].keys())
-        self.assertEqual(classes_unit, classes)
-
-
-if __name__ == '__main__':
-    unittest2.main()
+        assert classes_unit == classes

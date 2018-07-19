@@ -3,11 +3,8 @@
 
 __author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 
-import os
-import unittest2
-
-class GravitySpyTests(unittest2.TestCase):
+class TestGravitySpyAPI(object):
     """`TestCase` for the GravitySpy
     """
     def test_api(self):
-        self.assertEqual(1,1)
+        assert 1 == 1

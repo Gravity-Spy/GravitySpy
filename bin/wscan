@@ -66,6 +66,11 @@ def parse_commandline():
     parser.add_argument("--pathToModel",
                         help="Path to folder containing trained model",
                         required=True)
+    parser.add_argument("--project-info-pickle",
+                        help="This pickle file holds information"
+                        "about what workflows a image with what"
+                        "confidence label should go into",
+                        required=True)
     parser.add_argument("--runML", action="store_true", default=False,
                         help="Run the ML classifer on the omega scans")
     parser.add_argument("--verbose", action="store_true", default=False,
@@ -85,7 +90,7 @@ def parse_commandline():
 ##########################                     ################################
 ###############################################################################
 
-def main(inifile, eventTime, ID, outDir,
+def main(inifile, eventTime, project_info_pickle, ID, outDir,
          pathToModel='/home/machinelearning/GravitySpy/gravityspy/ML/trained_model/',
          uniqueID=True, runML=False, HDF5=False, PostgreSQL=False,
          verbose=False):
@@ -236,7 +241,8 @@ def main(inifile, eventTime, ID, outDir,
 
     if runML:
         # load the API gravityspy project cached class
-        gspyproject = GravitySpyProject.load_project_from_cache('1104.pkl')
+        gspyproject = GravitySpyProject.load_project_from_cache(
+                                            project_info_pickle)
         # Since we created the images in a
         # special temporary directory we can run os.listdir to get there full
         # names so we can convert the images into ML readable format.
@@ -368,5 +374,6 @@ def main(inifile, eventTime, ID, outDir,
 
 if __name__ == '__main__':
     args = parse_commandline()
-    main(args.inifile, args.eventTime, args.ID, args.outDir, args.pathToModel,
+    main(args.inifile, args.eventTime, args.project_info_pickle,
+         args.ID, args.outDir, args.pathToModel,
          args.uniqueID, args.runML, args.HDF5, args.PostgreSQL, args.verbose)
