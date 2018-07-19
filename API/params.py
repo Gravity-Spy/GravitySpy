@@ -19,20 +19,18 @@ class Priors:
 class Weighting:
     def __init__(self):
         '''
-        Read in the classifications table in __init__
-        We can sort by classification ID, and see the highest workflow that
-        the user has classified in at the time of the classification
+        we read in the classificaitons in the main function already, so these will just be arguments to ther pertinenet weighting schemes
         '''
+        # make dict for relating workflow to weighting
+        workflow_dict = {'1610': 'B1', '1934': 'B2', '1935': 'B3', '2360': 'A', '2117': 'M'}
+        weight_dict = {'B1': 0.5, 'B2': 0.5, 'B3': 0.5, 'A': 1.0, 'M': 2.0}
+
 
 
     def default(self, data, user, glitch):
         """
         our default weighting is to give beginner users 0.5 the weight of the machine, apprentice user 1.0, master users 2.0
         """
-        # make dict for relating workflow to weighting
-        workflow_dict = {'1610': 'B1', '1934': 'B2', '1935': 'B3', '2360': 'A', '2117': 'M'}
-        weight_dict = {'B1': 0.5, 'B2': 0.5, 'B3': 0.5, 'A': 1.0, 'M': 2.0}
-
         # sort classifications by date
         userClassifications = data[data.links_user == user]
         userClassifications = userClassifications.sort_values(by=['metadata_finished_at'])
@@ -59,6 +57,45 @@ class Weighting:
         else:
             weight = 0.5
         return weight
+
+    def uniform(self, data, user, glitch):
+        """
+        uniform weighting weights all humans and the machine the same
+        """
+        weight = 1.0
+        return weight
+
+    def machine_dominated(self, data, user, glitch):
+        """
+        machine_dominated weighted humans relative to each other by the default method, but makes the total weight from the human equal to the weight of the machine
+        """
+        # sort classifications by date
+        userClassifications = data[data.links_user == user]
+        userClassifications = userClassifications.sort_values(by=['metadata_finished_at'])
+
+        # find the ID of the glitch classification in question (should only be 1 classification)
+        classificationNum=np.argwhere(userClassifications.links_subjects == glitch).min()
+        # find IDs of apprentice and master workflow classificaitons
+        apprenticeClass = np.argwhere(userClassifications.links_workflow == 2360)
+        if len(apprenticeClass) > 0:
+            apprenticeNum = apprenticeClass.min()
+        else:
+            apprenticeNum = -1
+        masterClass = np.argwhere(userClassifications.links_workflow == 2117)
+        if len(masterClass) > 0:
+            masterNum = masterClass.min()
+        else:
+            masterNum = -1
+
+        # apply the proper weight
+        if (masterNum > 0) & (masterNum < classificationNum):
+            weight = 2.0
+        elif (apprenticeNum > 0) & (apprenticeNum < classificationNum):
+            weight = 1.0
+        else:
+            weight = 0.5
+        return weight
+
 
 class NOA:
     def __init__(self):
