@@ -47,7 +47,7 @@ class TestGravitySpyML(object):
 
         image_dataDF = pd.DataFrame()
         for idx, image in enumerate(list_of_images):
-            image_data = make_pickle.main(os.path.join(
+            image_data = make_pickle.read_grayscale(os.path.join(
                                                        TEST_IMAGES_PATH,
                                                        image),
                                           resolution=0.3)
@@ -76,7 +76,7 @@ class TestGravitySpyML(object):
         image_dataDF = pd.DataFrame()
         for idx, image in enumerate(list_of_images):
             if '1.0.png' in image:
-                image_data = make_pickle.main(os.path.join(TEST_IMAGES_PATH, image), resolution=0.3)
+                image_data = make_pickle.read_grayscale(os.path.join(TEST_IMAGES_PATH, image), resolution=0.3)
                 image_dataDF[image] = [image_data]
 
         # Determine features
@@ -86,3 +86,31 @@ class TestGravitySpyML(object):
                                               verbose=False)
 
         numpy.testing.assert_array_almost_equal(features, FEATURES, decimal=3)
+
+
+    def test_multiview_rgb(self):
+
+        list_of_images = []
+        for ifile in os.listdir(TEST_IMAGES_PATH):
+            if 'spectrogram' in ifile:
+                list_of_images.append(ifile)
+
+        image_dataDF = pd.DataFrame()
+        for idx, image in enumerate(list_of_images):
+            image_data_r, image_data_g, image_data_b = make_pickle.read_rgb(os.path.join(
+                                                       TEST_IMAGES_PATH,
+                                                       image),
+                                          resolution=0.3)
+
+            image_dataDF[image] = [[image_data_r, image_data_g, image_data_b]]
+
+        # Now label the image
+        scores, MLlabel = label_glitches.get_multiview_feature_space(
+                                                        image_dataDF,
+                                                        '{0}'.format(
+                                                              MODEL_PATH),
+                                                        [140, 170],
+                                                        False)
+
+        confidence = float(scores[0][MLlabel])
+        assert confidence == SCORE

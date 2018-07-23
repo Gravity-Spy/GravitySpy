@@ -92,7 +92,7 @@ def label_glitches(image_data, model_adr, image_size=[140, 170], verbose=False):
     test_set_unlabelled_x_4 = image_data.filter(regex=("2.0.png")).iloc[0].iloc[0].reshape(-1, 1, img_rows, img_cols)
 
     concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
-                            test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols])
+                            test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], False)
 
     score3_unlabelled = final_model.predict_proba(concat_test_unlabelled, verbose=0)
 
@@ -138,3 +138,57 @@ def get_feature_space(image_data, semantic_model_adr, image_size=[140, 170],
         test_data = np.asarray(new_data2)
 
     return semantic_idx_model.predict([test_data])
+
+
+def get_multiview_feature_space(image_data, semantic_model_adr, image_size=[140, 170],
+                      verbose=False):
+    """Obtain N dimensional feature space of sample
+
+    Parameters:
+
+        image_data (`pd.DataFrame`):
+            This is a DF with columns whose names are the same as
+            the image and whose row entries are
+            the b/w pixel values at some resoltion
+            determined by `make_pickle`
+
+        semantic_model_adr (str):
+            Path to folder containing similarity model
+
+        image_size (list, optional):
+            default [140, 170]
+
+        verbose (bool, optional):
+            default False
+
+    Returns:
+
+        np.array:
+            a 200 dimensional feature space vector
+    """
+    img_rows, img_cols = image_size[0], image_size[1]
+    test_set_unlabelled_x_1 = image_data.filter(regex=("1.0.png")).iloc[0].iloc[0]
+    test_set_unlabelled_x_2 = image_data.filter(regex=("2.0.png")).iloc[0].iloc[0]
+    test_set_unlabelled_x_3 = image_data.filter(regex=("4.0.png")).iloc[0].iloc[0]
+    test_set_unlabelled_x_4 = image_data.filter(regex=("0.5.png")).iloc[0].iloc[0]
+    test_set_unlabelled_x_1 = np.concatenate((test_set_unlabelled_x_1[0].reshape(-1, 1, img_rows, img_cols),
+                                              test_set_unlabelled_x_1[1].reshape(-1, 1, img_rows, img_cols),
+                                              test_set_unlabelled_x_1[2].reshape(-1, 1, img_rows, img_cols)),
+                                             axis=1)
+    test_set_unlabelled_x_2 = np.concatenate((test_set_unlabelled_x_2[0].reshape(-1, 1, img_rows, img_cols),
+                                              test_set_unlabelled_x_2[1].reshape(-1, 1, img_rows, img_cols),
+                                              test_set_unlabelled_x_2[2].reshape(-1, 1, img_rows, img_cols)),
+                                             axis=1)
+    test_set_unlabelled_x_3 = np.concatenate((test_set_unlabelled_x_3[0].reshape(-1, 1, img_rows, img_cols),
+                                              test_set_unlabelled_x_3[1].reshape(-1, 1, img_rows, img_cols),
+                                              test_set_unlabelled_x_3[2].reshape(-1, 1, img_rows, img_cols)),
+                                             axis=1)
+    test_set_unlabelled_x_4 = np.concatenate((test_set_unlabelled_x_4[0].reshape(-1, 1, img_rows, img_cols),
+                                              test_set_unlabelled_x_4[1].reshape(-1, 1, img_rows, img_cols),
+                                              test_set_unlabelled_x_4[2].reshape(-1, 1, img_rows, img_cols)),
+                                             axis=1)
+    semantic_idx_model = load_model(semantic_model_adr + '/semantic_idx_model.h5')
+    concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
+                            test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], True)
+
+    return semantic_idx_model.predict([concat_test_unlabelled])

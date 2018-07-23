@@ -16,7 +16,7 @@ import numpy as np
 
 #4/2/2018
 def concatenate_views(image_set1, image_set2, image_set3,
-                      image_set4, image_size):
+                      image_set4, image_size, rgb_flag):
     """Create a merged view from a set of 4 views of one sample image
 
     Parameters:
@@ -40,6 +40,10 @@ def concatenate_views(image_set1, image_set2, image_set3,
             This refers to the shape of the non flattened pixelized image
             array
 
+        rgb_flag (bool):
+            Are you trying to create a merged view of grayscale
+            or RGB image renders
+
     Returns:
         concated_view (array):
             A single merged view of the sample, in the case
@@ -48,14 +52,18 @@ def concatenate_views(image_set1, image_set2, image_set3,
     """
     img_rows = image_size[0]
     img_cols = image_size[1]
+    if rgb_flag:
+        ch = 3
+    else:
+        ch = 1
 
     assert len(image_set1) == len(image_set2)
-    concat_images_set = np.zeros((len(image_set1), 1, img_rows * 2, img_cols))
+    concat_images_set = np.zeros((len(image_set1), ch, img_rows * 2, img_cols))
     for i in range(0, len(image_set1)):
         concat_images_set[i, :, :, :] = np.append(image_set1[i, :, :, :], image_set2[i, :, :, :], axis=1)
 
     assert len(image_set3) == len(image_set4)
-    concat_images_set2 = np.zeros((len(image_set3), 1, img_rows * 2, img_cols))
+    concat_images_set2 = np.zeros((len(image_set3), ch, img_rows * 2, img_cols))
     for i in range(0, len(image_set3)):
         concat_images_set2[i, :, :, :] = np.append(image_set3[i, :, :, :], image_set4[i, :, :, :], axis=1)
 
