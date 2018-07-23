@@ -18,8 +18,8 @@ from scipy.sparse import coo_matrix
 def main(userID = None, returnMatrixPerImage = False):
 
     engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['QUEST_SQL_USER'],os.environ['QUEST_SQL_PASSWORD']))
-    #goldenDF = pd.read_sql('goldenimages', engine)
-    goldenDF = pd.read_pickle('../data/goldenDF.pkl')
+    goldenDF = pd.read_sql('goldenimages', engine)
+    #goldenDF = pd.read_pickle('../data/goldenDF.pkl')
 
     if userID:
         # Only retrieve classication by that particular user. 
@@ -45,10 +45,10 @@ def main(userID = None, returnMatrixPerImage = False):
     # Retrieve Answers
     answers = getAnswers('1104')
     answersDictRev =  dict(enumerate(sorted(answers[2360].keys())))
-    answersDict = dict((str(v),k) for k,v in answersDictRev.iteritems())
+    answersDict = dict((str(v),k) for k,v in answersDictRev.items())
 
     # From ansers Dict determine number of classes
-    numClasses = max(answersDict.iteritems(), key=operator.itemgetter(1))[1] + 1
+    numClasses = max(answersDict.items(), key=operator.itemgetter(1))[1] + 1
 
     # merge the golden image DF with the classification (this merge is on links_subject (i.e. the zooID of the image classified)
     image_and_classification = classifications.merge(goldenDF, on=['links_subjects'])
