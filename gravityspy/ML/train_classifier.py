@@ -297,47 +297,47 @@ def make_model(data, model_folder='model', batch_size=22, nb_epoch=10,
                                                            len(image_dataDF)))
 
     # concatenate the pixels
-    train_set_x_1 = np.vstack(image_dataDF['0.5.png'].as_matrix()).reshape(
+    train_set_x_1 = np.vstack(image_dataDF['0.5.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
-    validation_x_1 = np.vstack(validationDF['0.5.png'].as_matrix()).reshape(
-                                                     -1, 1, img_rows, img_cols)
-
-    train_set_x_2 = np.vstack(image_dataDF['1.0.png'].as_matrix()).reshape(
-                                                     -1, 1, img_rows, img_cols)
-    validation_x_2 = np.vstack(validationDF['1.0.png'].as_matrix()).reshape(
+    validation_x_1 = np.vstack(validationDF['0.5.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
 
-    train_set_x_3 = np.vstack(image_dataDF['2.0.png'].as_matrix()).reshape(
+    train_set_x_2 = np.vstack(image_dataDF['1.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
-    validation_x_3 = np.vstack(validationDF['2.0.png'].as_matrix()).reshape(
+    validation_x_2 = np.vstack(validationDF['1.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
 
-    train_set_x_4 = np.vstack(image_dataDF['4.0.png'].as_matrix()).reshape(
+    train_set_x_3 = np.vstack(image_dataDF['2.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
-    validation_x_4 = np.vstack(validationDF['4.0.png'].as_matrix()).reshape(
+    validation_x_3 = np.vstack(validationDF['2.0.png'].values).reshape(
+                                                     -1, 1, img_rows, img_cols)
+
+    train_set_x_4 = np.vstack(image_dataDF['4.0.png'].values).reshape(
+                                                     -1, 1, img_rows, img_cols)
+    validation_x_4 = np.vstack(validationDF['4.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
 
     if fraction_testing:
-        testing_x_1 = np.vstack(testingDF['0.5.png'].as_matrix()).reshape(
+        testing_x_1 = np.vstack(testingDF['0.5.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
-        testing_x_2 = np.vstack(testingDF['1.0.png'].as_matrix()).reshape(
+        testing_x_2 = np.vstack(testingDF['1.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
-        testing_x_3 = np.vstack(testingDF['2.0.png'].as_matrix()).reshape(
+        testing_x_3 = np.vstack(testingDF['2.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
-        testing_x_4 = np.vstack(testingDF['4.0.png'].as_matrix()).reshape(
+        testing_x_4 = np.vstack(testingDF['4.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
 
     # Concatenate the labels
-    trainingset_labels = np.vstack(image_dataDF['Label'].as_matrix())
-    validation_labels = np.vstack(validationDF['Label'].as_matrix())
+    trainingset_labels = np.vstack(image_dataDF['Label'].values)
+    validation_labels = np.vstack(validationDF['Label'].values)
     if fraction_testing:
-        testing_labels = np.vstack(testingDF['Label'].as_matrix())
+        testing_labels = np.vstack(testingDF['Label'].values)
 
     # Concatenate the name
-    trainingset_names = np.vstack(image_dataDF['uniqueID'].as_matrix())
-    validation_names = np.vstack(validationDF['uniqueID'].as_matrix())
+    trainingset_names = np.vstack(image_dataDF['uniqueID'].values)
+    validation_names = np.vstack(validationDF['uniqueID'].values)
     if fraction_testing:
-        testing_names = np.vstack(testingDF['uniqueID'].as_matrix())
+        testing_names = np.vstack(testingDF['uniqueID'].values)
 
     # Categorize labels
     trainingset_labels = np_utils.to_categorical(
