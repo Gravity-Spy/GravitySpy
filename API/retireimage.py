@@ -196,8 +196,8 @@ for idx, g in enumerate(subjects):
     if idx%100 == 0:
         print('%.2f%% complete' % (100*float(idx)/len(subjects)))
 
-# save image and retirement data as pickles
+# save image and retirement data as hdf5 files
 if args.multiproc:
-    image_db.to_pickle('../output/imageDB_'+args.file_name+str(args.index)+'.pkl')
+    image_db.to_hdf('../output/retired_'+args.file_name+str(args.index)+'.hdf5', key='retired')
 else:
-    image_db.to_pickle('../output/imageDB_'+args.file_name+'.pkl')
+    image_db.to_hdf('../output/retired_'+args.file_name+'.hdf5', key='retired')
