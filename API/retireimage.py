@@ -19,11 +19,11 @@ argp.add_argument("-mp", "--multiproc", action="store_true", help="Specifies if 
 argp.add_argument("-nc", "--num-cores", default=None, type=int, help="Specify the number of cores that the retirement code will be parallelized over. Only used if multiproc is specified")
 argp.add_argument("-i", "--index", default=None, type=int, help="Index which indicates the chunk of image files that retirement will be calculated for. Only used if multiproc is specified")
 
-argp.add_argument("--min-label", default=2, type=int, help="Minimum number of citizen labels that an image must receive before it is retired. Default=2")
+argp.add_argument("--min-label", default=1, type=int, help="Minimum number of citizen labels that an image must receive before it is retired. Default=1")
 argp.add_argument("--max-label", default=50, type=int, help="Maximum number of citizen labels that an image must receive before it is retired as NOA. Default=50")
-argp.add_argument("--ret-thresh", default=0.9, help="Retirement threshold that must be achieved to retire a particular class. Can be a float, or a 22-length vector of floats. Default = 0.9")
+argp.add_argument("--ret-thresh", default=0.8, help="Retirement threshold that must be achieved to retire a particular class. Can be a float, or a 22-length vector of floats. Default = 0.8")
 argp.add_argument("--prior", default='uniform', type=str, help="String indicating the prior choice for the subjects. Calls function from class params.py. Default=uniform")
-argp.add_argument("--weighting", default='default', type=str, help="String indicating the weighting choice for the subjects. Calls function from class params.py. Default=default")
+argp.add_argument("--weighting", default='default', type=str, help="String indicating the weighting choice for the subjects. Calls function from class params.py. Default=default, where all users receive an equal weight")
 args = argp.parse_args()
 
 
@@ -43,24 +43,29 @@ if args.prior == 'uniform':
     prior = priors.uniform(numClasses)
 
 # Load classifications
-print '\nreading classifications...'
-classifications = pd.read_pickle('../data/classifications.pkl')
+print('\nreading classifications...')
+classifications = pd.read_hdf('../data/classifications.hdf5')
 classifications = classifications.loc[~(classifications.annotations_value_choiceINT == -1)]
 
 # Load glitches
-print 'reading glitches...'
-glitches = pd.read_pickle('../data/glitches.pkl')
+print('reading glitches...')
+glitches = pd.read_hdf('../data/glitches.hdf5')
 # filter glitches for only testing images
 glitches = glitches.loc[glitches.ImageStatus != 'Training']
 glitches['MLScore'] = glitches[classes].max(1)
 glitches['MLLabel'] = glitches[classes].idxmax(1)
 
 # Load confusion matrices
-print 'reading confusion matrices...'
-conf_matrices = pd.read_pickle('../data/conf_matrices.pkl')
+print('reading confusion matrices...')
+conf_matrices1 = pd.read_hdf('../data/conf_matrices1.hdf5')
+conf_matrices2 = pd.read_hdf('../data/conf_matrices2.hdf5')
+conf_matrices3 = pd.read_hdf('../data/conf_matrices3.hdf5')
+conf_matrices4 = pd.read_hdf('../data/conf_matrices4.hdf5')
+conf_matrices5 = pd.read_hdf('../data/conf_matrices5.hdf5')
+conf_matrices = pd.concat([conf_matrices1,conf_matrices2,conf_matrices3,conf_matrices4,conf_matrices5])
 
 # Merge DBs
-print 'combining data...'
+print('combining data...')
 combined_data = classifications.merge(conf_matrices, on=['id','links_user'])
 combined_data = combined_data.merge(glitches, on=['links_subjects', 'uniqueID'])
 
@@ -125,6 +130,11 @@ def get_post_contribution(x):
         if np.isnan(post_contribution[row,:]).any():
             # if this is the last user in the group, save pertinent info
             if idx == len(glitch)-1:
+                # first, make sure someone has contributed to the posterior for this image
+                try:
+                    posterior
+                except NameError:
+                    continue
                 image_db.loc[x, 'numClassifications'] = image_db.loc[x, 'numLabel']
                 image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
                 image_db.loc[x, 'finalLabel'] = classes[np.asarray(posterior.divide(weight_ctr)).argmax()]
@@ -169,7 +179,7 @@ def get_post_contribution(x):
             return
 
 
-print 'determining retired images...'
+print('determining retired images...')
 # sort data based on subjects number
 subjects = combined_data.links_subjects.unique()
 subjects.sort()
@@ -184,7 +194,7 @@ if args.multiproc:
 for idx, g in enumerate(subjects):
     get_post_contribution(g)
     if idx%100 == 0:
-        print '%.2f%% complete' % (100*float(idx)/len(subjects))
+        print('%.2f%% complete' % (100*float(idx)/len(subjects)))
 
 # save image and retirement data as pickles
 if args.multiproc:

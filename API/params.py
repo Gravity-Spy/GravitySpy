@@ -23,11 +23,16 @@ class Weighting:
         '''
         # make dict for relating workflow to weighting
         workflow_dict = {'1610': 'B1', '1934': 'B2', '1935': 'B3', '2360': 'A', '2117': 'M'}
-        weight_dict = {'B1': 0.5, 'B2': 0.5, 'B3': 0.5, 'A': 1.0, 'M': 2.0}
-
-
+        b05_a1_m2_dict = {'B1': 0.5, 'B2': 0.5, 'B3': 0.5, 'A': 1.0, 'M': 2.0}
 
     def default(self, data, user, glitch):
+        """
+        default weighting scheme where all users are created equal
+        """
+        weight = 1.0
+        return weight
+
+    def b05_a1_m2(self, data, user, glitch):
         """
         our default weighting is to give beginner users 0.5 the weight of the machine, apprentice user 1.0, master users 2.0
         """
