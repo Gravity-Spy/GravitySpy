@@ -357,7 +357,7 @@ def main(inifile, eventTime, project_info_pickle, ID, outDir,
             columnDict = scoresTable.to_dict(orient='records')[0]
             SQLCommand = 'UPDATE glitches SET '
             for Column in columnDict:
-                if isinstance(columnDict[Column],basestring):
+                if isinstance(columnDict[Column], str):
                     SQLCommand = SQLCommand + '''\"{0}\" = \'{1}\', '''.format(Column,columnDict[Column])
                 else:
                     SQLCommand = SQLCommand + '''\"{0}\" = {1}, '''.format(Column,columnDict[Column])
