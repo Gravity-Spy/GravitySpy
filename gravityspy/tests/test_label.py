@@ -6,7 +6,7 @@ __author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 import os
 os.environ["KERAS_BACKEND"] = "theano"
 
-import gravityspy.ML.make_pickle_for_linux as make_pickle
+import gravityspy.ML.read_image as read_image
 import gravityspy.ML.labelling_test_glitches as label_glitches
 import gravityspy.ML.train_classifier as train_classifier
 
@@ -16,6 +16,8 @@ import numpy
 TEST_IMAGES_PATH = os.path.join(os.path.split(__file__)[0], 'data',
 'images')
 MODEL_PATH = os.path.join(os.path.split(__file__)[0], '..', '..', 'bin')
+MULTIVIEW_FEATURES_FILE = os.path.join(os.path.split(__file__)[0], 'data',
+                                       'MULTIVIEW_FEATURES.npy')
 
 SCORE = 0.9997797608375549 
 
@@ -35,6 +37,8 @@ FEATURES = numpy.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 34.673343658447266, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
 
+MULTIVIEW_FEATURES = numpy.load(MULTIVIEW_FEATURES_FILE)
+
 class TestGravitySpyML(object):
     """`TestCase` for the GravitySpy
     """
@@ -47,7 +51,7 @@ class TestGravitySpyML(object):
 
         image_dataDF = pd.DataFrame()
         for idx, image in enumerate(list_of_images):
-            image_data = make_pickle.read_grayscale(os.path.join(
+            image_data = read_image.read_grayscale(os.path.join(
                                                        TEST_IMAGES_PATH,
                                                        image),
                                           resolution=0.3)
@@ -76,7 +80,7 @@ class TestGravitySpyML(object):
         image_dataDF = pd.DataFrame()
         for idx, image in enumerate(list_of_images):
             if '1.0.png' in image:
-                image_data = make_pickle.read_grayscale(os.path.join(TEST_IMAGES_PATH, image), resolution=0.3)
+                image_data = read_image.read_grayscale(os.path.join(TEST_IMAGES_PATH, image), resolution=0.3)
                 image_dataDF[image] = [image_data]
 
         # Determine features
@@ -97,7 +101,7 @@ class TestGravitySpyML(object):
 
         image_dataDF = pd.DataFrame()
         for idx, image in enumerate(list_of_images):
-            image_data_r, image_data_g, image_data_b = make_pickle.read_rgb(os.path.join(
+            image_data_r, image_data_g, image_data_b = read_image.read_rgb(os.path.join(
                                                        TEST_IMAGES_PATH,
                                                        image),
                                           resolution=0.3)
@@ -105,12 +109,12 @@ class TestGravitySpyML(object):
             image_dataDF[image] = [[image_data_r, image_data_g, image_data_b]]
 
         # Now label the image
-        scores, MLlabel = label_glitches.get_multiview_feature_space(
+        features = label_glitches.get_multiview_feature_space(
                                                         image_dataDF,
                                                         '{0}'.format(
                                                               MODEL_PATH),
                                                         [140, 170],
                                                         False)
 
-        confidence = float(scores[0][MLlabel])
-        assert confidence == SCORE
+        numpy.testing.assert_array_almost_equal(features, MULTIVIEW_FEATURES,
+                                                decimal=3)

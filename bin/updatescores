@@ -3,7 +3,7 @@
 # ---- Import standard modules to the python path.
 
 from gravityspy.API.project import GravitySpyProject
-import gravityspy.ML.make_pickle_for_linux as make_pickle
+import gravityspy.ML.read_image as read_image
 import gravityspy.ML.labelling_test_glitches as label_glitches
 from gravityspy.utils import log
 import argparse
@@ -50,7 +50,7 @@ logger.info('Converting image to ML readable...')
 image_dataDF = pd.DataFrame()
 for idx, image in enumerate(list_of_images):
     logger.info('Converting {0}'.format(image))
-    image_data = make_pickle.main(image,
+    image_data = read_image.main(image,
                                   resolution=0.3)
     image_dataDF[image] = [image_data]
 

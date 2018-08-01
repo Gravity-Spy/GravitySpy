@@ -33,7 +33,7 @@ from gwpy.segments import Segment
 from gravityspy import __version__
 from gravityspy.plot.plot import plot_qtransform
 from gravityspy.API.project import GravitySpyProject
-import gravityspy.ML.make_pickle_for_linux as make_pickle
+import gravityspy.ML.read_image as read_image
 import gravityspy.ML.labelling_test_glitches as label_glitches
 from gravityspy.utils import log
 
@@ -250,52 +250,29 @@ def main(inifile, eventTime, project_info_pickle, ID, outDir,
                           if 'spectrogram' in ifile]
 
         logger.info('Converting image to ML readable...')
-        image_dataDF = pd.DataFrame()
+        image_data_for_cnn = pd.DataFrame()
+        image_data_for_si = pd.DataFrame()
         for idx, image in enumerate(list_of_images):
             logger.info('Converting {0}'.format(image))
-            image_data = make_pickle.main(os.path.join(outDirtmp, image),
+            image_data_r, image_data_g, image_data_b = read_image.read_rgb(os.path.join(outDirtmp, image),
                                           resolution=0.3)
-            image_dataDF[image] = [image_data]
+            image_data = read_image.read_grayscale(os.path.join(outDirtmp, image),
+                                                   resolution=0.3)
+            image_data_for_si[image] = [[image_data_r, image_data_g, image_data_b]]
+            image_data_for_cnn[image] = [image_data]
 
-        image_dataDF['uniqueID'] = ID
-        #filename = outDirtmp + ID + '.h5'
-        # save ML image to H5 file
-        #image_dataDF.to_hdf(filename, ID, mode='w')
+        image_data_for_cnn['uniqueID'] = ID
+        image_data_for_si['uniqueID'] = ID
 
         # Now label the image
         logger.info('Labelling image...')
-        scores, MLlabel = label_glitches.label_glitches(image_data=image_dataDF,
+        scores, MLlabel = label_glitches.label_glitches(image_data=image_data_for_cnn,
                                               model_adr='{0}'.format(pathToModel),
                                               image_size=[140, 170],
                                               verbose=verbose)
 
+        # extract confidence
         confidence = float(scores[0][MLlabel])
-
-        # Get ML semantic index image data
-        image_dataDF = pd.DataFrame()
-        for idx, image in enumerate(list_of_images):
-            if '1.0.png' in image:
-                logger.info('Converting {0} for feature space extractor'.format(image))
-                image_data = make_pickle.main(outDirtmp + image, resolution=0.3)
-                image_dataDF[image] = [image_data]
-
-        image_dataDF['uniqueID'] = ID
-
-        # Determine features
-        logger.info('Extracting Features'.format(image))
-        features = label_glitches.get_feature_space(image_data=image_dataDF,
-                                              semantic_model_adr='{0}'.format(pathToModel),
-                                              image_size=[140, 170],
-                                              verbose=verbose)
-
-        features = pd.DataFrame(features)
-        features['uniqueID'] = ID
-        # Create directory called "Classified" were images that were successfully classified go.
-        workFlow = 'Classified'
-        finalPath = outDir + '/' + workFlow
-
-        if not os.path.isdir(finalPath):
-            os.makedirs(finalPath)
 
         # We must determine the columns that will be saved for this image.
         # First and foremost we want to determine the possible classes the image could be
@@ -312,8 +289,36 @@ def main(inifile, eventTime, project_info_pickle, ID, outDir,
 
         # Determine label
         Label = classes[MLlabel]
+
         logger.info('This image has received the following label: '
                     '{0} with {1} percent confidence'.format(Label, confidence))
+
+
+        logger.info('Extracting Features'.format(image))
+        features = label_glitches.get_multiview_feature_space(
+                                                        image_data_for_si,
+                                                        '{0}'.format(
+                                                              pathToModel),
+                                                        [140, 170],
+                                                        False)
+
+
+        # Determine features
+        #logger.info('Extracting Features'.format(image))
+        #features = label_glitches.get_feature_space(image_data=image_dataDF,
+        #                                      semantic_model_adr='{0}'.format(pathToModel),
+        #                                      image_size=[140, 170],
+        #                                      verbose=verbose)
+
+        features = pd.DataFrame(features)
+        features['uniqueID'] = ID
+
+        # Create directory called "Classified" were images that were successfully classified go.
+        workFlow = 'Classified'
+        finalPath = outDir + '/' + workFlow
+
+        if not os.path.isdir(finalPath):
+            os.makedirs(finalPath)
 
         # determine confidence values from ML
         scores = scores[0].tolist()
