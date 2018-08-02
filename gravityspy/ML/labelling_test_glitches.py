@@ -19,7 +19,7 @@ def main(image_data, model_adr, image_size=[140, 170], verbose=False):
                  columns whose names are the same as
                  the image and whose row entries are
                  the b/w pixel values at some resoltion
-                 determined by `make_pickle`
+                 determined by `read_image`
 
     model_adr : `str` path to folder containing model
 
@@ -47,7 +47,7 @@ def label_glitches(image_data, model_adr, image_size=[140, 170], verbose=False):
             This is a DF with columns whose names are the same as
             the image and whose row entries are
             the b/w pixel values at some resoltion
-            determined by `make_pickle`
+            determined by `read_image`
 
         model_adr (str, optional):
             Path to folder containing model
@@ -109,7 +109,7 @@ def get_feature_space(image_data, semantic_model_adr, image_size=[140, 170],
             This is a DF with columns whose names are the same as
             the image and whose row entries are
             the b/w pixel values at some resoltion
-            determined by `make_pickle`
+            determined by `read_image`
 
         semantic_model_adr (str):
             Path to folder containing similarity model
@@ -150,7 +150,7 @@ def get_multiview_feature_space(image_data, semantic_model_adr, image_size=[140,
             This is a DF with columns whose names are the same as
             the image and whose row entries are
             the b/w pixel values at some resoltion
-            determined by `make_pickle`
+            determined by `read_image`
 
         semantic_model_adr (str):
             Path to folder containing similarity model

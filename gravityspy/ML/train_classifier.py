@@ -9,7 +9,7 @@ from gwpy.timeseries import TimeSeries
 
 import numpy as np
 import os
-import make_pickle_for_linux as make_pickle
+import read_image
 import pandas as pd
 
 '''
@@ -154,7 +154,7 @@ def pickle_trainingset(path_to_trainingset,
             for idur in isample:
                 if verbose:
                     logger.info('Converting {0}'.format(idur))
-                image_data = make_pickle.main(os.path.join(path_to_trainingset,
+                image_data = read_image.read_grayscale(os.path.join(path_to_trainingset,
                                               iclass, idur), resolution=0.3)
                 information_on_image = idur.split('_')
                 tmpDF[information_on_image[-1]] = [image_data]
@@ -351,16 +351,18 @@ def make_model(data, model_folder='model', batch_size=22, nb_epoch=10,
 
     logger.info('Concatenating multiple views ...')
     concat_train = concatenate_views(train_set_x_1, train_set_x_2,
-                            train_set_x_3, train_set_x_4, [img_rows, img_cols])
+                            train_set_x_3, train_set_x_4, [img_rows, img_cols], False)
     concat_valid = concatenate_views(validation_x_1, validation_x_2,
                             validation_x_3, validation_x_4,
-                            [img_rows, img_cols])
+                            [img_rows, img_cols], False)
 
     if fraction_testing:
         concat_test = concatenate_views(testing_x_1, testing_x_2,
                             testing_x_3, testing_x_4,
-                            [img_rows, img_cols])
+                            [img_rows, img_cols], False)
 
+    import pdb
+    pdb.set_trace()
     cnn1 = build_cnn(img_rows*2, img_cols*2)
     final_model = Sequential()
     final_model.add(cnn1)
