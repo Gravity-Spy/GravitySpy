@@ -63,8 +63,11 @@ def parse_commandline():
                         help="The uniqueID string to be supplied with "
                              "--uniqueID")
     parser.add_argument("--outDir", help="Outdir for images")
-    parser.add_argument("--pathToModel",
-                        help="Path to folder containing trained model",
+    parser.add_argument("--path-to-cnn-model",
+                        help="Path to name of cnn model",
+                        required=True)
+    parser.add_argument("--path-to-semantic-file",
+                        help="Path to name of similarity model",
                         required=True)
     parser.add_argument("--project-info-pickle",
                         help="This pickle file holds information"
@@ -91,7 +94,8 @@ def parse_commandline():
 ###############################################################################
 
 def main(inifile, eventTime, project_info_pickle, ID, outDir,
-         pathToModel='/home/machinelearning/GravitySpy/gravityspy/ML/trained_model/',
+         path_to_cnn='/home/machinelearning/GravitySpy/gravityspy/ML/trained_model/multi_view_classifier.h5',
+         path_to_similarity_search='/home/machinelearning/GravitySpy/gravityspy/ML/trained_model/semantic_idx_model.h5',
          uniqueID=True, runML=False, HDF5=False, PostgreSQL=False,
          verbose=False):
 
@@ -99,8 +103,11 @@ def main(inifile, eventTime, project_info_pickle, ID, outDir,
         raise ValueError('If you wish to run ML must select file format to '
                          'save with. Most cases HDF5=True is what you want')
 
-    if not os.path.isdir(pathToModel):
-        raise ValueError('The provided training set model path does not '
+    if not os.path.isfile(path_to_cnn):
+        raise ValueError('The provided CNN model does not '
+                         'exist.')
+    if not os.path.isfile(path_to_similarity_search):
+        raise ValueError('The provided similarity model does not '
                          'exist.')
 
     logger = log.Logger('Gravity Spy: OmegaScan')
@@ -267,7 +274,7 @@ def main(inifile, eventTime, project_info_pickle, ID, outDir,
         # Now label the image
         logger.info('Labelling image...')
         scores, MLlabel = label_glitches.label_glitches(image_data=image_data_for_cnn,
-                                              model_adr='{0}'.format(pathToModel),
+                                              model_name='{0}'.format(path_to_cnn),
                                               image_size=[140, 170],
                                               verbose=verbose)
 
@@ -298,7 +305,7 @@ def main(inifile, eventTime, project_info_pickle, ID, outDir,
         features = label_glitches.get_multiview_feature_space(
                                                         image_data_for_si,
                                                         '{0}'.format(
-                                                              pathToModel),
+                                                              path_to_similarity_search),
                                                         [140, 170],
                                                         False)
 
@@ -380,5 +387,5 @@ def main(inifile, eventTime, project_info_pickle, ID, outDir,
 if __name__ == '__main__':
     args = parse_commandline()
     main(args.inifile, args.eventTime, args.project_info_pickle,
-         args.ID, args.outDir, args.pathToModel,
+         args.ID, args.outDir, args.path_to_cnn_model, args.path_to_semantic_file,
          args.uniqueID, args.runML, args.HDF5, args.PostgreSQL, args.verbose)

@@ -38,7 +38,8 @@ def main(image_data, model_adr, image_size=[140, 170], verbose=False):
     return dw[0],np.argmax(dwslice)
 
 
-def label_glitches(image_data, model_adr, image_size=[140, 170], verbose=False):
+def label_glitches(image_data, model_name, image_size=[140, 170],
+                   verbose=False):
     """Obtain 1XNclasses confidence vector and label for image
 
     Parameters:
@@ -65,9 +66,6 @@ def label_glitches(image_data, model_adr, image_size=[140, 170], verbose=False):
             index_label (int): ml label
     """
 
-    # the path where the trained is saved there
-    model_adr += '/'
-
     np.random.seed(1986)  # for reproducibility
 
     img_rows, img_cols = image_size[0], image_size[1]
@@ -75,8 +73,7 @@ def label_glitches(image_data, model_adr, image_size=[140, 170], verbose=False):
     # load a model and weights
     if verbose:
         print ('Retrieving the trained ML classifier')
-    load_folder = model_adr
-    final_model = load_model(load_folder + '/multi_view_classifier.h5')
+    final_model = load_model(model_name)
 
     final_model.compile(loss='categorical_crossentropy',
                         optimizer='adadelta',
@@ -99,7 +96,7 @@ def label_glitches(image_data, model_adr, image_size=[140, 170], verbose=False):
     return score3_unlabelled, np.argmax(score3_unlabelled)
 
 
-def get_feature_space(image_data, semantic_model_adr, image_size=[140, 170],
+def get_feature_space(image_data, semantic_model_name, image_size=[140, 170],
                       verbose=False):
     """Obtain N dimensional feature space of sample
 
@@ -126,7 +123,7 @@ def get_feature_space(image_data, semantic_model_adr, image_size=[140, 170],
             a 200 dimensional feature space vector
     """
     img_rows, img_cols = image_size[0], image_size[1]
-    semantic_idx_model = load_model(semantic_model_adr + '/semantic_idx_model.h5')
+    semantic_idx_model = load_model(semantic_model_name)
     test_data = image_data.filter(regex=("1.0.png")).iloc[0].iloc[0].reshape(-1, 1, img_rows, img_cols)
     test_data = test_data.reshape([test_data.shape[0], img_rows, img_cols, 1])
     test_data = np.repeat(test_data, 3, axis=3)
@@ -140,7 +137,7 @@ def get_feature_space(image_data, semantic_model_adr, image_size=[140, 170],
     return semantic_idx_model.predict([test_data])
 
 
-def get_multiview_feature_space(image_data, semantic_model_adr, image_size=[140, 170],
+def get_multiview_feature_space(image_data, semantic_model_name, image_size=[140, 170],
                       verbose=False):
     """Obtain N dimensional feature space of sample
 
@@ -187,7 +184,7 @@ def get_multiview_feature_space(image_data, semantic_model_adr, image_size=[140,
                                               test_set_unlabelled_x_4[1].reshape(-1, 1, img_rows, img_cols),
                                               test_set_unlabelled_x_4[2].reshape(-1, 1, img_rows, img_cols)),
                                              axis=1)
-    semantic_idx_model = load_model(semantic_model_adr + '/semantic_idx_model.h5')
+    semantic_idx_model = load_model(semantic_model_name)
     concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
                             test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], True)
 

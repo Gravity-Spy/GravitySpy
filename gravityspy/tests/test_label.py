@@ -15,7 +15,12 @@ import numpy
 
 TEST_IMAGES_PATH = os.path.join(os.path.split(__file__)[0], 'data',
 'images')
-MODEL_PATH = os.path.join(os.path.split(__file__)[0], '..', '..', 'bin')
+MODEL_NAME_CNN = os.path.join(os.path.split(__file__)[0], '..', '..', 'bin',
+                              'multi_view_classifier.h5')
+MODEL_NAME_FEATURE_SINGLE_VIEW = os.path.join(os.path.split(__file__)[0], '..', '..', 'bin',
+                                              'single_view_model.h5')
+MODEL_NAME_FEATURE_MULTIVIEW = os.path.join(os.path.split(__file__)[0], '..', '..', 'bin',
+                                            'semantic_idx_model.h5')
 MULTIVIEW_FEATURES_FILE = os.path.join(os.path.split(__file__)[0], 'data',
                                        'MULTIVIEW_FEATURES.npy')
 
@@ -62,7 +67,7 @@ class TestGravitySpyML(object):
         scores, MLlabel = label_glitches.label_glitches(
                                                         image_dataDF,
                                                         '{0}'.format(
-                                                              MODEL_PATH),
+                                                              MODEL_NAME_CNN),
                                                         [140, 170],
                                                         False)
 
@@ -85,7 +90,7 @@ class TestGravitySpyML(object):
 
         # Determine features
         features = label_glitches.get_feature_space(image_data=image_dataDF,
-                                              semantic_model_adr='{0}'.format(MODEL_PATH),
+                                              semantic_model_name='{0}'.format(MODEL_NAME_FEATURE_SINGLE_VIEW),
                                               image_size=[140, 170],
                                               verbose=False)
 
@@ -112,7 +117,7 @@ class TestGravitySpyML(object):
         features = label_glitches.get_multiview_feature_space(
                                                         image_dataDF,
                                                         '{0}'.format(
-                                                              MODEL_PATH),
+                                                              MODEL_NAME_FEATURE_MULTIVIEW),
                                                         [140, 170],
                                                         False)
 
