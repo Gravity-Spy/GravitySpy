@@ -53,7 +53,7 @@ for list_of_images in list_of_images_all:
     image_dataDF = pd.DataFrame()
     for idx, image in enumerate(list_of_images):
         logger.info('Converting {0}'.format(image))
-        image_data = make_pickle.main(image,
+        image_data = read_image.read_grayscale(image,
                                       resolution=0.3)
         image_dataDF[image] = [image_data]
 
@@ -105,4 +105,4 @@ for list_of_images in list_of_images_all:
             SQLCommand = SQLCommand + '''\"{0}\" = {1}, '''.format(Column,columnDict[Column])
     SQLCommand = SQLCommand[:-2] + ' WHERE \"uniqueID\" = \'' + scoresTable.uniqueID.iloc[0] + "'"
     engine.execute(SQLCommand)
->>>>>>> origin/develop
+    engine.dispose()
