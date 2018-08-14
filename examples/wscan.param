@@ -1,1 +1,1 @@
-wscan --inifile ..//Production/wini.ini --project-info-pickle 1104.pkl --eventTime 1127700030.877928972 --outDir ./public_html/GravitySpy/Test/ --uniqueID --ID 123abc1234 --HDF5 --runML --pathToModel ../bin
+wscan --inifile ..//Production/wini.ini --project-info-pickle 1104.pkl --eventTime 1127700030.877928972 --outDir ./public_html/GravitySpy/Test/ --HDF5 --runML --uniqueID --ID 123abc1234 --path-to-cnn-model ../bin/multi_view_classifier.h5 --path-to-semantic-file ../bin/semantic_idx_model.h5
