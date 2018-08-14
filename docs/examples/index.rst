@@ -16,32 +16,22 @@ The following example will although you to query the entire gravity spy trianing
 
 Ahead of time, it is encourage to set up your user environment. For LIGO users please see `Gravity Spy Authentication <https://secrets.ligo.org/secrets/144/>`_ for information concerning authentication to access certain Gravity Spy DBs.
 
-============
-Installation
-============
-
-Very brief installation! Create a virtualenv on the clusters and `pip install`
-
-.. code-block:: bash
-
-   $ virtualenv --system-site-packages ~/LAAC/opt/
-   $ . ~/LAAC/opt/bin/activate
-   $ pip install --upgrade pip
-   $ pip install gwpy sqlalchemy psycopg2 pandas git+https://github.com/duncanmmacleod/ligo.org.git
-
 =======================
 Pre-Existing VirtualEnv
 =======================
 
-On CIT, LLO and LHO
+On CIT
 
 .. code-block:: bash
 
-   $ source /home/gravityspy/.gravityspy_profile
+   $ source ~gravityspy/.gravityspy_py36_profile
+   $ source ~gravityspy/.gravityspy_py27_profile
 
 =======================
 The `glitches` database
 =======================
+
+This database contains all of the labelled Omicron glitches in h(t) with `SNR > 7.5` and `10 < peak_frequency < 2048`
 
 .. code-block:: bash
 
@@ -73,8 +63,8 @@ Here we mimic the `histogram <https://gwpy.github.io/docs/latest/examples/table/
     >>> import matplotlib.pyplot as plt
     >>> plt.switch_backend('agg')
     >>> from gwpy.table import EventTable
-    >>> blips_O2_L1 = EventTable.fetch('gravityspy', 'glitches', selection = ['"Label" = "Blip"', '"peakGPS" > 1137250000', '"Blip" > 0.95', 'ifo=L1'])
-    >>> koi_O2_L1 = EventTable.fetch('gravityspy', 'glitches', selection = ['"Label" = "Koi_Fish"', '"peakGPS" > 1137250000', '"Koi_Fish" > 0.95', 'ifo=L1'])
+    >>> blips_O2_L1 = EventTable.fetch('gravityspy', 'glitches', selection = ['"Label" = "Blip"', '1200000000 > "peakGPS" > 1137250000', '"Blip" > 0.95', 'ifo=L1'])
+    >>> koi_O2_L1 = EventTable.fetch('gravityspy', 'glitches', selection = ['"Label" = "Koi_Fish"', '1200000000 > "peakGPS" > 1137250000', '"Koi_Fish" > 0.95', 'ifo=L1'])
     >>> aftercomiss_koi_l1 = koi_O2_L1[koi_O2_L1['peakGPS']>1178841618]
     >>> beforecomiss_koi_l1 = koi_O2_L1[koi_O2_L1['peakGPS']<1178841618]
     >>> beforecomiss_blips_l1 = blips_O2_L1[blips_O2_L1['peakGPS']<1178841618]

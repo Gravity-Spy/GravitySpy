@@ -3,7 +3,7 @@
 # ---- Import standard modules to the python path.
 
 from gravityspy.API.project import GravitySpyProject
-import gravityspy.ML.make_pickle_for_linux as make_pickle
+import gravityspy.ML.read_image as read_image
 import gravityspy.ML.labelling_test_glitches as label_glitches
 from gravityspy.utils import log
 import argparse
@@ -23,8 +23,8 @@ def parse_commandline():
                         required=True, nargs='+')
     parser.add_argument("--Filename4", help="Path to File 4",
                         required=True, nargs='+')
-    parser.add_argument("--pathToModel",
-                        help="Path to folder containing trained model",
+    parser.add_argument("--path-to-cnn-model",
+                        help="Path to name of cnn model",
                         required=True)
     args = parser.parse_args()
 
@@ -47,14 +47,13 @@ list_of_images_all = zip(list_of_images_all[0],list_of_images_all[1],list_of_ima
 
 for list_of_images in list_of_images_all:
     ID = list_of_images[0].split('/')[-1].split('_')[1]
-    pathToModel = args.pathToModel
 
     logger.info('Converting image to ML readable...')
 
     image_dataDF = pd.DataFrame()
     for idx, image in enumerate(list_of_images):
         logger.info('Converting {0}'.format(image))
-        image_data = make_pickle.main(image,
+        image_data = read_image.read_grayscale(image,
                                       resolution=0.3)
         image_dataDF[image] = [image_data]
 
@@ -63,7 +62,7 @@ for list_of_images in list_of_images_all:
     # Now label the image
     logger.info('Labelling image...')
     scores, MLlabel = label_glitches.label_glitches(image_data=image_dataDF,
-                                          model_adr='{0}'.format(pathToModel),
+                                          model_adr='{0}'.format(args.path_to_cnn_model),
                                           image_size=[140, 170],
                                           verbose=False)
 
@@ -106,3 +105,4 @@ for list_of_images in list_of_images_all:
             SQLCommand = SQLCommand + '''\"{0}\" = {1}, '''.format(Column,columnDict[Column])
     SQLCommand = SQLCommand[:-2] + ' WHERE \"uniqueID\" = \'' + scoresTable.uniqueID.iloc[0] + "'"
     engine.execute(SQLCommand)
+    engine.dispose()
