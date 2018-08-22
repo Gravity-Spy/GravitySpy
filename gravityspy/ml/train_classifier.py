@@ -361,8 +361,6 @@ def make_model(data, model_folder='model', batch_size=22, nb_epoch=10,
                             testing_x_3, testing_x_4,
                             [img_rows, img_cols], False)
 
-    import pdb
-    pdb.set_trace()
     cnn1 = build_cnn(img_rows*2, img_cols*2)
     final_model = Sequential()
     final_model.add(cnn1)

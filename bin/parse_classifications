@@ -7,21 +7,37 @@ import pandas as pd
 import ast
 import numpy as np
 import os, sys
-import ast
 import pdb
 import datetime
 import collections
 import operator
+import argparse
 
-from gravityspy.API.getLabelDict import getAnswers
-from gravityspy.API import getGoldenImages
+from gravityspy.api.project import GravitySpyProject
 
 ########################
 ####### Functions ######
 #########################
 
+def parse_commandline():
+    """Parse the arguments given on the command-line.
+    """
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--project-info-pickle",
+                        help="This pickle file holds information"
+                        "about what workflows a image with what"
+                        "confidence label should go into",
+                        required=True)
+
+    args = parser.parse_args()
+
+
+    return args
+
+args = parse_commandline()
 engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],os.environ['GRAVITYSPY_DATABASE_PASSWD']))
 
+gspyproject = GravitySpyProject.load_project_from_cache(args.project_info_pickle)
 # This function translates the string answer to an integer value.
 def extract_choiceINT(x):
     return answersDict[x]
@@ -40,9 +56,9 @@ def flatten(d, parent_key='', sep='_'):
     return dict(items)
 
 # This is the current version of the integer to string dict
-answers = getAnswers('1104')
-answersDictRev =  dict(enumerate(sorted(answers[2360].keys())))
-answersDict = dict((str(v),k) for k,v in answersDictRev.iteritems())
+answers = gspyproject.get_answers(workflow=2360)
+answersDictRev =  dict(enumerate(sorted(answers['2360'].keys())))
+answersDict = dict((str(v),k) for k,v in answersDictRev.items())
 
 # Obtain workflow order
 workflowOrder = [int(str(i)) for i in Project.find('1104').raw['configuration']['workflow_order']]
@@ -70,7 +86,7 @@ for iN in range(0,allClassifications.object_count):
         break
 
     # Generically with no hard coding we want to parse all aspects of the
-    # classification metadata. This will ease any changes on the API side and
+    # classification metadata. This will ease any changes on the api side and
     # any changes to the metadata on our side.
 
     try:
@@ -105,5 +121,5 @@ except:
 classifications = classifications[['created_at','id','links_project','links_subjects','links_user','links_workflow','metadata_finished_at','metadata_started_at','metadata_workflow_version','annotations_value_choiceINT', 'annotations_value_choice']]
 classifications.loc[classifications.links_user.isnull(),'links_user'] = 0
 classifications.links_user = classifications.links_user.astype(int)
-print classifications['created_at'].iloc[0]
+print(classifications['created_at'].iloc[0])
 classifications.to_sql('classificationsdev',engine,index=False,if_exists='append',chunksize=100)

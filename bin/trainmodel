@@ -6,7 +6,7 @@ import os
 from matplotlib import use
 use('agg')
 
-import gravityspy.ML.train_classifier as train_classifier
+import gravityspy.ml.train_classifier as train_classifier
 
 # Definite Command line arguments here
 

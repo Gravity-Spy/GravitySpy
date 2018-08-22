@@ -6,9 +6,9 @@ __author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 import os
 os.environ["KERAS_BACKEND"] = "theano"
 
-import gravityspy.ML.read_image as read_image
-import gravityspy.ML.labelling_test_glitches as label_glitches
-import gravityspy.ML.train_classifier as train_classifier
+import gravityspy.ml.read_image as read_image
+import gravityspy.ml.labelling_test_glitches as label_glitches
+import gravityspy.ml.train_classifier as train_classifier
 
 import pandas as pd
 import numpy

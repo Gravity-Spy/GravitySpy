@@ -32,9 +32,9 @@ from gwpy.segments import Segment
 
 from gravityspy import __version__
 from gravityspy.plot.plot import plot_qtransform
-from gravityspy.API.project import GravitySpyProject
-import gravityspy.ML.read_image as read_image
-import gravityspy.ML.labelling_test_glitches as label_glitches
+from gravityspy.api.project import GravitySpyProject
+import gravityspy.ml.read_image as read_image
+import gravityspy.ml.labelling_test_glitches as label_glitches
 from gravityspy.utils import log
 
 ###############################################################################
@@ -247,7 +247,7 @@ def main(inifile, eventTime, project_info_pickle, ID, outDir,
                   bbox_inches='tight')
 
     if runML:
-        # load the API gravityspy project cached class
+        # load the api gravityspy project cached class
         gspyproject = GravitySpyProject.load_project_from_cache(
                                             project_info_pickle)
         # Since we created the images in a
