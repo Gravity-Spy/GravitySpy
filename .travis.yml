@@ -3,6 +3,7 @@ language: python
 env:
   global:
     - KERAS_BACKEND="theano"
+    - MPLBACKEND='agg'
 
 python:
   - '2.7'
