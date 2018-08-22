@@ -1,3 +1,24 @@
+# -*- coding: utf-8 -*-
+# Copyright (C) Scott Coughlin (2017-)
+#
+# This file is part of gravityspy.
+#
+# gravityspy is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# gravityspy is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with gravityspy.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Plotting tool for gravityspy
+"""
+
 from matplotlib import use
 use('agg')
 from matplotlib import pyplot
@@ -7,7 +28,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from gwpy.plot import Plot
 
-import os
 import numpy
 
 
@@ -40,7 +60,7 @@ def plot_qtransform(specsgrams, plot_normalized_energy_range, plot_time_ranges,
         super_fig
             A single `plot` object contianing all spectrograms
     """
-    frange = kqargs.pop('frange', [10, 2048])
+    frange = kwargs.pop('frange', [10, 2048])
 
     # Set some plotting params
     myfontsize = 15
@@ -81,11 +101,15 @@ def plot_qtransform(specsgrams, plot_normalized_energy_range, plot_time_ranges,
         ax.set_xscale('linear')
         ax.grid(False)
 
-        xticks = numpy.linspace(spec.xindex.min().value,
-                             spec.xindex.max().value, 5)
-        xticklabels = []
         dur = float(plot_time_ranges[i])
-        [xticklabels.append(str(i)) for i in numpy.linspace(-dur/2, dur/2, 5)]
+
+        xticks = numpy.linspace(spec.xindex.min().value,
+                                spec.xindex.max().value, 5)
+
+        xticklabels = []
+        for itick in numpy.linspace(-dur/2, dur/2, 5):
+            xticklabels.append(str(itick))
+
         ax.set_xticks(xticks)
         ax.set_xticklabels(xticklabels)
 
@@ -128,10 +152,13 @@ def plot_qtransform(specsgrams, plot_normalized_energy_range, plot_time_ranges,
         iax.set_xscale('linear')
 
         xticks = numpy.linspace(spec.xindex.min().value,
-                             spec.xindex.max().value, 5)
-        xticklabels = []
+                                spec.xindex.max().value, 5)
         dur = float(plot_time_ranges[count])
-        [xticklabels.append(str(i)) for i in numpy.linspace(-dur/2, dur/2, 5)]
+
+        xticklabels = []
+        for itick in numpy.linspace(-dur/2, dur/2, 5):
+            xticklabels.append(str(itick))
+
         iax.set_xticks(xticks)
         iax.set_xticklabels(xticklabels)
 
@@ -147,8 +174,8 @@ def plot_qtransform(specsgrams, plot_normalized_energy_range, plot_time_ranges,
     cax = divider.append_axes("right", size="5%", pad="3%")
 
     cbar = super_fig.colorbar(cax=cax, cmap='viridis',
-                            label='Normalized energy',
-                            clim=plot_normalized_energy_range)
+                              label='Normalized energy',
+                              clim=plot_normalized_energy_range)
 
     super_fig.suptitle(title, fontsize=mylabelfontsize, color=my_color, x=0.51)
 
