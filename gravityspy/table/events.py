@@ -34,7 +34,7 @@ import random
 import os
 
 class Events(GravitySpyTable):
-    """This class provides method for classifying omicron triggers with gravityspy
+    """This class provides method for classifying events with gravityspy
     """
     @classmethod
     def read(cls, *args, **kwargs):
@@ -68,10 +68,12 @@ class Events(GravitySpyTable):
         tab = cls.from_pandas(tab)
 
         if etg == 'OMICRON':
-            tab['event_time'] = tab['peak_time'] + (0.000000001)*tab['peak_time_ns']
+            tab['event_time'] = (tab['peak_time'] +
+                                 (0.000000001)*tab['peak_time_ns'])
             tab['event_time'].format = '%.9f'
         else:
-            raise ValueError('No trigger reading has been defined for this ETG')
+            raise ValueError("No trigger reading has "
+                             "been defined for this ETG")
 
         return tab
         
@@ -86,7 +88,8 @@ class Events(GravitySpyTable):
         """
         if 'event_time' not in self.keys():
             raise ValueError("This method only works if you have defined "
-                             "a column event_time for your Event Trigger Generator.")
+                             "a column event_time for your "
+                             "Event Trigger Generator.")
 
         config = kwargs.pop('config', utils.GravitySpyConfigFile())
 
@@ -96,9 +99,12 @@ class Events(GravitySpyTable):
 
         plot_directory = kwargs.pop('plot_directory', 'plots')
 
-        for event_time, ifo, channel, gid in zip(self['event_time'], self['ifo'],
-                                                 self['channel'], self['gravityspy_id']):
-            specsgrams, q_value = utils.make_q_scans(event_time=event_time, config=config,
+        for event_time, ifo, channel, gid in zip(self['event_time'],
+                                                 self['ifo'],
+                                                 self['channel'],
+                                                 self['gravityspy_id']):
+            specsgrams, q_value = utils.make_q_scans(event_time=event_time,
+                                                     config=config,
                                                      **kwargs) 
 
             utils.save_q_scans(plot_directory, specsgrams,
@@ -321,7 +327,8 @@ class Events(GravitySpyTable):
         logger = log.Logger('Gravity Spy: Fetching Omicron Triggers')
 
         # Obtain segments that are analysis ready
-        analysis_ready = DataQualityFlag.query('{0}:{1}'.format(detector, dqflag),\
+        analysis_ready = DataQualityFlag.query('{0}:{1}'.format(detector,
+                                                                dqflag),
                                               float(start), float(end))
 
         # Display segments for which this flag is true
@@ -332,42 +339,56 @@ class Events(GravitySpyTable):
         files = find_trigger_files(channel,'Omicron',
                                    float(start),float(end))
 
-        omicrontriggers = cls.read(files, tablename='sngl_burst', format='ligolw')
+        triggers = cls.read(files, tablename='sngl_burst', format='ligolw')
 
-        masks = numpy.ones(len(omicrontriggers), dtype=bool)
+        logger.info("Number of triggers "
+                    "before any filtering: {0}".format(len(triggers)))
+
+        masks = numpy.ones(len(triggers), dtype=bool)
+
+        logger.info("duration filter "
+                    "[{0}, {1}]".format(duration_min, duration_max))
+
+        logger.info("frequency filter "
+                    "[{0}, {1}]".format(frequency_min, frequency_max))
+
+        logger.info("snr filter "
+                    "[{0}, {1}]".format(snr_min, snr_max))
 
         if not duration_max is None:
-            masks &= (omicrontriggers['duration'] <= duration_max)
+            masks &= (triggers['duration'] <= duration_max)
         if not duration_min is None:
-            masks &= (omicrontriggers['duration'] >= duration_min)
+            masks &= (triggers['duration'] >= duration_min)
         if not frequency_max is None:
-            masks &= (omicrontriggers['peak_frequency'] <= frequency_max)
+            masks &= (triggers['peak_frequency'] <= frequency_max)
         if not frequency_min is None:
-            masks &= (omicrontriggers['peak_frequency'] >= frequency_min)
+            masks &= (triggers['peak_frequency'] >= frequency_min)
         if not snr_max is None:
-            masks &= (omicrontriggers['snr'] <= snr_max)
+            masks &= (triggers['snr'] <= snr_max)
         if not snr_min is None:
-            masks &= (omicrontriggers['snr'] >= snr_min)
+            masks &= (triggers['snr'] >= snr_min)
 
-        omicrontriggers = omicrontriggers[masks]
+        triggers = triggers[masks]
         # Set peakGPS
-        omicrontriggers['peakGPS'] = omicrontriggers['peak_time'] + (0.000000001)*omicrontriggers['peak_time_ns']
 
-        logger.info("List of available metadata information for a given glitch provided by omicron: {0}".format(omicrontriggers.keys()))
-
-        logger.info("Number of triggers after SNR and Freq cuts but before ANALYSIS READY flag filtering: {0}".format(len(omicrontriggers)))
+        logger.info("Number of triggers after "
+                    "snr, frequency, and duration filters "
+                    "cuts but before {0} flag filtering: "
+                    "{1}".format(dqflag, len(triggers)))
 
         # Filter the raw omicron triggers against the ANALYSIS READY flag.
-        vetoed = omicrontriggers['peakGPS'].in_segmentlist(analysis_ready.active)
-        omicrontriggers = omicrontriggers[vetoed]
+        vetoed = triggers['event_time'].in_segmentlist(analysis_ready.active)
+        triggers = triggers[vetoed]
 
-        logger.info("Final trigger length: {0}".format(len(omicrontriggers)))
+        logger.info("Final trigger length: {0}".format(len(triggers)))
 
-        return omicrontriggers
+        return triggers
 
 
 def id_generator(x, size=10,
-                 chars=string.ascii_uppercase + string.digits + string.ascii_lowercase):
+                 chars=(string.ascii_uppercase +
+                        string.digits +
+                        string.ascii_lowercase)):
     """Obtain omicron triggers run gravityspy on
 
     Parameters:
