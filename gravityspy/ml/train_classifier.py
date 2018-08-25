@@ -170,7 +170,7 @@ def pickle_trainingset(path_to_trainingset,
     return image_dataDF
 
 
-def make_model(data, model_folder='model', batch_size=22, nb_epoch=10,
+def make_model(data, batch_size=22, nb_epoch=10,
                nb_classes=22, fraction_validation=.125, fraction_testing=None,
                best_model_based_validset=0, image_size=[140, 170],
                random_seed=1986, verbose=True):
@@ -189,9 +189,9 @@ def make_model(data, model_folder='model', batch_size=22, nb_epoch=10,
         data (str):
             Pickle file containing training set data
 
-        model_folder (str, optional):
-            Defaults to `model`
-            path to folder you would like to save the model
+        model_name (str, optional):
+            Defaults to `multi_view_classifier.h5`
+            path to file you would like to save the model to
 
         batch_size (int, optional):
             Default 22
@@ -224,8 +224,7 @@ def make_model(data, model_folder='model', batch_size=22, nb_epoch=10,
             Default False
 
     Returns:
-        file:
-            name `final_model/multi_view_classifier.h5`
+        filename:
             A trained Convultional Neural Network
     """
     logger = log.Logger('Gravity Spy: Training '
@@ -367,39 +366,8 @@ def make_model(data, model_folder='model', batch_size=22, nb_epoch=10,
     final_model.add(Dense(nb_classes, activation='softmax'))
 
     final_model.compile(loss='categorical_crossentropy',
-                  optimizer='adadelta',
-                  metrics=['accuracy'])
-
-    if not os.path.exists(model_folder):
-        if verbose:
-            logger.info('making... ' + model_folder)
-        os.makedirs(model_folder)
-
-    full_model_adr = model_folder
-
-    loss_checker = ModelCheckpoint(os.path.join(full_model_adr,
-                                                "best_weights_loss.h5"),
-                                   monitor='val_loss', verbose=1,
-                                   save_best_only=True, mode='auto',
-                                   save_weights_only=True)
-    acc_checker = ModelCheckpoint(os.path.join(full_model_adr,
-                                               "best_weights_acc.h5"),
-                                  monitor='val_acc', verbose=1,
-                                  save_best_only=True, mode='auto',
-                                  save_weights_only=True)
-
-    if best_model_based_validset:
-        callbacks = [acc_checker, loss_checker]
-    else:
-        callbacks = []
-
-    final_model_adr = os.path.join(full_model_adr, 'final_model')
-    if not os.path.exists(final_model_adr):
-        logger.info('making... ' + final_model_adr)
-        os.makedirs(final_model_adr)
-    out_file = open(os.path.join(final_model_adr, 'out.txt'), "w")
-    out_file.write(data + '\n')
-
+                        optimizer='adadelta',
+                        metrics=['accuracy'])
 
     final_model.fit(concat_train, trainingset_labels,
         batch_size=batch_size, epochs=nb_epoch, verbose=1,
@@ -409,7 +377,6 @@ def make_model(data, model_folder='model', batch_size=22, nb_epoch=10,
         score = final_model.evaluate(concat_test, testing_labels, verbose=0)
 
         logger.info('Test accuracy (last): {0}'.format(score[1]))
-        out_file.write('\n * Test Accuracy (last): %0.4f%% \n' % score[1])
 
         score2 = final_model.evaluate(concat_valid, validation_labels, verbose=0)
         logger.info('valid accuracy (last): {0}'.format(score2[1]))
@@ -424,25 +391,4 @@ def make_model(data, model_folder='model', batch_size=22, nb_epoch=10,
         score3 = final_model.evaluate(concat_train, trainingset_labels, verbose=0)
         logger.info('Train accuracy (last): {0}'.format(score3[1]))
 
-    final_model.save(os.path.join(final_model_adr, 'multi_view_classifier.h5'))
-
-    if best_model_based_validset:
-        final_model.load_weights(full_model_adr + "/best_weights_acc.h5")
-        score = final_model.evaluate(concat_test, cat_test_set_y_1, verbose=0)
-        print('Test accuracy (acc):', score[1])
-        out_file.write('\n * Test Accuracy (acc): %0.4f%% \n' % score[1])
-        score2 = final_model.evaluate(concat_valid, cat_valid_set_y_1, verbose=0)
-        print('valid accuracy (acc):', score2[1])
-        score3 = final_model.evaluate(concat_train, cat_train_set_y_1, verbose=0)
-        print('Train accuracy (acc):', score3[1])
-
-        final_model.load_weights(full_model_adr + "/best_weights_loss.h5")
-        score = final_model.evaluate(concat_test, cat_test_set_y_1, verbose=0)
-        print('Test accuracy (loss):', score[1])
-        out_file.write('\n * Test Accuracy (loss): %0.4f%% \n' % score[1])
-        score2 = final_model.evaluate(concat_valid, cat_valid_set_y_1, verbose=0)
-        print('valid accuracy (loss):', score2[1])
-        score3 = final_model.evaluate(concat_train, cat_train_set_y_1, verbose=0)
-        print('Train accuracy (loss):', score3[1])
-
-        return
+    return final_model
