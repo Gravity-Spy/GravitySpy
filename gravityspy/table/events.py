@@ -235,7 +235,6 @@ class Events(GravitySpyTable):
 
         return self
 
-
     def update_scores(self, path_to_cnn):
         """Obtain omicron triggers to run gravityspy on
 
@@ -250,18 +249,6 @@ class Events(GravitySpyTable):
                              "of the images are known.")
 
         return
-
-    def trainmodel(self, **kwargs):
-        """Obtain omicron triggers to run gravityspy on
-
-        Parameters:
-        ----------
-
-        Returns
-        -------
-        """
-        model = make_model(data, **kwargs)
-        return model
 
     def determine_workflow_and_subjectset(self, project_info_pickle):
         """Obtain omicron triggers to run gravityspy on
