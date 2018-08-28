@@ -41,10 +41,10 @@ class Events(GravitySpyTable):
         """Classify triggers in this table
 
         Parameters:
-        ----------
+            `gwpy.table.GravitySpyTable`
 
-        Returns
-        -------
+        Returns:
+            `Events` table
         """
         etg = kwargs.pop('etg', 'OMICRON')
         tab = super(Events, cls).read(*args, **kwargs)
@@ -81,10 +81,12 @@ class Events(GravitySpyTable):
         """Classify triggers in this table
 
         Parameters:
-        ----------
 
-        Returns
-        -------
+            project_info_pickle: thing1
+            path_to_cnn: thing2
+
+        Returns:
+            `Events` table
         """
         if 'event_time' not in self.keys():
             raise ValueError("This method only works if you have defined "
@@ -139,10 +141,7 @@ class Events(GravitySpyTable):
         """Obtain omicron triggers to run gravityspy on
 
         Parameters:
-        ----------
-
-        Returns
-        -------
+            table (str): name of SQL table
         """
         from sqlalchemy.engine import create_engine
         # connect if needed
@@ -162,10 +161,7 @@ class Events(GravitySpyTable):
         """Obtain omicron triggers to run gravityspy on
 
         Parameters:
-        ----------
-
-        Returns
-        -------
+            table (str): name of SQL tabl
         """
         from sqlalchemy.engine import create_engine
         # connect if needed
@@ -193,10 +189,10 @@ class Events(GravitySpyTable):
         """Obtain omicron triggers to run gravityspy on
 
         Parameters:
-        ----------
+            subject_set_id (optional, int) : subject set id to upload to
 
-        Returns
-        -------
+        Returns:
+            `Events` table
         """
         # First filter out images that have already been uploaded
         tab = self[self['upload_flag'] == 1]
@@ -245,14 +241,18 @@ class Events(GravitySpyTable):
         """Obtain omicron triggers to run gravityspy on
 
         Parameters:
-        ----------
+            path_to_cnn (str): filename of model
 
-        Returns
-        -------
+        Returns:
+            `Events` table with columns containing new scores
         """
-        if ['Filename1', 'Filename2', 'Filename3', 'Filename4'] not in self.keys():
+        if ((['Filename1', 'Filename2', 'Filename3', 'Filename4'] not in self.keys()) or
+            (['url1', 'url2', 'url3', 'url4'] not in self.keys()) or
+            (['imgUrl1', 'imgUrl2', 'imgUrl3', 'imgUrl4'] not in self.keys())
+            ):
             raise ValueError("This method only works if the file paths of the images "
                              "of the images are known.")
+
 
         return
 
@@ -260,10 +260,10 @@ class Events(GravitySpyTable):
         """Obtain omicron triggers to run gravityspy on
 
         Parameters:
-        ----------
+            path_to_cnn (str): filename of file with Gravity Spy project info
 
-        Returns
-        -------
+        Returns:
+            `Events` table with columns workflow and subjectset
         """
         if 'ml_confidence' not in self.keys() or 'ml_label' not in self.keys():
             raise ValueError("This method only works if the confidence and label "
@@ -297,10 +297,14 @@ class Events(GravitySpyTable):
         """Obtain omicron triggers to run gravityspy on
 
         Parameters:
-        ----------
 
-        Returns
-        -------
+            start (int): start of time to look for triggers
+            end (int): end time to look for triggers
+            channel (str): channel to look for triggers
+            dqflag (str): name of segment during which to keep triggers
+
+        Returns:
+            `Events` table
         """
         duration_max = kwargs.pop('duration_max', None)
         duration_min = kwargs.pop('duration_min', None)
@@ -379,19 +383,22 @@ def id_generator(x, size=10,
     """Obtain omicron triggers run gravityspy on
 
     Parameters:
-    ----------
 
-    Returns
-    -------
+        x (str): the item you would like a random id to be generated for
+    Returns:
     """
     return ''.join(random.SystemRandom().choice(chars) for _ in range(size))
 
 def get_connection_str(db='gravityspy',
                        host='gravityspy.ciera.northwestern.edu',
-                       user=os.getenv('GRAVITYSPY_DATABASE_USER', None),
-                       passwd=os.getenv('GRAVITYSPY_DATABASE_PASSWD', None)):
+                       user=None,
+                       passwd=None):
     """Create string to pass to create_engine
     """
+    if (not user) or (not passwd):
+        user = os.getenv('GRAVITYSPY_DATABASE_USER', None)
+        passwd = os.getenv('GRAVITYSPY_DATABASE_PASSWD', None)
+
     if (not user) or (not passwd):
         raise ValueError('Remember to either pass '
                          'or export GRAVITYSPY_DATABASE_USER '

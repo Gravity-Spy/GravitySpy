@@ -16,44 +16,38 @@
 # You should have received a copy of the GNU General Public License
 # along with gravityspy.  If not, see <http://www.gnu.org/licenses/>.
 
-from gwpy.timeseries import TimeSeries
-from gwpy.table import GravitySpyTable
-from gwpy.segments import Segment
-
-from ..plot.plot import plot_qtransform
-from ..api.project import GravitySpyProject
 from ..utils import log
 from ..utils import utils
 
-import ..ml.read_image as read_image
-import ..ml.labelling_test_glitches as label_glitches
-
 import os
-import numpy
-import pandas
 
 def classify(event_time, channel_name,
              project_info_pickle, path_to_cnn,
              verbose=True, **kwargs):
     """classify an excess noise event
 
+    Note:
+        If you do not pass the **kwargs `timeseries`
+        or `source` then your timeseries will attempt to be
+        generated on the fly uses `gwpy.timeseries.TimeSeries.get`
+
     Parameters:
 
-        specsgrams (list):
+        event_time (list):
             A list of `gwpy.spectrogram.Spectrogram` objects
 
-        plot_normalized_energy_range (array):
+        channel_name (array):
             The min and max of the colorbar for the plots
 
-        plot_time_ranges (array):
+        project_info_pickle (array):
             The duration assosciated with each plot to be made
 
-        detector_name (str):
+        path_to_cnn (str):
             What detetor where these spectrograms from
 
-        start_time (float):
-            What was the start time of the data used for these spectrograms
-            this effects what the plot title is (ER10 O1 O2 etc)
+        **kwargs:
+            timeseries
+            source
 
     Returns:
 
@@ -75,9 +69,6 @@ def classify(event_time, channel_name,
     # Parse Keyword Arguments
     config = kwargs.pop('config', utils.GravitySpyConfigFile())
     plot_directory = kwargs.pop('plot_directory', 'plots')
-    timeseries = kwargs.pop('timeseries', None)
-    source = kwargs.pop('source', None)
-    id_string = kwargs.pop('ID', '{0:.9f}'.format(event_time))
 
     # Parse Ini File
     plot_time_ranges = config.plot_time_ranges
@@ -85,17 +76,20 @@ def classify(event_time, channel_name,
 
     # Cropping the results before interpolation to save on time and memory
     # perform the q-transform
-    specsgrams, q_value = utils.make_q_scans(event_time, config=config,
+    specsgrams, q_value = utils.make_q_scans(event_time=event_time,
+                                             config=config,
                                              **kwargs)
 
     utils.save_q_scans(plot_directory, specsgrams,
                        plot_normalized_energy_range, plot_time_ranges,
-                       detector_name, event_time, id_string)
+                       detector_name, event_time,
+                       **kwargs)
 
-    # Since we created the images in a
-    # special temporary directory we can run os.listdir to get there full
-    # names so we can convert the images into ML readable format.
-    scores_table = utils.label_q_scans(plot_directory, path_to_cnn,
-                                       project_info_pickle)
 
-    return scores_table
+    results = utils.label_q_scans(plot_directory=plot_directory,
+                                  path_to_cnn=path_to_cnn,
+                                  project_info_pickle=project_info_pickle,
+                                  **kwargs)
+    results['q_value'] = q_value
+
+    return results

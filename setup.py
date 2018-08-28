@@ -64,20 +64,21 @@ setup_requires = [
 ]
 
 install_requires = [
-    'gwpy>=0.10.1',
+    'gwpy>=0.12',
     'configparser',
     'panoptes_client',
     'pandas>=0.22;python_version>="3.5"',
     'pandas<0.21;python_version=="3.4"',
     'pandas>=0.22;python_version=="2.7"',
-    'h5py',
     'psycopg2-binary',
     'SQLAlchemy',
     'scikit_image',
     'keras==2.1.6',
     'Theano==1.0.1',
     'tensorflow-gpu',
-    'tables',
+    'gwtrigfind',
+    'lscsoft-glue',
+    'lalsuite',
 ]
 
 tests_require = [
@@ -86,6 +87,7 @@ tests_require = [
 
 extras_require = {
     'doc': [
+        'ipython',
         'sphinx',
         'numpydoc',
         'sphinx_rtd_theme',
