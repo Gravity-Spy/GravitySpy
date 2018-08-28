@@ -77,6 +77,7 @@ def classify(event_time, channel_name,
     # Cropping the results before interpolation to save on time and memory
     # perform the q-transform
     specsgrams, q_value = utils.make_q_scans(event_time=event_time,
+                                             channel_name=channel_name,
                                              config=config,
                                              **kwargs)
 
