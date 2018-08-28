@@ -3,6 +3,7 @@ from gwpy.table import EventTable
 
 from gravityspy.classify import classify
 import os
+import pandas
 
 MODEL_NAME_CNN = os.path.join(os.path.split(__file__)[0], '..', '..', 'models',
                               'multi_view_classifier.h5')
@@ -33,4 +34,5 @@ class TestUtils(object):
                            timeseries=SCRATCHY_TIMESERIES)
 
         results.convert_unicode_to_bytestring()
-        assert results == RESULTS_TABLE
+        pandas.testing.assert_frame_equal(results.to_pandas(),
+                                          RESULTS_TABLE.to_pandas())
