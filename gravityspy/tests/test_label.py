@@ -6,20 +6,20 @@ __author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 import os
 os.environ["KERAS_BACKEND"] = "theano"
 
-import gravityspy.ML.read_image as read_image
-import gravityspy.ML.labelling_test_glitches as label_glitches
-import gravityspy.ML.train_classifier as train_classifier
+import gravityspy.ml.read_image as read_image
+import gravityspy.ml.labelling_test_glitches as label_glitches
+import gravityspy.ml.train_classifier as train_classifier
 
 import pandas as pd
 import numpy
 
 TEST_IMAGES_PATH = os.path.join(os.path.split(__file__)[0], 'data',
 'images')
-MODEL_NAME_CNN = os.path.join(os.path.split(__file__)[0], '..', '..', 'bin',
+MODEL_NAME_CNN = os.path.join(os.path.split(__file__)[0], '..', '..', 'models',
                               'multi_view_classifier.h5')
-MODEL_NAME_FEATURE_SINGLE_VIEW = os.path.join(os.path.split(__file__)[0], '..', '..', 'bin',
+MODEL_NAME_FEATURE_SINGLE_VIEW = os.path.join(os.path.split(__file__)[0], '..', '..', 'models',
                                               'single_view_model.h5')
-MODEL_NAME_FEATURE_MULTIVIEW = os.path.join(os.path.split(__file__)[0], '..', '..', 'bin',
+MODEL_NAME_FEATURE_MULTIVIEW = os.path.join(os.path.split(__file__)[0], '..', '..', 'models',
                                             'semantic_idx_model.h5')
 MULTIVIEW_FEATURES_FILE = os.path.join(os.path.split(__file__)[0], 'data',
                                        'MULTIVIEW_FEATURES.npy')
@@ -64,12 +64,12 @@ class TestGravitySpyML(object):
             image_dataDF[image] = [image_data]
 
         # Now label the image
-        scores, MLlabel = label_glitches.label_glitches(
-                                                        image_dataDF,
-                                                        '{0}'.format(
-                                                              MODEL_NAME_CNN),
-                                                        [140, 170],
-                                                        False)
+        scores, MLlabel, _, _, _, _, _, = label_glitches.label_glitches(
+                                                                        image_dataDF,
+                                                                        '{0}'.format(
+                                                                        MODEL_NAME_CNN),
+                                                                        [140, 170],
+                                                                        False)
 
         confidence = float(scores[0][MLlabel])
         assert confidence == SCORE
