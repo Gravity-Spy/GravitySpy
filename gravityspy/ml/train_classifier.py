@@ -141,12 +141,12 @@ def pickle_trainingset(path_to_trainingset,
     logger.info('The classes you are pickling are {0}'.format(
           classes))
 
-    image_dataDF = pd.DataFrame()
+    data = pd.DataFrame()
     for iclass in classes:
         logger.info('Converting {0} into b/w info'.format(iclass))
         images = sorted(os.listdir(os.path.join(path_to_trainingset, iclass)))
         images = [imageidx for imageidx in images \
-                  if 'L1_' in imageidx or 'H1_' in imageidx]
+                  if 'L1_' in imageidx or 'H1_' in imageidx or 'V1_' in imageidx]
         # Group each sample into sets of 4 different durations
         samples = zip(*(iter(images),) * 4)
         for isample in samples:
@@ -160,14 +160,14 @@ def pickle_trainingset(path_to_trainingset,
                 tmpDF[information_on_image[-1]] = [image_data]
             tmpDF['uniqueID'] = information_on_image[1]
             tmpDF['Label'] = iclass
-            image_dataDF = image_dataDF.append(tmpDF)
+            data = data.append(tmpDF)
 
         logger.info('Finished converting {0} into b/w info'.format(iclass))
 
     picklepath = os.path.join(save_address)
     logger.info('Saving pickled data to {0}'.format(picklepath))
-    image_dataDF.to_pickle(picklepath)
-    return image_dataDF
+    data.to_pickle(picklepath)
+    return data
 
 
 def make_model(data, batch_size=22, nb_epoch=10,
@@ -233,48 +233,44 @@ def make_model(data, batch_size=22, nb_epoch=10,
     logger.info('Using random seed {0}'.format(random_seed))
     np.random.seed(random_seed)  # for reproducibility
 
-    logger.info('Loading file {0}'.format(data))
-
-    image_dataDF = pd.read_pickle(data)
-
-    logger.info('You data set contained {0} samples'.format(len(image_dataDF)))
+    logger.info('You data set contained {0} samples'.format(len(data)))
 
     img_rows, img_cols = image_size[0], image_size[1]
 
     logger.info('The size of the images being trained {0}'.format(image_size))
 
-    classes = sorted(image_dataDF.Label.unique())
+    classes = sorted(data.Label.unique())
 
     if len(classes) != nb_classes:
         raise ValueError('Youre supplied data set does not match the number of'
                          ' classes you said you were training on')
 
     classes = dict(enumerate(classes))
-    classes = dict((str(v),k) for k,v in classes.iteritems())
+    classes = dict((str(v),k) for k,v in classes.items())
 
     logger.info('You have supplied a training set with the following class'
                 'idx to str label mapping: {0}'.format(classes))
 
     logger.info('converting string to idx...')
-    image_dataDF.Label = image_dataDF.Label.apply(lambda x: classes[x])
+    data.Label = data.Label.apply(lambda x: classes[x])
 
     logger.info('Selecting samples for validation ...')
     logger.info('You have selected to set aside {0} percent of '
                 'images per class for validation.'.format(
                                        fraction_validation * 100))
 
-    validationDF = image_dataDF.groupby('Label').apply(
+    validationDF = data.groupby('Label').apply(
                        lambda x: x.sample(frac=fraction_validation,
                        random_state=random_seed)
                        ).reset_index(drop=True)
 
     logger.info('Removing validation images from training DF ...')
 
-    image_dataDF = image_dataDF.loc[~image_dataDF.uniqueID.isin(
+    data = data.loc[~data.uniqueID.isin(
                                     validationDF.uniqueID)]
 
     logger.info('There are now {0} samples remaining'.format(
-                                                       len(image_dataDF)))
+                                                       len(data)))
 
     if fraction_testing:
         logger.info('Selecting samples for testing ...')
@@ -282,36 +278,36 @@ def make_model(data, batch_size=22, nb_epoch=10,
                 'images per class for validation.'.format(
 
                                        fraction_testing * 100))
-        testingDF = image_dataDF.groupby('Label').apply(
+        testingDF = data.groupby('Label').apply(
                    lambda x: x.sample(frac=fraction_testing,
                              random_state=random_seed)
                    ).reset_index(drop=True)
 
         logger.info('Removing testing images from training DF ...')
 
-        image_dataDF = image_dataDF.loc[~image_dataDF.uniqueID.isin(
+        data = data.loc[~data.uniqueID.isin(
                                         testingDF.uniqueID)]
 
         logger.info('There are now {0} samples remaining'.format(
-                                                           len(image_dataDF)))
+                                                           len(data)))
 
     # concatenate the pixels
-    train_set_x_1 = np.vstack(image_dataDF['0.5.png'].values).reshape(
+    train_set_x_1 = np.vstack(data['0.5.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
     validation_x_1 = np.vstack(validationDF['0.5.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
 
-    train_set_x_2 = np.vstack(image_dataDF['1.0.png'].values).reshape(
+    train_set_x_2 = np.vstack(data['1.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
     validation_x_2 = np.vstack(validationDF['1.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
 
-    train_set_x_3 = np.vstack(image_dataDF['2.0.png'].values).reshape(
+    train_set_x_3 = np.vstack(data['2.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
     validation_x_3 = np.vstack(validationDF['2.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
 
-    train_set_x_4 = np.vstack(image_dataDF['4.0.png'].values).reshape(
+    train_set_x_4 = np.vstack(data['4.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
     validation_x_4 = np.vstack(validationDF['4.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
@@ -327,13 +323,13 @@ def make_model(data, batch_size=22, nb_epoch=10,
                                                      -1, 1, img_rows, img_cols)
 
     # Concatenate the labels
-    trainingset_labels = np.vstack(image_dataDF['Label'].values)
+    trainingset_labels = np.vstack(data['Label'].values)
     validation_labels = np.vstack(validationDF['Label'].values)
     if fraction_testing:
         testing_labels = np.vstack(testingDF['Label'].values)
 
     # Concatenate the name
-    trainingset_names = np.vstack(image_dataDF['uniqueID'].values)
+    trainingset_names = np.vstack(data['uniqueID'].values)
     validation_names = np.vstack(validationDF['uniqueID'].values)
     if fraction_testing:
         testing_names = np.vstack(testingDF['uniqueID'].values)
@@ -371,7 +367,7 @@ def make_model(data, batch_size=22, nb_epoch=10,
 
     final_model.fit(concat_train, trainingset_labels,
         batch_size=batch_size, epochs=nb_epoch, verbose=1,
-        validation_data=(concat_valid, validation_labels), callbacks=callbacks)
+        validation_data=(concat_valid, validation_labels), callbacks=[])
 
     if fraction_testing:
         score = final_model.evaluate(concat_test, testing_labels, verbose=0)
