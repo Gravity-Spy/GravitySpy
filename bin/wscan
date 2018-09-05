@@ -192,7 +192,8 @@ def main(inifile, eventTime, project_info_pickle, ID, outDir,
 
     # Read in the data
     logger.info('Fetching Data...')
-    data = TimeSeries.get(channelName, startTime, stopTime).astype('float64')
+    data = TimeSeries.get(channelName, startTime, stopTime,
+                          frametype=frameType).astype('float64')
 
     # resample data
     logger.info('Resampling Data...')
@@ -253,7 +254,7 @@ def main(inifile, eventTime, project_info_pickle, ID, outDir,
         # Since we created the images in a
         # special temporary directory we can run os.listdir to get there full
         # names so we can convert the images into ML readable format.
-        list_of_images = [ifile for ifile in os.listdir(outDirtmp) 
+        list_of_images = [ifile for ifile in os.listdir(outDirtmp)
                           if 'spectrogram' in ifile]
 
         logger.info('Converting image to ML readable...')
@@ -273,13 +274,13 @@ def main(inifile, eventTime, project_info_pickle, ID, outDir,
 
         # Now label the image
         logger.info('Labelling image...')
-        scores, MLlabel = label_glitches.label_glitches(image_data=image_data_for_cnn,
+        scores, MLlabel, _, _, _, _, _ = label_glitches.label_glitches(image_data=image_data_for_cnn,
                                               model_name='{0}'.format(path_to_cnn),
                                               image_size=[140, 170],
                                               verbose=verbose)
 
         # extract confidence
-        confidence = float(scores[0][MLlabel])
+        confidence = scores.max(1)
 
         # We must determine the columns that will be saved for this image.
         # First and foremost we want to determine the possible classes the image could be
@@ -295,7 +296,7 @@ def main(inifile, eventTime, project_info_pickle, ID, outDir,
                         "UploadFlag", "qvalue"])
 
         # Determine label
-        Label = classes[MLlabel]
+        Label = np.array(classes)[MLlabel]
 
         logger.info('This image has received the following label: '
                     '{0} with {1} percent confidence'.format(Label, confidence))
