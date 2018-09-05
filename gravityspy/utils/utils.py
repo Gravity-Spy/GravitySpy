@@ -57,6 +57,7 @@ def make_q_scans(event_time, **kwargs):
     timeseries = kwargs.pop('timeseries', None)
     source = kwargs.pop('source', None)
     channel_name = kwargs.pop('channel_name', None)
+    frametype = kwargs.pop('frametype', None)
     verbose = kwargs.pop('verbose', False)
 
     if verbose:
@@ -112,8 +113,8 @@ def make_q_scans(event_time, **kwargs):
     else:
         if verbose:
             logger.info('Fetching Data...')
-        data = TimeSeries.get(channel_name,
-                              start_time, stop_time).astype('float64')
+        data = TimeSeries.get(channel_name, start_time, stop_time,
+                              frametype=frametype).astype('float64')
 
     # resample data
     if verbose:
@@ -225,7 +226,8 @@ def label_q_scans(plot_directory, path_to_cnn, project_info_pickle,
                                                             )
 
     workflows_for_each_class = gspyproject.get_level_structure(IDfilter='O2')
-    classes = sorted(workflows_for_each_class['2117'].keys())
+    classes = kwargs.pop('classes',
+                         sorted(workflows_for_each_class['2117'].keys()))
 
     if verbose:
         logger = log.Logger('Gravity Spy: Labelling Images')

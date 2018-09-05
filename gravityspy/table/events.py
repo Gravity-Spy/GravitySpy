@@ -19,6 +19,7 @@
 from gwtrigfind import find_trigger_files
 from gwpy.segments import DataQualityFlag
 from gwpy.table import GravitySpyTable
+from sklearn.cluster import KMeans
 
 from ..utils import log
 from ..utils import utils
@@ -76,6 +77,11 @@ class Events(GravitySpyTable):
                              "been defined for this ETG")
 
         return tab
+
+    @classmethod
+    def fetch(cls, *args, **kwargs):
+        tab = super(Events, cls).fetch(*args, **kwargs)
+        return cls(tab)
         
     def classify(self, project_info_pickle, path_to_cnn, **kwargs):
         """Classify triggers in this table
@@ -288,6 +294,67 @@ class Events(GravitySpyTable):
 
         self["workflow"] = level_of_images
         self["subjectset"] = subjectset_of_images
+
+        return self
+
+    def create_collection(self, name=None, private=True,
+                          default_subject=None):
+        """Obtain omicron triggers to run gravityspy on
+
+        Parameters:
+            name (str, optional):
+                name of collection
+            private (bool, optional):
+                would you like this collection to be private or public
+            default_subject (int, optional):
+                subject id to be the cover image of collection
+
+        Returns:
+            `str` url link to the created collection 
+        """
+        if name is None:
+            # will name it after the label of event table
+            name = self['Label'][0]
+
+        if default_subject is None:
+            default_subject = self['links_subjects'][0]
+
+        collection_url = ('https://www.zooniverse.org/'
+                          'projects/zooniverse/gravity-spy/collections/')
+
+        with panoptes_client.Panoptes() as client:
+            client.connect()
+
+            collection = panoptes_client.Collection()
+            collection.links.project = '1104'
+            collection.display_name = '{0}'.format(name)
+            collection.private = private
+            urltmp = collection.save()
+            collection_url = collection_url + urltmp['collections'][0]['slug']
+            collection.add(list(self['links_subjects']))
+            collection.set_default_subject(default_subject)
+
+        return collection_url
+
+    def cluster(self, nclusters, random_state=30):
+        """Create new clusters from feature space vectors
+
+        Parameters:
+
+            nclusters (int): how many clusters to try to group
+                these triggers into
+
+        Returns:
+            `Events` table
+        """
+        if '0' not in self.columns:
+            raise ValueError("You are trying to cluster but you do not have "
+                             "the feature space information in this table.")
+
+        features = self.to_pandas().values[:, 0:200]
+        kmeans_1 = KMeans(nclusters, random_state=random_state).fit(features)
+        clusters = kmeans_1.labels_
+        self['clusters'] = clusters
 
         return self
 

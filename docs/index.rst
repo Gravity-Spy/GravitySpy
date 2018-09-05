@@ -103,6 +103,7 @@ Please consult these pages for more details on using GravitySpy:
    install/index
    classify/index
    events/index
+   cluster/index
    wscan/index
    trainmodel/index
    examples/index
