@@ -79,6 +79,8 @@ install_requires = [
     'gwtrigfind',
     'lscsoft-glue',
     'lalsuite',
+    'scikit-learn',
+    'dqsegdb',
 ]
 
 tests_require = [
