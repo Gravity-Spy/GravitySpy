@@ -1,0 +1,71 @@
+#!/usr/bin/env python
+
+# ---- Import standard modules to the python path.
+
+from __future__ import division
+
+from gravityspy import __version__
+from gravityspy.classify import classify
+
+import argparse
+import os
+
+###############################################################################
+##########################                             ########################
+##########################   Func: parse_commandline   ########################
+##########################                             ########################
+###############################################################################
+# Definite Command line arguments here
+
+def parse_commandline():
+    """Parse the arguments given on the command-line.
+    """
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-V', '--version', action='version',
+                        version=__version__)
+    parser.add_argument("--event-time", type=float,
+                        help="Trigger time of the glitch", required=True)
+    parser.add_argument("--gravityspy-id", action="store_true", default=False,
+                        help="Is this image being generated for "
+                        "the GravitySpy project, if so you must assign a "
+                        "uniqueID string to label the images instead of "
+                        "GPS time")
+    parser.add_argument("--ifo",
+                        help="ifo associated with the event")
+    parser.add_argument("--id",
+                        help="The uniqueID string to be supplied with "
+                             "--uniqueID")
+    parser.add_argument("--plot-directory", help="Outdir for images")
+    parser.add_argument("--path-to-cnn-model",
+                        help="Path to name of cnn model",
+                        required=True)
+    parser.add_argument("--project-info-pickle",
+                        help="This pickle file holds information"
+                        "about what workflows a image with what"
+                        "confidence label should go into",
+                        required=True)
+    parser.add_argument("--verbose", action="store_true", default=False,
+                        help="Run in Verbose Mode")
+    args = parser.parse_args()
+
+
+    return args
+
+###############################################################################
+##########################                     ################################
+##########################      MAIN CODE      ################################
+##########################                     ################################
+###############################################################################
+
+
+args = parse_commandline()
+results = classify(event_time=args.event_time,
+                   plot_directory=args.plot_directory,
+                   channel_name='{0}1:GDS-CALIB_STRAIN'.format(args.ifo),
+                   project_info_pickle=args.project_info_pickle,
+                   path_to_cnn=args.path_to_cnn_model,
+                   frametype='{0}1_HOFT_C00'.format(args.ifo), verbose=True,
+                   id_string=args.id)
+
+results.convert_unicode_to_bytestring()
+results.write(os.path.join(args.plot_directory,  args.id + '.h5'), format='hdf5', path='{0}'.format(args.id))

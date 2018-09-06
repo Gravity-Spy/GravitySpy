@@ -78,7 +78,7 @@ class ZooProject(object):
         """
         output = open('{0}.pkl'.format(self.zoo_project_id), 'wb')
         # Pickle dictionary using protocol 0.
-        pickle.dump(self, output)
+        pickle.dump(self, output, protocol=2)
         return
 
     @classmethod

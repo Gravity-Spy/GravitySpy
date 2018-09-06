@@ -13,10 +13,14 @@ source /opt/rh/rh-python36/enable
 virtualenv ~/opt/GravitySpy-py36
 . ~/opt/GravitySpy-py36/bin/activate
 python -m pip install --upgrade --quiet pip
-pip install .
+pip install ../../.
+pip install lalsuite
 
 git clone https://github.com/Theano/libgpuarray.git
 cd libgpuarray
+
+pip install cython
+
 rm -rf build Build
 mkdir Build
 cd Build
