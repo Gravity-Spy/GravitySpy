@@ -19,6 +19,7 @@
 from gwtrigfind import find_trigger_files
 from gwpy.segments import DataQualityFlag
 from gwpy.table import GravitySpyTable
+from gwpy.utils import mp as mp_utils
 from sklearn.cluster import KMeans
 
 from ..utils import log
@@ -82,14 +83,21 @@ class Events(GravitySpyTable):
     def fetch(cls, *args, **kwargs):
         tab = super(Events, cls).fetch(*args, **kwargs)
         return cls(tab)
-        
+
     def classify(self, project_info_pickle, path_to_cnn, **kwargs):
         """Classify triggers in this table
 
         Parameters:
 
-            project_info_pickle: thing1
-            path_to_cnn: thing2
+            project_info_pickle:
+                file name of a pickle file which contains the string names of
+                the gravityspy classes
+
+            path_to_cnn:
+                file name of the CNN you would like to use
+
+            **kwargs:
+                nproc : number of parallel event times to be processing at once
 
         Returns:
             `Events` table
@@ -99,28 +107,43 @@ class Events(GravitySpyTable):
                              "a column event_time for your "
                              "Event Trigger Generator.")
 
+        # Parse key word arguments
         config = kwargs.pop('config', utils.GravitySpyConfigFile())
-
-        # Parse Ini File
-        plot_time_ranges = config.plot_time_ranges
-        plot_normalized_energy_range = config.plot_normalized_energy_range
-
         plot_directory = kwargs.pop('plot_directory', 'plots')
+        timeseries = kwargs.pop('timeseries', None)
+        source = kwargs.pop('source', None)
+        channel_name = kwargs.pop('channel_name', None)
+        frametype = kwargs.pop('frametype', None)
 
-        for event_time, ifo, channel, gid in zip(self['event_time'],
-                                                 self['ifo'],
-                                                 self['channel'],
-                                                 self['gravityspy_id']):
-            specsgrams, q_value = utils.make_q_scans(event_time=event_time,
-                                                     config=config,
-                                                     **kwargs) 
+        # make a list of event times
+        inputs = zip(self['event_time'], self['ifo'],
+                     self['gravityspy_id'])
 
-            utils.save_q_scans(plot_directory, specsgrams,
-                               plot_normalized_energy_range, plot_time_ranges,
-                               ifo, event_time, id_string=gid,
-                               **kwargs)
+        inputs = ((etime, ifo, gid, config, plot_directory,
+                   timeseries, source, channel_name, frametype)
+                  for etime, ifo, gid in inputs)
 
-        self['q_value'] = q_value
+        # calculate maximum number of processes
+        nproc = kwargs.pop('nproc', 1)
+
+        # make q_scans
+        output = mp_utils.multiprocess_with_queues(nproc,
+                                                   _make_single_qscan,
+                                                   inputs)
+
+        qvalues = []
+        import pdb
+        pdb.set_trace()
+        # raise exceptions (from multiprocessing, single process raises inline)
+        for f, x in output:
+            if isinstance(x, Exception):
+                x.args = ('Failed to make q scan at time %s: %s' % (f,
+                                                                    str(x)),)
+                raise x
+            else:
+                qvalues.append(x)
+
+        self['q_value'] = qvalues
 
         results = utils.label_q_scans(plot_directory=plot_directory,
                                       path_to_cnn=path_to_cnn,
@@ -137,10 +160,9 @@ class Events(GravitySpyTable):
         results['Filename4'] = results['Filename4'].apply(lambda x, y : os.path.join(y, x),
                                                           args=(plot_directory,))
 
-        
+
         results = Events.from_pandas(results.merge(self.to_pandas(),
                                                    on=['gravityspy_id']))
-
         return results
 
     def to_sql(self, table='glitches_v2d0', engine=None, **kwargs):
@@ -310,7 +332,7 @@ class Events(GravitySpyTable):
                 subject id to be the cover image of collection
 
         Returns:
-            `str` url link to the created collection 
+            `str` url link to the created collection
         """
         if name is None:
             # will name it after the label of event table
@@ -475,3 +497,43 @@ def get_connection_str(db='gravityspy',
                          ' description is username and secret is password.')
 
     return 'postgresql://{0}:{1}@{2}:5432/{3}'.format(user, passwd, host, db)
+
+# define multiprocessing method
+def _make_single_qscan(inputs):
+    event_time = inputs[0]
+    ifo = inputs[1]
+    gid = inputs[2]
+    config = inputs[3]
+    plot_directory = inputs[4]
+    timeseries = inputs[5]
+    source = inputs[6]
+    channel_name = inputs[7]
+    frametype = inputs[8]
+
+    # Parse Ini File
+    plot_time_ranges = config.plot_time_ranges
+    plot_normalized_energy_range = config.plot_normalized_energy_range
+    try:
+        if timeseries is not None:
+            specsgrams, q_value = utils.make_q_scans(event_time=event_time,
+                                                     config=config,
+                                                     timeseries=timeseries)
+        if source is not None:
+            specsgrams, q_value = utils.make_q_scans(event_time=event_time,
+                                                     config=config,
+                                                     source=source)
+        if channel_name is not None:
+            specsgrams, q_value = utils.make_q_scans(event_time=event_time,
+                                                     config=config,
+                                                     channel_name=channel_name,
+                                                     frametype=frametype)
+        utils.save_q_scans(plot_directory, specsgrams,
+                           plot_normalized_energy_range, plot_time_ranges,
+                           ifo, event_time, id_string=gid)
+
+        return event_time, q_value
+    except Exception as exc:  # pylint: disable=broad-except
+        if nproc == 1:
+            raise
+        else:
+            return event_time, exc

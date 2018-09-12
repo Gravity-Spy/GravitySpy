@@ -29,6 +29,7 @@ from gwpy.table import GravitySpyTable
 import numpy
 import os
 import pandas
+import matplotlib.pyplot as plt
 
 class GravitySpyConfigFile(object):
     def __init__(self, sample_frequency=16384, block_time=64,
@@ -193,7 +194,7 @@ def save_q_scans(plot_directory, specsgrams,
                                              plot_normalized_energy_range,
                                              plot_time_ranges,
                                              detector_name,
-                                             event_time)
+                                             event_time, **kwargs)
 
     for idx, ind_fig in enumerate(ind_fig_all):
         dur = float(plot_time_ranges[idx])
@@ -206,6 +207,8 @@ def save_q_scans(plot_directory, specsgrams,
 
     super_fig.save(os.path.join(plot_directory, id_string + '.png'),
                    bbox_inches='tight')
+
+    plt.close('all')
 
     return
 

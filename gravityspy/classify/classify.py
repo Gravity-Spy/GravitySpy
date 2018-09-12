@@ -73,6 +73,7 @@ def classify(event_time, channel_name,
     # Parse Ini File
     plot_time_ranges = config.plot_time_ranges
     plot_normalized_energy_range = config.plot_normalized_energy_range
+    frange = config.search_frequency_range
 
     # Cropping the results before interpolation to save on time and memory
     # perform the q-transform
@@ -83,7 +84,7 @@ def classify(event_time, channel_name,
 
     utils.save_q_scans(plot_directory, specsgrams,
                        plot_normalized_energy_range, plot_time_ranges,
-                       detector_name, event_time,
+                       detector_name, event_time, frange=frange,
                        **kwargs)
 
 
