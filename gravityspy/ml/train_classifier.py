@@ -18,7 +18,7 @@ This function reads the  pickle files of golden_set and train a ML classifier
 and write it into a model folder
 '''
 def fetch_data(ifo, event_time, duration=8, sample_frequency=4096,
-               verbose=False):
+               verbose=False, **kwargs):
     """Fetch raw data around a glitch
 
     Parameters:
@@ -45,11 +45,14 @@ def fetch_data(ifo, event_time, duration=8, sample_frequency=4096,
     # determine segment start and stop times
     start_time = round(center_time - duration / 2)
     stop_time = start_time + duration
+    frametype = kwargs.pop('frametype', None)
+    frametype = '{0}_HOFT_{1}'.format(ifo, frametype)
 
     try:
         channel_name = '{0}:GDS-CALIB_STRAIN'.format(ifo)
         data = TimeSeries.get(channel_name, start_time,
-                              stop_time, verbose=verbose).astype('float64')
+                              stop_time, frametype=frametype,
+                              verbose=verbose).astype('float64')
     except:
         TimeSeries.fetch_open_data(ifo, start_time, stop_time, verbose=verbose)
 
@@ -60,7 +63,7 @@ def fetch_data(ifo, event_time, duration=8, sample_frequency=4096,
 
 
 def training_set_raw_data(filename, format, duration=8, sample_frequency=4096,
-                          verbose=False):
+                          verbose=False, **kwargs):
     """Obtain the raw timeseries for the whole training set
 
     Parameters:
@@ -92,7 +95,7 @@ def training_set_raw_data(filename, format, duration=8, sample_frequency=4096,
                     '{2}'.format(label, gps, ifo))
         data = fetch_data(ifo, gps, duration=duration,
                           sample_frequency=sample_frequency,
-                          verbose=verbose)
+                          verbose=verbose, **kwargs)
         logger.info('Writing Sample To File..')
         data.write(filename, format=format,
                    append=True,
