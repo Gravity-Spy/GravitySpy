@@ -7,8 +7,6 @@ from scipy.misc import imresize
 import numpy
 import os
 
-from keras import backend as K
-
 '''
 By Sara Bahaadini and Neda Rohani, IVPL, Northwestern University.
 This function reads the trained ML classifier and pickle files of unlabelled glitches and generate the score
