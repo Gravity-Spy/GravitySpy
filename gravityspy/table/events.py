@@ -258,7 +258,7 @@ class Events(GravitySpyTable):
 
         return self
 
-    def update_scores(self, path_to_cnn):
+    def update_scores(self, path_to_cnn, nproc=1, **kwargs):
         """Obtain omicron triggers to run gravityspy on
 
         Parameters:
@@ -267,15 +267,20 @@ class Events(GravitySpyTable):
         Returns:
             `Events` table with columns containing new scores
         """
-        if ((['Filename1', 'Filename2', 'Filename3', 'Filename4'] not in self.keys()) or
-            (['url1', 'url2', 'url3', 'url4'] not in self.keys()) or
-            (['imgUrl1', 'imgUrl2', 'imgUrl3', 'imgUrl4'] not in self.keys())
-            ):
-            raise ValueError("This method only works if the file paths of the images "
-                             "of the images are known.")
+        if all(elem in self.keys() for elem in ['Filename1', 'Filename2',
+                                                'Filename3', 'Filename4']):
+            raise ValueError("This method only works if the file paths
+                             of the images of the images are known.")
+
+        results = utils.label_select_images(filename1=self['Filename1'],
+                                            filename2=self['Filename2'],
+                                            filename3=self['Filename3'],
+                                            filename4=self['Filename4'],
+                                            path_to_cnn=path_to_cnn, **kwargs)
 
 
-        return
+
+        return results
 
     def determine_workflow_and_subjectset(self, project_info_pickle):
         """Obtain omicron triggers to run gravityspy on

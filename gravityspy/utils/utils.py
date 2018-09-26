@@ -270,3 +270,66 @@ def label_q_scans(plot_directory, path_to_cnn, **kwargs):
     scores_table['ml_confidence'] = scores.max(1)
 
     return scores_table
+
+def label_select_images(filename1, filename2, filename3, filename4,
+                        path_to_cnn, **kwargs):
+    """Classify triggers in this table
+
+    Parameters:
+    ----------
+
+    Returns
+    -------
+    """
+    verbose = kwargs.pop('verbose', False)
+
+    # determine class names
+    f = h5py.File(path_to_cnn, 'r')
+    classes = kwargs.pop('classes',
+                         numpy.array(f['/labels/labels']).astype(str).T[0])
+
+    if verbose:
+        logger = log.Logger('Gravity Spy: Labelling Select Images')
+
+    list_of_images_all = [filename1,
+                          filename2,
+                          filename3,
+                          filename4]
+
+    list_of_images_all = zip(list_of_images_all[0], list_of_images_all[1],
+                             list_of_images_all[2], list_of_images_all[3])
+
+    if verbose:
+        logger.info('Converting image to ML readable...')
+
+    image_data_for_cnn = pandas.DataFrame()
+
+    for list_of_images in list_of_images_all:
+        for image in list_of_images:
+            if verbose:
+                logger.info('Converting {0}'.format(image))
+
+            image_data = read_image.read_grayscale(os.path.join(plot_directory,
+                                                                image),
+                                                   resolution=0.3)
+            image_data_for_cnn[image] = [image_data]
+
+    # Now label the image
+    if verbose:
+        logger.info('Labelling images...')
+
+    scores, ml_label, ids, _, _, _, _ = \
+         label_glitches.label_glitches(image_data=image_data_for_cnn,
+                                       model_name='{0}'.format(path_to_cnn),
+                                       image_size=[140, 170],
+                                       verbose=verbose)
+
+    labels = numpy.array(classes)[ml_label]
+
+    scores_table = GravitySpyTable(scores, names=classes)
+
+    scores_table['gravityspy_id'] = ids
+    scores_table['ml_label'] = labels
+    scores_table['ml_confidence'] = scores.max(1)
+
+    return scores_table
