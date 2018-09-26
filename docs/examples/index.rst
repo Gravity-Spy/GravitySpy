@@ -27,12 +27,12 @@ This database contains all of the labelled Omicron glitches in h(t) with `SNR > 
    $ ipython
 
     >>> from gwpy.table import EventTable
-    >>> blips_O1 = EventTable.fetch('gravityspy','glitches',selection='"Label"="Blip" & 1137250000 > "peakGPS" > 1126400000 & "ImageStatus" = "Retired"') 
-    >>> koi_fish_O1 = EventTable.fetch('gravityspy','glitches',selection='"Label"="Koi_Fish" & 1137250000 > "peakGPS" > 1126400000 & "ImageStatus" = "Retired"') 
+    >>> blips_O1 = EventTable.fetch('gravityspy','glitches',selection='"Label"="Blip" & 1137250000 > "peakGPS" > 1126400000 & "ImageStatus" = "Retired"')
+    >>> koi_fish_O1 = EventTable.fetch('gravityspy','glitches',selection='"Label"="Koi_Fish" & 1137250000 > "peakGPS" > 1126400000 & "ImageStatus" = "Retired"')
     >>> whistle_O1 = EventTable.fetch('gravityspy','glitches',selection='"Label"="Whistle" & 1137250000 > "peakGPS" > 1126400000 & "ImageStatus" = "Retired" & "ifo" = "L1"')
     >>> koi_fish_O1.write('O1_Koi_Fish.csv')
     >>> blips_O1.write('O1_Blips.csv')
-    >>> whistle_O1["peakGPS","peak_frequency", "snr"].write('{0}-triggers-{1}-{2}.csv'.format()) 
+    >>> whistle_O1["peakGPS","peak_frequency", "snr"].write('{0}-triggers-{1}-{2}.csv'.format())
 
 
 
@@ -62,13 +62,13 @@ Here we mimic the `histogram <https://gwpy.github.io/docs/latest/examples/table/
     >>> ax = plot.gca()
     >>> ax.hist(aftercomiss_koi_l1['snr'], logbins=True, bins=50, histtype='stepfilled', label='After Commissioning Koi')
     >>> ax.hist(beforecomiss_blips_l1['snr'], logbins=True, bins=50, histtype='stepfilled', label='Before Commissioning')
-    >>> ax.hist(beforecomiss_koi_l1['snr'], logbins=True, bins=50, histtype='stepfilled', label='Before Commissioning Koi') 
+    >>> ax.hist(beforecomiss_koi_l1['snr'], logbins=True, bins=50, histtype='stepfilled', label='Before Commissioning Koi')
     >>> ax.set_xlabel('Signal-to-noise ratio (SNR)')
-    >>> ax.set_ylabel('Rate')                       
+    >>> ax.set_ylabel('Rate')
     >>> ax.set_title('Blips and Kois before and after comissioning L1')
-    >>> ax.autoscale(axis='x', tight=True)                             
-    >>> ax.set_xlim([0,1000])             
-    >>> plot.add_legend()    
+    >>> ax.autoscale(axis='x', tight=True)
+    >>> ax.set_xlim([0,1000])
+    >>> plot.legend()
 
 =====================================
 Utilizing `hveto` (and soon Karoo GP)
@@ -83,7 +83,7 @@ Go to LLO
 
     $ . /home/scoughlin/Project/opt/GravitySpy/bin/activate
     $ ligo-proxy-init albert.einstein@LIGO.ORG
-    $ run_hveto.sh L1 Whistle 1126400000 1137250000 
+    $ run_hveto.sh L1 Whistle 1126400000 1137250000
 
 
 Coming soon ...
@@ -99,10 +99,10 @@ The `trainingset` database
 
     >>> from gwpy.table import EventTable
     >>> trainingset = EventTable.fetch('gravityspy','trainingsetv1d1')
-    >>> trainingset.download(nproc=4, TrainingSet=1, LabelledSamples=1, download_path='TrainingSet')
+    >>> trainingset.download(nproc=4, TrainingSet=True, LabelledSamples=True, download_path='TrainingSet')
 
 ================
-Training a model 
+Training a model
 ================
 
 .. code-block:: bash
@@ -118,7 +118,7 @@ Training a model
     >>> trainingset = vstack([whistle, blips])
     >>> trainingset.download(nproc=4, TrainingSet=1, download_path='TrainingSet')
 
-The download script utilize `gwpy` very nice `Multi-Processing Tool <https://github.com/gwpy/gwpy/blob/develop/gwpy/utils/mp.py>`_. This tool is also currently being used to help speed up the creation of omega scans and turn things into a pythonic only `Omega Scan <https://github.com/scottcoughlin2014/PyOmega>`_. This Pythonic omega scan utilizes the gwpy implementation of `q_transform <https://gwpy.github.io/docs/latest/examples/timeseries/qscan.html?highlight=q_transform>`_ 
+The download script utilize `gwpy` very nice `Multi-Processing Tool <https://github.com/gwpy/gwpy/blob/develop/gwpy/utils/mp.py>`_. This tool is also currently being used to help speed up the creation of omega scans and turn things into a pythonic only `Omega Scan <https://github.com/scottcoughlin2014/PyOmega>`_. This Pythonic omega scan utilizes the gwpy implementation of `q_transform <https://gwpy.github.io/docs/latest/examples/timeseries/qscan.html?highlight=q_transform>`_
 
 At this point we have a folder with Training data. Let's train a model using a GPU and some in house python software `Theano <http://www.deeplearning.net/software/theano/>`_ and `keras <https://keras.io/>`_
 
@@ -128,4 +128,4 @@ LSC has some great hardware resources. Marco Cavaglia and Stuart Anderson have p
 
 .. code-block:: bash
 
-    $ THEANO_FLAGS=mode=FAST_RUN,device=cuda,floatX=float32 trainmodel --path-to-trainingset=./TrainingSet --number-of-classes=2 --nb-epoch=7 
+    $ THEANO_FLAGS=mode=FAST_RUN,device=cuda,floatX=float32 trainmodel --path-to-trainingset=./TrainingSet --number-of-classes=2 --nb-epoch=7

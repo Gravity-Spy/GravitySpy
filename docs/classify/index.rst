@@ -36,7 +36,7 @@ we will refer to these excess noise events as *glitches*.
     In [4]: event_time = 1127700030.877928972
 
     In [4]: results = classify(event_time=event_time, channel_name='L1:GDS-CALIB_STRAIN',
-       ...:                    project_info_pickle='../examples/1104.pkl', path_to_cnn='../models/multi_view_classifier.h5',
+       ...:                    path_to_cnn='../models/multi_view_classifier.h5',
        ...:                    timeseries=timeseries)
 
     In [5]: print(results)

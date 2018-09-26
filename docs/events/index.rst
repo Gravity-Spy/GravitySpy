@@ -32,7 +32,7 @@ doing stuff
 
     In [4]: triggers = Events.read('data/omicron/L1-DCH_FAKE_STRAIN_16k_BBH-SEOBNRv3_OMICRON-1173188120-14996.xml.gz')
 
-    In [4]: results = triggers.classify(project_info_pickle='../examples/1104.pkl', path_to_cnn='../models/multi_view_classifier.h5',
-       ...:                             timeseries=timeseries)
+    In [4]: results = triggers.classify(path_to_cnn='../models/multi_view_classifier.h5',
+       ...:                             timeseries=timeseries, nproc=3)
 
     In [5]: print(results)
