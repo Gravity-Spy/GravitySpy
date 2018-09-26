@@ -84,14 +84,10 @@ class Events(GravitySpyTable):
         tab = super(Events, cls).fetch(*args, **kwargs)
         return cls(tab)
 
-    def classify(self, project_info_pickle, path_to_cnn, **kwargs):
+    def classify(self, path_to_cnn, **kwargs):
         """Classify triggers in this table
 
         Parameters:
-
-            project_info_pickle:
-                file name of a pickle file which contains the string names of
-                the gravityspy classes
 
             path_to_cnn:
                 file name of the CNN you would like to use
@@ -145,7 +141,6 @@ class Events(GravitySpyTable):
 
         results = utils.label_q_scans(plot_directory=plot_directory,
                                       path_to_cnn=path_to_cnn,
-                                      project_info_pickle=project_info_pickle,
                                       **kwargs)
 
         results = results.to_pandas()

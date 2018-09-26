@@ -17,17 +17,6 @@ The following example will although you to query the entire gravity spy trianing
 Ahead of time, it is encourage to set up your user environment. For LIGO users please see `Gravity Spy Authentication <https://secrets.ligo.org/secrets/144/>`_ for information concerning authentication to access certain Gravity Spy DBs.
 
 =======================
-Pre-Existing VirtualEnv
-=======================
-
-On CIT
-
-.. code-block:: bash
-
-   $ source ~gravityspy/.gravityspy_py36_profile
-   $ source ~gravityspy/.gravityspy_py27_profile
-
-=======================
 The `glitches` database
 =======================
 

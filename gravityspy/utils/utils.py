@@ -18,7 +18,6 @@
 
 from . import log
 from ..plot.plot import plot_qtransform
-from ..api.project import GravitySpyProject
 from ..ml import read_image
 from ..ml import labelling_test_glitches as label_glitches
 
@@ -27,6 +26,7 @@ from gwpy.segments import Segment
 from gwpy.table import GravitySpyTable
 
 import numpy
+import h5py
 import os
 import pandas
 import matplotlib.pyplot as plt
@@ -212,8 +212,7 @@ def save_q_scans(plot_directory, specsgrams,
 
     return
 
-def label_q_scans(plot_directory, path_to_cnn, project_info_pickle,
-                  **kwargs):
+def label_q_scans(plot_directory, path_to_cnn, **kwargs):
     """Classify triggers in this table
 
     Parameters:
@@ -223,14 +222,10 @@ def label_q_scans(plot_directory, path_to_cnn, project_info_pickle,
     -------
     """
     verbose = kwargs.pop('verbose', False)
+    f = h5py.File(path_to_cnn, 'r')
     # load the api gravityspy project cached class
-    gspyproject = GravitySpyProject.load_project_from_cache(
-                                                            project_info_pickle
-                                                            )
-
-    workflows_for_each_class = gspyproject.get_level_structure(IDfilter='O2')
     classes = kwargs.pop('classes',
-                         sorted(workflows_for_each_class['2117'].keys()))
+                         numpy.array(f['/labels/labels']).astype(str).T[0])
 
     if verbose:
         logger = log.Logger('Gravity Spy: Labelling Images')

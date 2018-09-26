@@ -22,8 +22,7 @@ from ..utils import utils
 import os
 
 def classify(event_time, channel_name,
-             project_info_pickle, path_to_cnn,
-             verbose=True, **kwargs):
+             path_to_cnn, verbose=True, **kwargs):
     """classify an excess noise event
 
     Note:
@@ -38,9 +37,6 @@ def classify(event_time, channel_name,
 
         channel_name (array):
             The min and max of the colorbar for the plots
-
-        project_info_pickle (array):
-            The duration assosciated with each plot to be made
 
         path_to_cnn (str):
             What detetor where these spectrograms from
@@ -90,7 +86,6 @@ def classify(event_time, channel_name,
 
     results = utils.label_q_scans(plot_directory=plot_directory,
                                   path_to_cnn=path_to_cnn,
-                                  project_info_pickle=project_info_pickle,
                                   **kwargs)
     results['q_value'] = q_value
 
