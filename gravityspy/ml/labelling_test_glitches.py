@@ -5,6 +5,8 @@ from scipy.misc import imresize
 import numpy
 import os
 
+from keras import backend as K
+
 '''
 By Sara Bahaadini and Neda Rohani, IVPL, Northwestern University.
 This function reads the trained ML classifier and pickle files of unlabelled glitches and generate the score
@@ -207,3 +209,83 @@ def get_multiview_feature_space(image_data, semantic_model_name, image_size=[140
                             test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], True)
 
     return semantic_idx_model.predict([concat_test_unlabelled])
+
+
+def get_deeplayer(image_data, model_name, image_size=[140, 170],
+                  verbose=False):
+    """Obtain 1XNclasses confidence vector and label for image
+
+    Parameters:
+
+        image_data (`pd.DataFrame`):
+            This is a DF with columns whose names are the same as
+            the image and whose row entries are
+            the b/w pixel values at some resoltion
+            determined by `read_image`
+
+        model_adr (str, optional):
+            Path to folder containing model
+
+        image_size (list, optional):
+            Default [140, 170]
+
+        verbose (bool, optional):
+            Default False
+
+    Returns:
+
+        score3_unlabelled (np.array):
+            confidence scores per class (b/t 0 and 1)
+            index_label (int): ml label
+    """
+
+    numpy.random.seed(1986)  # for reproducibility
+
+    img_rows, img_cols = image_size[0], image_size[1]
+
+    # load a model and weights
+    if verbose:
+        print ('Retrieving the trained ML classifier')
+    final_model = load_model(model_name)
+
+    final_model.compile(loss='categorical_crossentropy',
+                        optimizer='adadelta',
+                        metrics=['accuracy'])
+
+    if verbose:
+        print ('Scoring unlabelled glitches')
+
+    half_second_images = sorted(image_data.filter(regex=("0.5.png")).keys())
+    one_second_images = sorted(image_data.filter(regex=("1.0.png")).keys())
+    two_second_images = sorted(image_data.filter(regex=("2.0.png")).keys())
+    four_second_images = sorted(image_data.filter(regex=("4.0.png")).keys())
+
+    numpy.vstack(image_data[sorted(image_data.filter(regex=("1.0.png")).keys())].iloc[0].values).reshape(-1, 1, 140, 170)
+
+    # read in 4 durations
+    test_set_unlabelled_x_1 = numpy.vstack(image_data[half_second_images].iloc[0].values)
+    test_set_unlabelled_x_1 = test_set_unlabelled_x_1.reshape(-1, 1, img_rows, img_cols)
+
+    test_set_unlabelled_x_2 = numpy.vstack(image_data[four_second_images].iloc[0].values)
+    test_set_unlabelled_x_2 = test_set_unlabelled_x_2.reshape(-1, 1, img_rows, img_cols)
+
+    test_set_unlabelled_x_3 = numpy.vstack(image_data[one_second_images].iloc[0].values)
+    test_set_unlabelled_x_3 = test_set_unlabelled_x_3.reshape(-1, 1, img_rows, img_cols)
+
+    test_set_unlabelled_x_4 = numpy.vstack(image_data[two_second_images].iloc[0].values)
+    test_set_unlabelled_x_4 = test_set_unlabelled_x_4.reshape(-1, 1, img_rows, img_cols)
+
+    concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
+                            test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], False)
+
+    feature_exc1 = K.function([final_model.layers[0].get_input_at(node_index=0),
+                K.learning_phase()],
+               [final_model.layers[0].get_layer(index=20).output])
+
+    deeplayer = feature_exc1([concat_test_unlabelled, 0])[0]
+
+
+    confidence_array = final_model.predict_proba(concat_test_unlabelled, verbose=0)
+    index_label = confidence_array.argmax(1)
+
+    return confidence_array, index_label, deeplayer
