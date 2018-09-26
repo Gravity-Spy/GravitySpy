@@ -1,4 +1,6 @@
 from .GS_utils import concatenate_views
+from keras import backend as K
+K.set_image_dim_ordering('th')
 from keras.models import load_model
 from scipy.misc import imresize
 
