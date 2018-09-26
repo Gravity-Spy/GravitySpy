@@ -1,4 +1,6 @@
 from .GS_utils import build_cnn, concatenate_views
+from keras import backend as K
+K.set_image_dim_ordering('th')
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.utils import np_utils
