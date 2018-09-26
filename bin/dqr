@@ -39,11 +39,6 @@ def parse_commandline():
     parser.add_argument("--path-to-cnn-model",
                         help="Path to name of cnn model",
                         required=True)
-    parser.add_argument("--project-info-pickle",
-                        help="This pickle file holds information"
-                        "about what workflows a image with what"
-                        "confidence label should go into",
-                        required=True)
     parser.add_argument("--verbose", action="store_true", default=False,
                         help="Run in Verbose Mode")
     args = parser.parse_args()
@@ -62,7 +57,6 @@ args = parse_commandline()
 results = classify(event_time=args.event_time,
                    plot_directory=args.plot_directory,
                    channel_name='{0}1:GDS-CALIB_STRAIN'.format(args.ifo),
-                   project_info_pickle=args.project_info_pickle,
                    path_to_cnn=args.path_to_cnn_model,
                    frametype='{0}1_HOFT_C00'.format(args.ifo), verbose=True,
                    id_string=args.id)
