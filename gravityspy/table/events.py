@@ -132,8 +132,6 @@ class Events(GravitySpyTable):
                                                    inputs)
 
         qvalues = []
-        import pdb
-        pdb.set_trace()
         # raise exceptions (from multiprocessing, single process raises inline)
         for f, x in output:
             if isinstance(x, Exception):
