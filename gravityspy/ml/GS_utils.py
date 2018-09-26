@@ -207,3 +207,90 @@ def create_pairs3_gen(data, class_indices, batch_size):
                     pairs1 = []
                     pairs2 = []
                     labels = []
+
+
+def split_data_set(data, fraction_validation=.125, fraction_testing=None,
+                   image_size=[140, 170]):
+    """Split data set to training validation and optional testing
+
+    Parameters:
+        data (str):
+            Pickle file containing training set data
+
+        fraction_validation (float, optional):
+            Default .125
+
+        fraction_testing (float, optional):
+            Default None
+
+        image_size (list, optional):
+            Default [140, 170]
+
+    Returns:
+        numpy arrays
+    """
+
+    img_rows, img_cols = image_size[0], image_size[1]
+    validationDF = data.groupby('Label').apply(
+                       lambda x: x.sample(frac=fraction_validation,
+                       random_state=random_seed)
+                       ).reset_index(drop=True)
+
+    data = data.loc[~data.uniqueID.isin(
+                                    validationDF.uniqueID)]
+
+    if fraction_testing:
+        testingDF = data.groupby('Label').apply(
+                   lambda x: x.sample(frac=fraction_testing,
+                             random_state=random_seed)
+                   ).reset_index(drop=True)
+
+        data = data.loc[~data.uniqueID.isin(
+                                        testingDF.uniqueID)]
+
+
+    # concatenate the pixels
+    train_set_x_1 = np.vstack(data['0.5.png'].values).reshape(
+                                                     -1, 1, img_rows, img_cols)
+    validation_x_1 = np.vstack(validationDF['0.5.png'].values).reshape(
+                                                     -1, 1, img_rows, img_cols)
+
+    train_set_x_2 = np.vstack(data['1.0.png'].values).reshape(
+                                                     -1, 1, img_rows, img_cols)
+    validation_x_2 = np.vstack(validationDF['1.0.png'].values).reshape(
+                                                     -1, 1, img_rows, img_cols)
+
+    train_set_x_3 = np.vstack(data['2.0.png'].values).reshape(
+                                                     -1, 1, img_rows, img_cols)
+    validation_x_3 = np.vstack(validationDF['2.0.png'].values).reshape(
+                                                     -1, 1, img_rows, img_cols)
+
+    train_set_x_4 = np.vstack(data['4.0.png'].values).reshape(
+                                                     -1, 1, img_rows, img_cols)
+    validation_x_4 = np.vstack(validationDF['4.0.png'].values).reshape(
+                                                     -1, 1, img_rows, img_cols)
+
+    if fraction_testing:
+        testing_x_1 = np.vstack(testingDF['0.5.png'].values).reshape(
+                                                     -1, 1, img_rows, img_cols)
+        testing_x_2 = np.vstack(testingDF['1.0.png'].values).reshape(
+                                                     -1, 1, img_rows, img_cols)
+        testing_x_3 = np.vstack(testingDF['2.0.png'].values).reshape(
+                                                     -1, 1, img_rows, img_cols)
+        testing_x_4 = np.vstack(testingDF['4.0.png'].values).reshape(
+                                                     -1, 1, img_rows, img_cols)
+
+    concat_train = concatenate_views(train_set_x_1, train_set_x_2,
+                            train_set_x_3, train_set_x_4, [img_rows, img_cols], False)
+    concat_valid = concatenate_views(validation_x_1, validation_x_2,
+                            validation_x_3, validation_x_4,
+                            [img_rows, img_cols], False)
+
+    if fraction_testing:
+        concat_test = concatenate_views(testing_x_1, testing_x_2,
+                            testing_x_3, testing_x_4,
+                            [img_rows, img_cols], False)
+    else:
+        concat_test = None
+
+    return concat_train, concat_valid, concat_test
