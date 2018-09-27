@@ -306,13 +306,13 @@ def label_select_images(filename1, filename2, filename3, filename4,
 
     for list_of_images in list_of_images_all:
         for image in list_of_images:
+            image_name = image.split('/')[-1]
             if verbose:
-                logger.info('Converting {0}'.format(image))
+                logger.info('Converting {0}'.format(image_name))
 
-            image_data = read_image.read_grayscale(os.path.join(plot_directory,
-                                                                image),
+            image_data = read_image.read_grayscale(image,
                                                    resolution=0.3)
-            image_data_for_cnn[image] = [image_data]
+            image_data_for_cnn[image_name] = [image_data]
 
     # Now label the image
     if verbose:

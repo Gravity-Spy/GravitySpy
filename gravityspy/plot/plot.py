@@ -80,6 +80,8 @@ def plot_qtransform(specsgrams, plot_normalized_energy_range, plot_time_ranges,
         title = title + ' - pre O1'
     elif 1126400000 < start_time < 1137250000:
         title = title + ' - O1'
+    elif 1137250000 < start_time < 1161907217:
+        title = title + ' - post O1 pre ER 10'
     elif 1161907217 < start_time < 1164499217:
         title = title + ' - ER10'
     elif start_time > 1164499217:

@@ -267,10 +267,10 @@ class Events(GravitySpyTable):
         Returns:
             `Events` table with columns containing new scores
         """
-        if all(elem in self.keys() for elem in ['Filename1', 'Filename2',
-                                                'Filename3', 'Filename4']):
-            raise ValueError("This method only works if the file paths
-                             of the images of the images are known.")
+        if not all(elem in self.keys() for elem in ['Filename1', 'Filename2',
+                                                    'Filename3', 'Filename4']):
+            raise ValueError("This method only works if the file paths "
+                             "of the images of the images are known.")
 
         results = utils.label_select_images(filename1=self['Filename1'],
                                             filename2=self['Filename2'],
@@ -280,7 +280,7 @@ class Events(GravitySpyTable):
 
 
 
-        return results
+        return Events(results)
 
     def determine_workflow_and_subjectset(self, project_info_pickle):
         """Obtain omicron triggers to run gravityspy on
