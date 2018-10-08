@@ -1,4 +1,5 @@
 import keras.backend as K
+K.set_image_data_format("channels_first")
 from GS_utils import cosine_distance
 from keras import regularizers
 from keras.applications.vgg16 import VGG16, preprocess_input
@@ -7,7 +8,79 @@ from keras.models import Model,load_model
 from keras.optimizers import RMSprop
 
 from gravityspy.utils import log
-import numpy as np
+import numpy
+import os
+
+def pickle_trainingset(path_to_trainingset,
+                       save_address='pickleddata/trainingset.pkl',
+                       verbose=False):
+    """Pre-processes the training set images and save to pickle.
+
+    Parameters:
+
+        path_to_trainingset (str):
+            Path to trainingset where format of training set folder
+            is "somedirectoryname"/"classname/"images"
+
+        save_address (str, optional):
+            Defaults to `pickleddata`
+            Path to folder you would like to save the pixelated training data
+
+        verbose (bool, optional):
+            Defaults to False
+            Extra verbosity
+
+    Returns:
+
+        A pickled `pandas.DataFrame`:
+            with rows of samples
+            and columns containing the pixelated 0.5, 1.0, 2.0,
+            and 4.0 duration images as well as a column with the True
+            Label and a column with an ID that uniquely identifies that sample
+    """
+
+    logger = log.Logger('Gravity Spy: Pickling '
+                        'Trainingset RGB')
+
+    if not os.path.exists(os.path.dirname(save_address)):
+        if verbose:
+            logger.info('making... ' + os.path.dirname(save_address))
+        os.makedirs(os.path.dirname(save_address))
+
+    classes = sorted(os.listdir(path_to_trainingset))
+    nb_classes = len(classes)
+    logger.info('The number of classes are {0}'.format(nb_classes))
+    logger.info('The classes you are pickling are {0}'.format(
+          classes))
+
+    data = pd.DataFrame()
+    for iclass in classes:
+        logger.info('Converting {0} into RGB info'.format(iclass))
+        images = sorted(os.listdir(os.path.join(path_to_trainingset, iclass)))
+        images = [imageidx for imageidx in images \
+                  if 'L1_' in imageidx or 'H1_' in imageidx or 'V1_' in imageidx]
+        # Group each sample into sets of 4 different durations
+        samples = zip(*(iter(images),) * 4)
+        for isample in samples:
+            tmpDF = pd.DataFrame()
+            for idur in isample:
+                if verbose:
+                    logger.info('Converting {0}'.format(idur))
+                image_data_r, image_data_g, image_data_b  = read_image.read_rgb(os.path.join(path_to_trainingset,
+                                                              iclass, idur),
+                                                              resolution=0.3)
+                information_on_image = idur.split('_')
+                tmpDF[information_on_image[-1]] = [[image_data_r, image_data_g, image_data_b]]
+            tmpDF['uniqueID'] = information_on_image[1]
+            tmpDF['Label'] = iclass
+            data = data.append(tmpDF)
+
+        logger.info('Finished converting {0} into b/w info'.format(iclass))
+
+    picklepath = os.path.join(save_address)
+    logger.info('Saving pickled data to {0}'.format(picklepath))
+    data.to_pickle(picklepath)
+    return data
 
 def make_model(data, model_folder='model',
                unknown_classes_labels=['Whistle', 'Scratchy'],
@@ -66,59 +139,78 @@ def make_model(data, model_folder='model',
                         'Semantic Index')
 
     logger.info('Using random seed {0}'.format(random_seed))
-    np.random.seed(random_seed)  # for reproducibility
+    numpy.random.seed(random_seed)  # for reproducibility
 
-    logger.info('Loading file {0}'.format(data))
-
-    image_dataDF = pd.read_pickle(data)
-
-    logger.info('You data set contained {0} samples'.format(len(image_dataDF)))
+    logger.info('You data set contained {0} samples'.format(len(data)))
 
     img_rows, img_cols = image_size[0], image_size[1]
 
     logger.info('The size of the images being trained {0}'.format(image_size))
 
-    logger.info('Selecting images to be considered in the known '
-                'domain of samples which are {0}'.format(image_dataDF.Label.unique()))
-    knownDF = image_dataDF.loc[~image_dataDF.Label.isin(
-                                          unknown_classes_labels)]
+    known_df = data.loc[~data.Label.isin(unknown_classes_labels)]
+
+    logger.info('Given unknown images here is what is to be considered in '
+                'the known '
+                'domain of samples which are {0}'.format(knwon_df.Label.unique()))
+
     logger.info('Selecting images to be considered in the unknown '
                 'domain of samples which are {0}'.format(unknown_classes_labels))
-    unknownDF = image_dataDF.loc[image_dataDF.isin(unknown_classes_labels)]
+    unknown_df = data.loc[data.Label.isin(unknown_classes_labels)]
 
-    known_x_1 = np.vstack(knownDF['0.5.png'].as_matrix()).reshape(
+    known_x_1 = numpy.vstack(known_df['0.5.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
-    unknownn_x_1 = np.vstack(unknownDF['0.5.png'].as_matrix()).reshape(
-                                                     -1, 1, img_rows, img_cols)
-
-    known_x_2 = np.vstack(knownDF['1.0.png'].as_matrix()).reshape(
-                                                     -1, 1, img_rows, img_cols)
-    unknownn_x_2 = np.vstack(unknownDF['1.0.png'].as_matrix()).reshape(
+    unknownn_x_1 = numpy.vstack(unknown_df['0.5.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
 
-    known_x_3 = np.vstack(knownDF['2.0.png'].as_matrix()).reshape(
+    known_x_2 = numpy.vstack(known_df['1.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
-    unknown_x_3 = np.vstack(unknownDF['2.0.png'].as_matrix()).reshape(
+    unknownn_x_2 = numpy.vstack(unknown_df['1.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
 
-    known_x_4 = np.vstack(knownDF['4.0.png'].as_matrix()).reshape(
+    known_x_3 = numpy.vstack(known_df['2.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
-    unknown_x_4 = np.vstack(unknownDF['4.0.png'].as_matrix()).reshape(
+    unknown_x_3 = numpy.vstack(unknown_df['2.0.png'].values).reshape(
                                                      -1, 1, img_rows, img_cols)
+
+    known_x_4 = numpy.vstack(known_df['4.0.png'].values).reshape(
+                                                     -1, 1, img_rows, img_cols)
+    unknown_x_4 = numpy.vstack(unknown_df['4.0.png'].values).reshape(
+                                                     -1, 1, img_rows, img_cols)
+
+    test_set_unlabelled_x_1 = image_data.filter(regex=("1.0.png")).iloc[0].iloc[0]
+    test_set_unlabelled_x_2 = image_data.filter(regex=("2.0.png")).iloc[0].iloc[0]
+    test_set_unlabelled_x_3 = image_data.filter(regex=("4.0.png")).iloc[0].iloc[0]
+    test_set_unlabelled_x_4 = image_data.filter(regex=("0.5.png")).iloc[0].iloc[0]
+    test_set_unlabelled_x_1 = numpy.concatenate((test_set_unlabelled_x_1[0].reshape(-1, 1, img_rows, img_cols),
+                                              test_set_unlabelled_x_1[1].reshape(-1, 1, img_rows, img_cols),
+                                              test_set_unlabelled_x_1[2].reshape(-1, 1, img_rows, img_cols)),
+                                             axis=1)
+    test_set_unlabelled_x_2 = numpy.concatenate((test_set_unlabelled_x_2[0].reshape(-1, 1, img_rows, img_cols),
+                                              test_set_unlabelled_x_2[1].reshape(-1, 1, img_rows, img_cols),
+                                              test_set_unlabelled_x_2[2].reshape(-1, 1, img_rows, img_cols)),
+                                             axis=1)
+    test_set_unlabelled_x_3 = numpy.concatenate((test_set_unlabelled_x_3[0].reshape(-1, 1, img_rows, img_cols),
+                                              test_set_unlabelled_x_3[1].reshape(-1, 1, img_rows, img_cols),
+                                              test_set_unlabelled_x_3[2].reshape(-1, 1, img_rows, img_cols)),
+                                             axis=1)
+    test_set_unlabelled_x_4 = numpy.concatenate((test_set_unlabelled_x_4[0].reshape(-1, 1, img_rows, img_cols),
+                                              test_set_unlabelled_x_4[1].reshape(-1, 1, img_rows, img_cols),
+                                              test_set_unlabelled_x_4[2].reshape(-1, 1, img_rows, img_cols)),
+                                             axis=1)
 
     if multi_view:
         known_classes = concatenate_views(known_set_x_1, known_set_x_2,
-                            known_set_x_3, known_set_x_4, [img_rows, img_cols])
+                            known_set_x_3, known_set_x_4, [img_rows, img_cols], True)
         unknown_classes = concatenate_views(unknown_set_x_1, unknown_set_x_2,
-                            unknown_set_x_3, unknown_set_x_4, [img_rows, img_cols])
+                            unknown_set_x_3, unknown_set_x_4, [img_rows, img_cols], True)
     else:
         # We are only using one duration for the similarity search
         known_classes_image_array = known_set_x_2
         unknown_classes_image_array = unknown_set_x_2
 
     # Generate the Binary pairs for training.
-    train_generator = create_pairs3_gen(data_, known_classes_indices_for_metric_learning, size_of_batch)
-    valid_generator = create_pairs3_gen(data_x_2, unknown_classes_indices_for_clustering, size_of_batch)
+    train_generator = create_pairs3_gen(known_classes, known_classes_indices_for_metric_learning, size_of_batch)
+    valid_generator = create_pairs3_gen(unknown_classes, unknown_classes_indices_for_clustering, size_of_batch)
 
     # Create the model
     vgg16 = VGG16(weights='imagenet', include_top=False,
@@ -174,47 +266,25 @@ def make_model(data, model_folder='model',
 
     train_negative_factor = 1
     test_negative_factor = 1
-    train_generator = create_pairs3_gen(data_, known_classes_indices_for_metric_learning, size_of_batch)
-    valid_generator = create_pairs3_gen(data_x_2, unknown_classes_indices_for_clustering, size_of_batch)
     # the samples from data_x_2 should be separated for test and valid in future
 
     train_batch_num = (len(data_x_1) * (train_negative_factor + 1)) / size_of_batch
     logger.info('train batch num {0}'.format(train_batch_num))
     valid_batch_num = (len(data_x_2) * (test_negative_factor + 1)) / size_of_batch
 
-    #similarity_model.fit_generator(train_generator, validation_data=valid_generator, verbose=2,
-     #                   steps_per_epoch=train_batch_num, validation_steps=valid_batch_num, epochs=nb_epoch)
-    #train_batch_num = 10
-    #valid_batch_num = 10
     similarity_model.fit_generator(train_generator, validation_data=valid_generator, verbose=2,
                         steps_per_epoch=train_batch_num, validation_steps=valid_batch_num, epochs=nb_epoch)
 
     # validation
     logger.info('validating the model')
-    out_file.write('validating the model ...' + '\n')
-
-    '''known_classes_negative_factor = 1
-    unknown_classes_negative_factor = 1
-    known_classes_generator = create_pairs3_gen(data_x_1, known_classes_indices_for_metric_learning, size_of_batch)
-    unknown_classes_generator = create_pairs3_gen(data_x_2, unknown_classes_indices_for_clustering, size_of_batch)
-    known_classes_batch_num = (len(data_x_1) * (known_classes_negative_factor + 1)) / size_of_batch
-    unknown_classes_batch_num = (len(data_x_2) * (unknown_classes_negative_factor + 1)) / size_of_batch'''
 
     logger.info('Known classes')
-    out_file.write('known classes' + '\n')
-    #res1 = similarity_model.evaluate_generator(known_classes_generator, known_classes_batch_num)
     res1 = similarity_model.evaluate_generator(train_generator, train_batch_num)
     logger.info(res1)
-    for item in res1:
-            out_file.write("%f, " % item)
 
     logger.info(' unknown classes')
-    out_file.write('unknown classes' + '\n')
-    #res2 = similarity_model.evaluate_generator(unknown_classes_generator, unknown_classes_batch_num)
     res2 = similarity_model.evaluate_generator(valid_generator, valid_batch_num)
     logger.info(res2)
-    for item in res2:
-            out_file.write("%f, " % item)
 
     similarity_model.compile(loss='mean_squared_error', optimizer='rmsprop')
     similarity_model.save(os.join.path(model_adr, 'similarity_metric_model.h5'))

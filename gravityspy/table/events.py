@@ -303,7 +303,7 @@ class Events(GravitySpyTable):
         level_of_images = []
         subjectset_of_images = []
         for label, confidence in zip(self['ml_label'], self['ml_confidence']):
-            for iworkflow in ['1610', '1934', '1935', '2360', '2117']:
+            for iworkflow in ['1610', '1934', '1935', '7765', '7766', '7767']:
                 if label in workflows_for_each_class[iworkflow].keys():
                      if workflows_for_each_class[iworkflow][label][2][1] <= \
                             confidence <= \

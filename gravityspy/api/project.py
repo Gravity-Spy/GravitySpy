@@ -49,7 +49,7 @@ class ZooProject(object):
     wrapper functions to extracts helpful
     project information.
     '''
-    def __init__(self, zoo_project_id):
+    def __init__(self, zoo_project_id, workflow_order=None):
 
         self.zoo_project_id = zoo_project_id
         tmp = Project.find(zoo_project_id)
@@ -57,7 +57,11 @@ class ZooProject(object):
 
         # Determine workflow order
         self.workflow_info = {}
-        order = self.project_info['configuration_workflow_order']
+        if workflow_order is None:
+            order = self.project_info['configuration_workflow_order']
+        else:
+            order = workflow_order
+
         workflows = [int(str(iWorkflow)) for iWorkflow in order]
         self.workflow_order = workflows
 
@@ -186,9 +190,12 @@ class ZooProject(object):
         # Determine possible answers to the workflows
         for iWorkflow in workflows:
             answerDict = {}
+            try:
+                answers = self.workflow_info[iWorkflow]['tasks_T1_choicesOrder']
+            except:
+                answers = self.workflow_info[iWorkflow]['tasks_T0_choicesOrder']
 
-            for iAnswer in self.workflow_info[iWorkflow]\
-                                             ['tasks_T1_choicesOrder']:
+            for iAnswer in answers:
                 answerDict[iAnswer] = []
             workflowDictAnswers[iWorkflow] = answerDict
 
