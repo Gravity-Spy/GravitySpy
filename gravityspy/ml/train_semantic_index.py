@@ -8,6 +8,8 @@ from keras.models import Model,load_model
 from keras.optimizers import RMSprop
 
 from gravityspy.utils import log
+from .read_image import read_rgb
+
 import numpy
 import os
 import pandas
@@ -67,9 +69,9 @@ def pickle_trainingset(path_to_trainingset,
             for idur in isample:
                 if verbose:
                     logger.info('Converting {0}'.format(idur))
-                image_data_r, image_data_g, image_data_b  = read_image.read_rgb(os.path.join(path_to_trainingset,
-                                                              iclass, idur),
-                                                              resolution=0.3)
+                image_data_r, image_data_g, image_data_b  = read_rgb(os.path.join(path_to_trainingset,
+                                                                                  iclass, idur),
+                                                                     resolution=0.3)
                 information_on_image = idur.split('_')
                 tmpdf[information_on_image[-1]] = [[image_data_r, image_data_g, image_data_b]]
             tmpdf['uniqueID'] = information_on_image[1]
