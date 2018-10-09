@@ -10,6 +10,7 @@ from keras.optimizers import RMSprop
 from gravityspy.utils import log
 import numpy
 import os
+import pandas
 
 def pickle_trainingset(path_to_trainingset,
                        save_address='pickleddata/trainingset.pkl',
@@ -53,7 +54,7 @@ def pickle_trainingset(path_to_trainingset,
     logger.info('The classes you are pickling are {0}'.format(
           classes))
 
-    data = pd.DataFrame()
+    data = pandas.DataFrame()
     for iclass in classes:
         logger.info('Converting {0} into RGB info'.format(iclass))
         images = sorted(os.listdir(os.path.join(path_to_trainingset, iclass)))
@@ -62,7 +63,7 @@ def pickle_trainingset(path_to_trainingset,
         # Group each sample into sets of 4 different durations
         samples = zip(*(iter(images),) * 4)
         for isample in samples:
-            tmpDF = pd.DataFrame()
+            tmpdf = pandas.DataFrame()
             for idur in isample:
                 if verbose:
                     logger.info('Converting {0}'.format(idur))
@@ -70,10 +71,10 @@ def pickle_trainingset(path_to_trainingset,
                                                               iclass, idur),
                                                               resolution=0.3)
                 information_on_image = idur.split('_')
-                tmpDF[information_on_image[-1]] = [[image_data_r, image_data_g, image_data_b]]
-            tmpDF['uniqueID'] = information_on_image[1]
-            tmpDF['Label'] = iclass
-            data = data.append(tmpDF)
+                tmpdf[information_on_image[-1]] = [[image_data_r, image_data_g, image_data_b]]
+            tmpdf['uniqueID'] = information_on_image[1]
+            tmpdf['Label'] = iclass
+            data = data.append(tmpdf)
 
         logger.info('Finished converting {0} into b/w info'.format(iclass))
 
