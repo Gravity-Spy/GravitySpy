@@ -230,8 +230,7 @@ class Events(GravitySpyTable):
             subjectset = panoptes_client.SubjectSet.find(subset_id)
             subjects = []
 
-            if subject_set_id is None:
-                tab1 = tab[tab['subjectset'] == subset_id]
+            tab1 = tab[tab['subjectset'] == subset_id]
 
             for fn1, fn2, fn3, fn4, gid in tab1['Filename1', 'Filename2', 'Filename3', 'Filename4', 'gravityspy_id']:
                 subject = panoptes_client.Subject()
