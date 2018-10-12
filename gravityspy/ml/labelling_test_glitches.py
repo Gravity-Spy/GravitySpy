@@ -89,8 +89,6 @@ def label_glitches(image_data, model_name, image_size=[140, 170],
     two_second_images = sorted(image_data.filter(regex=("2.0.png")).keys())
     four_second_images = sorted(image_data.filter(regex=("4.0.png")).keys())
     
-    numpy.vstack(image_data[sorted(image_data.filter(regex=("1.0.png")).keys())].iloc[0].values).reshape(-1, 1, 140, 170)
-
     # read in 4 durations
     test_set_unlabelled_x_1 = numpy.vstack(image_data[half_second_images].iloc[0].values)
     test_set_unlabelled_x_1 = test_set_unlabelled_x_1.reshape(-1, 1, img_rows, img_cols)
