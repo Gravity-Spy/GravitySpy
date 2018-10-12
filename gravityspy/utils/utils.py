@@ -333,3 +333,63 @@ def label_select_images(filename1, filename2, filename3, filename4,
     scores_table['ml_confidence'] = scores.max(1)
 
     return scores_table
+
+def get_deeplayer(plot_directory, path_to_cnn, **kwargs):
+    """Classify triggers in this table
+
+    Parameters:
+    ----------
+
+    Returns
+    -------
+    """
+    verbose = kwargs.pop('verbose', False)
+    f = h5py.File(path_to_cnn, 'r')
+    # load the api gravityspy project cached class
+    classes = kwargs.pop('classes',
+                         numpy.array(f['/labels/labels']).astype(str).T[0])
+
+    if verbose:
+        logger = log.Logger('Gravity Spy: Labelling Images')
+    # Since we created the images in a
+    # special temporary directory we can run os.listdir to get there full
+    # names so we can convert the images into ML readable format.
+    list_of_images = [ifile for ifile in os.listdir(plot_directory)
+                      if 'spectrogram' in ifile]
+
+    if verbose:
+        logger.info('Converting image to ML readable...')
+
+    image_data_for_cnn = pandas.DataFrame()
+    for image in list_of_images:
+        if verbose:
+            logger.info('Converting {0}'.format(image))
+
+        image_data = read_image.read_grayscale(os.path.join(plot_directory, image),
+                                               resolution=0.3)
+        image_data_for_cnn[image] = [image_data]
+
+    # Now label the image
+    if verbose:
+        logger.info('Labelling image...')
+
+    scores, ml_label, deeplayer, ids, filename1, filename2, filename3, filename4 = \
+         label_glitches.get_deeplayer(image_data=image_data_for_cnn,
+                                       model_name='{0}'.format(path_to_cnn),
+                                       image_size=[140, 170],
+                                       verbose=verbose)
+
+    labels = numpy.array(classes)[ml_label]
+
+    scores_table = GravitySpyTable(scores, names=classes)
+
+    scores_table['Filename1'] = filename1
+    scores_table['Filename2'] = filename2
+    scores_table['Filename3'] = filename3
+    scores_table['Filename4'] = filename4
+    scores_table['gravityspy_id'] = ids
+    scores_table['ml_label'] = labels
+    scores_table['ml_confidence'] = scores.max(1)
+    scores_table['deeplayer'] = deeplayer
+
+    return scores_table
