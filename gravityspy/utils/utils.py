@@ -317,8 +317,6 @@ def label_select_images(filename1, filename2, filename3, filename4,
     # Now label the image
     if verbose:
         logger.info('Labelling images...')
-    import pdb
-    pdb.set_trace()
 
     scores, ml_label, ids, _, _, _, _ = \
          label_glitches.label_glitches(image_data=image_data_for_cnn,
