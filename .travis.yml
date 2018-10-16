@@ -26,9 +26,6 @@ script:
   - coverage run ./setup.py test
   - coverage run --append `which wscan` --help
 
-  # build documentation
-  - cd docs && make html; cd ../
-
 after_success:
 - coveralls
 
