@@ -20,5 +20,5 @@ pip install git+https://github.com/Gravity-Spy/GravitySpy.git
 source ~gravityspy/.gravityspy_py36 
 ```
 
-[![Build Status](https://travis-ci.org/Gravity-Spy/GravitySpy.svg?branch=master)](https://travis-ci.org/Gravity-Spy/GravitySpy)
-[![Coverage Status](https://coveralls.io/repos/github/Gravity-Spy/GravitySpy/badge.svg?branch=master)](https://coveralls.io/github/Gravity-Spy/GravitySpy?branch=master)
+[![Build Status](https://travis-ci.org/Gravity-Spy/GravitySpy.svg?branch=develop)](https://travis-ci.org/Gravity-Spy/GravitySpy)
+[![Coverage Status](https://coveralls.io/repos/github/Gravity-Spy/GravitySpy/badge.svg?branch=develop)](https://coveralls.io/github/Gravity-Spy/GravitySpy?branch=develop)
