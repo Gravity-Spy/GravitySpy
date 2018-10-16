@@ -114,7 +114,7 @@ class TestGravitySpyML(object):
             image_dataDF[image] = [[image_data_r, image_data_g, image_data_b]]
 
         # Now label the image
-        features = label_glitches.get_multiview_feature_space(
+        features, _ = label_glitches.get_multiview_feature_space(
                                                         image_dataDF,
                                                         '{0}'.format(
                                                               MODEL_NAME_FEATURE_MULTIVIEW),

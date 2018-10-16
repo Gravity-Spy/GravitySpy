@@ -35,4 +35,6 @@ class TestUtils(object):
 
         results.convert_unicode_to_bytestring()
         pandas.testing.assert_frame_equal(results.to_pandas(),
-                                          RESULTS_TABLE.to_pandas())
+                                          RESULTS_TABLE.to_pandas(),
+                                          check_dtype=False,
+                                          check_less_precise=True)

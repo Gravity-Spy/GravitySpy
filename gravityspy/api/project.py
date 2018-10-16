@@ -195,8 +195,8 @@ class ZooProject(object):
             except:
                 answers = self.workflow_info[iWorkflow]['tasks_T0_choicesOrder']
 
-            for iAnswer in answers:
-                answerDict[iAnswer] = []
+            for answer in answers:
+                answerDict[answer] = []
             workflowDictAnswers[iWorkflow] = answerDict
 
         self.workflowDictAnswers = workflowDictAnswers
@@ -266,7 +266,7 @@ class GravitySpyProject(ZooProject):
             if int(iworkflow) == 2117:
                 subjectset_id = [iid for iid in \
                                 workflowDictSubjectSets[iworkflow] \
-                                if iid not in workflowDictSubjectSets['2360']]
+                                if iid not in workflowDictSubjectSets['7766']]
             else:
                 subjectset_id = workflowDictSubjectSets[iworkflow]
 
@@ -322,7 +322,7 @@ class GravitySpyProject(ZooProject):
         golden_images_df = golden_images.to_pandas()
 
         # From answers Dict determine number of classes
-        numClasses = len(self.get_answers(workflow=2360).values()[0])
+        numClasses = len(self.get_answers(workflow=7766).values()[0])
 
         # merge the golden image DF with th classification (this merge is on
         # links_subject (i.e. the zooID of the image classified)
@@ -395,7 +395,7 @@ class GravitySpyProject(ZooProject):
         golden_images_df = golden_images.to_pandas()
 
         # From answers Dict determine number of classes
-        numClasses = len(self.get_answers(workflow=2360).values()[0])
+        numClasses = len(self.get_answers(workflow=7766).values()[0])
 
         # merge the golden image DF with th classification (this merge is on
         # links_subject (i.e. the zooID of the image classified)
@@ -420,7 +420,7 @@ class GravitySpyProject(ZooProject):
         return user_confusion_matrices
 
 
-    def determine_level(self, alpha):
+    def determine_level(self, alpha=None):
         """Parameters
         ----------
         alpha = 1xN vector of proficiency scores
@@ -432,25 +432,26 @@ class GravitySpyProject(ZooProject):
         of golden sets associated with that workflow
         """
         answers = self.get_answers()
-        workflow = workflow_with_most_answers(answers)[0]
-        answersDictRev =  dict(enumerate(sorted(answers[workflow].keys())))
-        answersDict = dict((str(v),k) for k,v in answersDictRev.iteritems())
+        answers_dict_rev =  dict(enumerate(sorted(answers['7766'].keys())))
+        answers_dict = dict((str(v),k) for k,v in answers_dict_rev.items())
+        # Determine what indices of the confusion matrix we evaluate for each level based on the answers for that level
+        promotion_Level1 = set([answers_dict[answer] for answer in answers['1610'].keys() if answer not in ['NONEOFTHEABOVE']])
+        promotion_Level2 = set([answers_dict[answer] for answer in answers['1934'].keys() if answer not in ['NONEOFTHEABOVE']])
+        promotion_Level3 = set([answers_dict[answer] for answer in answers['1935'].keys() if answer not in ['NONEOFTHEABOVE']])
+        promotion_Level4 = set([answers_dict[answer] for answer in answers['7765'].keys() if answer not in ['NONEOFTHEABOVE']])
+        promotion_Level5 = set([answers_dict[answer] for answer in answers['7766'].keys() if answer not in ['NONEOFTHEABOVE']])
 
-        answersidx = {}
-        for k, v in answers.iteritems():
-            answersidx[k] = [answersDict[k1] for k1 in v.keys() \
-                                if k1 not in ['NONEOFTHEABOVE']]
+        
+        level_dict = dict(enumerate(self.workflow_order))
+        workflow_level_dict = dict((v, k + 1) for k, v in
+                                   level_dict.items())
 
-        # Obtain workflow order
-        order = self.project_info['configuration_workflow_order']
-        workflows = [int(str(iWorkflow)) for iWorkflow in order]
-        levelWorkflowDict = dict(enumerate(workflows))
-        workflowLevelDict = dict((v, k + 1) for k,v in levelWorkflowDict.iteritems())
+        promotions = list(zip(range(4, -1,-1), [promotion_Level5, promotion_Level4,
+                                           promotion_Level3, promotion_Level2,
+                                           promotion_Level1]))
 
-        try:
-            alpha
-        except:
-            numClasses = len(answersDict.keys())
+        if alpha is None:
+            numClasses = len(answers_dict.keys())
             alpha = .7*np.ones(numClasses)
             alpha[4] = 0.65
 
@@ -461,38 +462,26 @@ class GravitySpyProject(ZooProject):
         for (iuser, ialpha) in zip(self.confusion_matrices.userID,
                                    self.confusion_matrices.alpha):
 
-            proficiencyidx = np.where(ialpha > alpha)[0]
+            proficiencyidx = set(np.where(ialpha > alpha)[0])
             # determine whether a user is proficient at >= number
             # of answers on a level. If yes, the check next level
             # until < at which point you know which level the user
             # should be on
 
-            maxlevel = max(levelWorkflowDict.keys())
-            maxworkflow = str(levelWorkflowDict[maxlevel])
-            # first check if they should be on level 5 and end
-            if (set(answersidx[maxworkflow]) <= set(proficiencyidx)):
-                level.append([maxworkflow, maxlevel + 1, iuser])
-                continue
+            for ilevel, promo in promotions:
+                if promo.issubset(proficiencyidx):
+                    if ilevel == 4:
+                        curr_level = ilevel + 3
+                        curr_workflow = level_dict[ilevel + 2]
+                    else:
+                        curr_level = ilevel + 2
+                        curr_workflow = level_dict[ilevel + 1]
+                    break
+                else:
+                    curr_level = 1
+                    curr_workflow = 1610
 
-            minlevel = min(levelWorkflowDict.keys())
-            minworkflow = str(levelWorkflowDict[minlevel])
-            # second check if they should be on level 1 and end
-            if (set(proficiencyidx) < set(answersidx[minworkflow])):
-                level.append([minworkflow, minlevel + 1, iuser])
-                continue
-
-            for ilevel in range(maxlevel - 1):
-                # first check if they should be on level 5 and end
-                next_workflow = str(levelWorkflowDict[ilevel + 1])
-                curr_workflow = str(levelWorkflowDict[ilevel])
-
-                if (set(answersidx[curr_workflow]) <= set(proficiencyidx)) \
-                   and \
-                   (not set(answersidx[next_workflow]) \
-                       <= set(proficiencyidx)):
-                    curr_workflow = levelWorkflowDict[ilevel + 1]
-                    curr_level = workflowLevelDict[curr_workflow]
-                    level.append([curr_workflow, curr_level, iuser])
+            level.append([curr_workflow, curr_level, iuser])
 
         columns = ['curr_workflow', 'curr_level', 'userID']
         return pd.DataFrame(level, columns = columns)

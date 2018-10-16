@@ -155,8 +155,8 @@ def get_feature_space(image_data, semantic_model_name, image_size=[140, 170],
     return semantic_idx_model.predict([test_data])
 
 
-def get_multiview_feature_space(image_data, semantic_model_name, image_size=[140, 170],
-                      verbose=False):
+def get_multiview_feature_space(image_data, semantic_model_name,
+                                image_size=[140, 170], verbose=False):
     """Obtain N dimensional feature space of sample
 
     Parameters:
@@ -206,7 +206,15 @@ def get_multiview_feature_space(image_data, semantic_model_name, image_size=[140
     concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
                             test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], True)
 
-    return semantic_idx_model.predict([concat_test_unlabelled])
+    half_second_images = sorted(image_data.filter(regex=("0.5.png")).keys())
+
+    ids = []
+    for uid in half_second_images:
+        ids.append(uid.split('_')[1])
+
+    features = semantic_idx_model.predict([concat_test_unlabelled])
+
+    return features, ids
 
 
 def get_deeplayer(image_data, model_name, image_size=[140, 170],

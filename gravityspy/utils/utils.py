@@ -334,6 +334,52 @@ def label_select_images(filename1, filename2, filename3, filename4,
 
     return scores_table
 
+def get_features(plot_directory, path_to_semantic_model, **kwargs):
+    """Classify triggers in this table
+
+    Parameters:
+    ----------
+
+    Returns
+    -------
+    """
+    verbose = kwargs.pop('verbose', False)
+
+    if verbose:
+        logger = log.Logger('Gravity Spy: Extracting Feature Space')
+    # Since we created the images in a
+    # special temporary directory we can run os.listdir to get there full
+    # names so we can convert the images into ML readable format.
+    list_of_images = [ifile for ifile in os.listdir(plot_directory)
+                      if 'spectrogram' in ifile]
+
+    if verbose:
+        logger.info('Converting image to RGB readable...')
+
+    image_data_for_si = pandas.DataFrame()
+    for image in list_of_images:
+        if verbose:
+            logger.info('Converting {0}'.format(image))
+
+        image_data_r, image_data_g, image_data_b = read_image.read_rgb(os.path.join(plot_directory, image),
+                                                                       resolution=0.3)
+        image_data_for_si[image] = [[image_data_r, image_data_g, image_data_b]]
+
+    # Now label the image
+    if verbose:
+        logger.info('Extracting Features of Image...')
+
+    features, ids = label_glitches.get_multiview_feature_space(image_data=image_data_for_si,
+                                       semantic_model_name='{0}'.format(path_to_semantic_model),
+                                       image_size=[140, 170],
+                                       verbose=verbose)
+
+    scores_table = GravitySpyTable(features, names=numpy.arange(0, features.size).astype(str))
+
+    scores_table['gravityspy_id'] = ids
+
+    return scores_table
+
 def get_deeplayer(plot_directory, path_to_cnn, **kwargs):
     """Classify triggers in this table
 

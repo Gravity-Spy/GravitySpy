@@ -30,7 +30,7 @@ doing stuff
 
     In [3]: timeseries = TimeSeries.read('data/timeseries/L-L1_SOFTWAREINJ-1173197648-132.h5')
 
-    In [4]: triggers = Events.read('data/omicron/L1-DCH_FAKE_STRAIN_16k_BBH-SEOBNRv3_OMICRON-1173188120-14996.xml.gz')
+    In [4]: triggers = Events.read('data/omicron/L1-DCH_FAKE_STRAIN_16k_BBH-SEOBNRv3_OMICRON-1173188120-14996.xml.gz', format='ligolw')
 
     In [4]: results = triggers.classify(path_to_cnn='../models/multi_view_classifier.h5',
        ...:                             timeseries=timeseries, nproc=3)

@@ -73,9 +73,6 @@ class Events(GravitySpyTable):
             tab['event_time'] = (tab['peak_time'] +
                                  (0.000000001)*tab['peak_time_ns'])
             tab['event_time'].format = '%.9f'
-        else:
-            raise ValueError("No trigger reading has "
-                             "been defined for this ETG")
 
         return tab
 
@@ -216,7 +213,11 @@ class Events(GravitySpyTable):
             `Events` table
         """
         # First filter out images that have already been uploaded
-        tab = self[self['upload_flag'] == 1]
+        tab = self[self['upload_flag'] != 1]
+        # If you want a specific subject set to be uploaded to then the
+        # subjectset column will be updated to reflect which one you want
+        if subject_set_id is not None:
+            tab['subjectset'] = subject_set_id
 
         if subject_set_id is None:
             subset_ids = numpy.unique(tab['subjectset'])

@@ -18,6 +18,7 @@
 
 from ..utils import log
 from ..utils import utils
+from ..table import Events
 
 import os
 
@@ -65,6 +66,7 @@ def classify(event_time, channel_name,
     # Parse Keyword Arguments
     config = kwargs.pop('config', utils.GravitySpyConfigFile())
     plot_directory = kwargs.pop('plot_directory', 'plots')
+    id_string = kwargs.pop('id_string', '{0:.9f}'.format(event_time))
 
     # Parse Ini File
     plot_time_ranges = config.plot_time_ranges
@@ -81,12 +83,23 @@ def classify(event_time, channel_name,
     utils.save_q_scans(plot_directory, specsgrams,
                        plot_normalized_energy_range, plot_time_ranges,
                        detector_name, event_time, frange=frange,
+                       id_string=id_string,
                        **kwargs)
-
 
     results = utils.label_q_scans(plot_directory=plot_directory,
                                   path_to_cnn=path_to_cnn,
                                   **kwargs)
+
     results['q_value'] = q_value
 
-    return results
+    results = results.to_pandas()
+    results['Filename1'] = results['Filename1'].apply(lambda x, y : os.path.join(y, x),
+                                                      args=(plot_directory,))
+    results['Filename2'] = results['Filename2'].apply(lambda x, y : os.path.join(y, x),
+                                                      args=(plot_directory,))
+    results['Filename3'] = results['Filename3'].apply(lambda x, y : os.path.join(y, x),
+                                                      args=(plot_directory,))
+    results['Filename4'] = results['Filename4'].apply(lambda x, y : os.path.join(y, x),
+                                                      args=(plot_directory,))
+
+    return Events.from_pandas(results)

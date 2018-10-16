@@ -2,6 +2,7 @@ language: python
 
 env:
   global:
+    - PIP_FLAGS="--quiet"
     - KERAS_BACKEND="theano"
     - MPLBACKEND='agg'
 

@@ -8,6 +8,7 @@ use('agg')
 
 import gravityspy.ml.train_classifier as train_classifier
 import pandas
+import h5py
 
 # Definite Command line arguments here
 
@@ -82,6 +83,10 @@ else:
     fraction_testing = args.fraction_testing
 
 # Train model
+class_names = sorted(data.Label.unique())
+class_names = [n.encode("ascii", "ignore") for n in class_names]
+
+# Train model
 model = train_classifier.make_model(
     data=data,
     batch_size=args.batch_size,
@@ -96,3 +101,8 @@ model = train_classifier.make_model(
     )
 
 model.save(args.model_name)
+
+f = h5py.File(args.model_name, 'r+')
+grp = f.create_group('labels')
+grp.create_dataset('labels', (len(class_names), 1), 'S100', class_names)
+f.close()
