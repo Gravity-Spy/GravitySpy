@@ -68,7 +68,8 @@ user_levels.loc[(user_levels.curr_level == 5) & (user_levels.userID.isin(virgo_p
 
 # Merge user Status DB with DB containing the init_level DB
 # which demonstrates what level  a user *should* be on at this point
-userstatus_db_init = user_status_init.merge(user_levels, how='outer')
+current_status = pandas.read_sql('current_user_status', engine)
+userstatus_db_init = current_status.merge(user_levels, how='outer')
 userstatus_db_init = userstatus_db_init.fillna(0)
 userstatus_db_init = userstatus_db_init.astype(int)
 
