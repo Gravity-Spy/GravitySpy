@@ -103,8 +103,8 @@ if args.update_website:
 if args.update_database:
     # save new user Status
     for irow in updates.iterrows():
-        SQLCommand = 'UPDATE \"current_user_status\" SET \"init_level\" = {0} WHERE \"userID\" = {1}'.format(irow[1][['init_level']].iloc[0], irow[1][['userID']].iloc[0])
+        SQLCommand = 'UPDATE \"current_user_status\" SET \"init_level\" = {0} WHERE \"userID\" = {1}'.format(irow[1][['curr_level']].iloc[0], irow[1][['userID']].iloc[0])
         result = engine.execute(SQLCommand)
         if not result.rowcount:
             print('New User {0}'.format(irow[1][['userID']].iloc[0]))
-            pandas.DataFrame({'userID' : irow[1]['userID'], 'init_level' : irow[1]['init_level']},index=[0])[['userID', 'init_level']].to_sql('current_user_status', engine, index=False, if_exists='append')
+            pandas.DataFrame({'userID' : irow[1]['userID'], 'init_level' : irow[1]['curr_level']},index=[0])[['userID', 'init_level']].to_sql('current_user_status', engine, index=False, if_exists='append')
