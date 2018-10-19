@@ -91,12 +91,14 @@ answers_dict_level4['KOI FISH'] = 7
 answers_dict_level4['VIOLIN MODE HARMONIC'] = 19
 answers_dict_level4['POWER LINE (60 HZ)'] = 14
 
+
 answers_virgo = gspyproject.get_answers(workflow=7501)
 answers_dict_rev_virgo =  dict(enumerate(sorted(answers_virgo['7501'].keys())))
 answers_dict_virgo = dict((str(v),k) for k,v in answers_dict_rev_virgo.items())
 
 
-answers_dict_level4.update(answers_dict_virgo)
+answers_dict_virgo.update(answers_dict_level4)
+answers_dict_level4 = answers_dict_virgo.copy()
 
 # Obtain workflow order
 workflow_order = [int(str(i)) for i in Project.find('1104').raw['configuration']['workflow_order']]
@@ -104,6 +106,9 @@ level_workflow_dict = dict(enumerate(workflow_order))
 
 # Load last_id that was parsed
 #last_id = "16822410"
+engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu'
+                       ':5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],
+                                                 os.environ['GRAVITYSPY_DATABASE_PASSWD']))
 if args.last_id is None:
     last_id = pd.read_sql("select max(id) from classificationsdev",engine).iloc[0].iloc[0]
     print(last_id)
@@ -170,9 +175,6 @@ classifications.links_user = classifications.links_user.astype(int)
 print(classifications['created_at'].iloc[0])
 
 if sql:
-    engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu'
-                           ':5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],
-                                                     os.environ['GRAVITYSPY_DATABASE_PASSWD']))
     classifications.to_sql('{0}'.format(args.database), engine,
                            index=False,if_exists='append',chunksize=100)
 if hdf5:
