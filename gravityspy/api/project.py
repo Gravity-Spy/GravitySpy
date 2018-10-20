@@ -454,6 +454,7 @@ class GravitySpyProject(ZooProject):
             numClasses = len(answers_dict.keys())
             alpha = .7*np.ones(numClasses)
             alpha[4] = 0.65
+            alpha[9] = 0.65
 
         if not hasattr(self, 'confusion_matrices'):
             self.calculate_confusion_matrices()
