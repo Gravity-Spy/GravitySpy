@@ -92,11 +92,14 @@ if args.update_website:
     project = Project.find(slug='zooniverse/gravity-spy')
 
     def update_settings(x):
-        user = User.find(x.userID)
-        new_settings = {"workflow_id": "{0}".format(level_dict[x.curr_level - 1])}
-        print(user)
-        print(new_settings)
-        ProjectPreferences.save_settings(project=project, user=user, settings=new_settings)
+        try:
+            user = User.find(x.userID)
+            new_settings = {"workflow_id": "{0}".format(level_dict[x.curr_level - 1])}
+            print(user)
+            print(new_settings)
+            ProjectPreferences.save_settings(project=project, user=user, settings=new_settings)
+        except:
+            print('This user promotion failed: {0}'.format(x.userID))
 
     updates.apply(update_settings, axis=1)
 

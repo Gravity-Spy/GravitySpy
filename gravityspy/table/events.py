@@ -462,6 +462,83 @@ class Events(GravitySpyTable):
 
         return triggers
 
+    def create_sub(self, channel_name, frame_type,
+                   path_to_cnn, plot_directory,
+                   subfile_name='gravityspy.sub',
+                   accounting_group_user='scott.coughlin',
+                   accounting_group='ligo.dev.o1.detchar.ch_categorization.glitchzoo'):
+        """Create a dag file to process all events in table
+
+        Parameters:
+
+            nclusters (int): how many clusters to try to group
+                these triggers into
+
+        Returns:
+            `Events` table
+        """
+        # Determine location of executables
+        proc = subprocess.Popen(['which', 'wscan'],
+                                stdin = subprocess.PIPE,
+                                stdout = subprocess.PIPE,
+                                stderr = subprocess.PIPE
+                                )
+        (path_to_wscan, err) = proc.communicate()
+        if not path_to_wscan:
+            raise ValueError('Cannot locate wscan executable in your path')
+
+        for d in ['logs', 'condor']:
+            if not os.path.isdir(d):
+                os.makedirs(d)
+
+        with open(subfile_name, 'w') as subfile:
+            subfile.write('universe = vanilla\n')
+            subfile.write('executable = {0}\n'.format(path_to_wscan))
+            subfile.write('\n')
+            subfile.write('arguments = "--channel-name {0} '
+                          '--frametype {1} '
+                          '--event-time $(event_time) '
+                          '--plot-directory {2} --hdf5 '
+                          '--path-to-cnn-model {3}"\n'.format(channel_name,
+                                                            frame_type,
+                                                            plot_directory,
+                                                            path_to_cnn))
+            subfile.write('getEnv=True\n')
+            subfile.write('\n')
+            subfile.write('accounting_group_user = {0}\n'.format(accounting_group_user))
+            subfile.write('accounting_group = {0}\n'.format(accounting_group))
+            subfile.write('\n')
+            subfile.write('priority = 0\n')
+            subfile.write('request_memory = 5000\n')
+            subfile.write('\n')
+            subfile.write('error = logs/gravityspy-$(jobNumber).err\n')
+            subfile.write('output = logs/gravityspy-$(jobNumber).out\n')
+            subfile.write('notification = Error\n')
+            subfile.write('queue 1')
+            subfile.close()
+
+    def create_dag(self, subfile_name='gravityspy.sub', retry_number=3):
+        """Create a dag file to process all events in table
+
+        Parameters:
+
+            nclusters (int): how many clusters to try to group
+                these triggers into
+
+        Returns:
+            `Events` table
+        """
+        with open('gravityspy_{0}_{1}.dag'.format(self['peak_time'].min(),
+                                                  self['peak_time'].max()),'a+') as dagfile:
+            for peak_time, peak_time_ns, event_id, event_time in zip(self['peak_time'],
+                                                                     self['peak_time_ns'],
+                                                                     self['event_id'],
+                                                                     self['event_time']):
+                job_number = '{0}{1}{2}'.format(peak_time, peak_time_ns, event_id)
+                dagfile.write('JOB {0} {1}\n'.format(job_number, subfile_name))
+                dagfile.write('RETRY {0} {1}\n'.format(job_number, retry_number))
+                dagfile.write('VARS {0} jobNumber="{0}" event_time="{1}"'.format(job_number, repr(event_time)))
+                dagfile.write('\n\n')
 
 def id_generator(x, size=10,
                  chars=(string.ascii_uppercase +
