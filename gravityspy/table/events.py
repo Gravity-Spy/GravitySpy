@@ -464,6 +464,7 @@ class Events(GravitySpyTable):
 
     def create_sub(self, channel_name, frame_type,
                    path_to_cnn, plot_directory,
+                   delete_images=False,
                    subfile_name='gravityspy.sub',
                    accounting_group_user='scott.coughlin',
                    accounting_group='ligo.dev.o1.detchar.ch_categorization.glitchzoo'):
@@ -493,16 +494,27 @@ class Events(GravitySpyTable):
 
         with open(subfile_name, 'w') as subfile:
             subfile.write('universe = vanilla\n')
-            subfile.write('executable = {0}\n'.format(path_to_wscan))
+            subfile.write('executable = {0}\n'.format(str(path_to_wscan)))
             subfile.write('\n')
-            subfile.write('arguments = "--channel-name {0} '
-                          '--frametype {1} '
-                          '--event-time $(event_time) '
-                          '--plot-directory {2} --hdf5 '
-                          '--path-to-cnn-model {3}"\n'.format(channel_name,
-                                                            frame_type,
-                                                            plot_directory,
-                                                            path_to_cnn))
+            if delete_images:
+                subfile.write('arguments = "--channel-name {0} '
+                              '--frametype {1} '
+                              '--event-time $(event_time) '
+                              '--plot-directory {2} --hdf5 '
+                              '--path-to-cnn-model {3} '
+                              '--delete-images"\n'.format(channel_name,
+                                                          frame_type,
+                                                          plot_directory,
+                                                          path_to_cnn))
+            else:
+                subfile.write('arguments = "--channel-name {0} '
+                              '--frametype {1} '
+                              '--event-time $(event_time) '
+                              '--plot-directory {2} --hdf5 '
+                              '--path-to-cnn-model {3}"\n'.format(channel_name,
+                                                                frame_type,
+                                                                plot_directory,
+                                                                path_to_cnn))
             subfile.write('getEnv=True\n')
             subfile.write('\n')
             subfile.write('accounting_group_user = {0}\n'.format(accounting_group_user))

@@ -57,6 +57,8 @@ def parse_commandline():
                         help="Store triggers in local hdf5 table format")
     parser.add_argument("--sql", action="store_true", default=False,
                         help="Store triggers in a remote sql DB")
+    parser.add_argument("--delete-images", action="store_true", default=False,
+                        help="Delete Images After Classifying Them")
     parser.add_argument("--verbose", action="store_true", default=False,
                         help="Run in Verbose Mode")
     args = parser.parse_args()
@@ -72,7 +74,8 @@ def parse_commandline():
 
 def main(channel_name, frametype, event_time, gid, plot_directory,
          path_to_cnn, project_info_pickle=None, path_to_similarity_search=None,
-         gravityspy_id=True, hdf5=False, sql=False, verbose=False):
+         gravityspy_id=True, hdf5=False, sql=False, verbose=False,
+         delete_images=False):
 
     if not os.path.isfile(path_to_cnn):
         raise ValueError('The provided CNN model does not '
@@ -145,19 +148,23 @@ def main(channel_name, frametype, event_time, gid, plot_directory,
     elif hdf5:
         results.convert_unicode_to_bytestring()
         results.write(os.path.join(final_path, 'classification.hdf5'),
-                      path='/{0}'.format(idstring), format='hdf5')
+                      path='/{0}'.format(idstring), format='hdf5', append=True))
         if path_to_similarity_search is not None:
             features.convert_unicode_to_bytestring()
             features.write(os.path.join(final_path, 'features.hdf5'),
-                       path='/{0}'.format(idstring), format='hdf5')
+                       path='/{0}'.format(idstring), format='hdf5', append=True)
 
-    system_call = "mv {0}*.png {1}".format(plot_directorytmp, final_path)
-    os.system(system_call)
-    shutil.rmtree(os.path.join(plot_directory, idstring))
+    if delete_images:
+        shutil.rmtree(os.path.join(plot_directory, idstring))
+    else:
+        system_call = "mv {0}*.png {1}".format(plot_directorytmp, final_path)
+        os.system(system_call)
+        shutil.rmtree(os.path.join(plot_directory, idstring))
 
 if __name__ == '__main__':
     args = parse_commandline()
     main(args.channel_name, args.frametype,
          args.event_time, args.id, args.plot_directory, args.path_to_cnn_model,
          args.project_info_pickle, args.path_to_semantic_file,
-         args.gravityspy_id, args.hdf5, args.sql, args.verbose)
+         args.gravityspy_id, args.hdf5, args.sql, args.verbose,
+         args.delete_images)
