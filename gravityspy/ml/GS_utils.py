@@ -161,6 +161,13 @@ def siamese_acc(thred):
 
     return inner_siamese_acc
 
+def eucl_dist_output_shape(shapes):
+    shape1, shape2 = shapes
+    return (shape1[0], 1)
+
+def contrastive_loss(y_true, y_pred):
+    margin = 1
+    return K.mean(y_true * K.square(y_pred) + (1 - y_true) * K.square(K.maximum(margin - y_pred, 0)))
 
 def create_pairs3_gen(data, class_indices, batch_size):
     """ Create the pairs
