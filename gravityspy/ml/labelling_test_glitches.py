@@ -3,6 +3,7 @@ from keras import backend as K
 K.set_image_dim_ordering('th')
 from keras.models import load_model
 from scipy.misc import imresize
+from keras.applications.vgg16 import preprocess_input
 
 import numpy
 import os
@@ -156,6 +157,9 @@ def get_feature_space(image_data, semantic_model_name, image_size=[140, 170],
 
 
 def get_multiview_feature_space(image_data, semantic_model_name,
+                                order_of_channels="channels_last",
+                                preprocess_inputs=True,
+                                order_orig=True,
                                 image_size=[140, 170], verbose=False):
     """Obtain N dimensional feature space of sample
 
@@ -182,31 +186,37 @@ def get_multiview_feature_space(image_data, semantic_model_name,
             a 200 dimensional feature space vector
     """
     img_rows, img_cols = image_size[0], image_size[1]
-    test_set_unlabelled_x_1 = image_data.filter(regex=("1.0.png")).iloc[0].iloc[0]
-    test_set_unlabelled_x_2 = image_data.filter(regex=("2.0.png")).iloc[0].iloc[0]
-    test_set_unlabelled_x_3 = image_data.filter(regex=("4.0.png")).iloc[0].iloc[0]
-    test_set_unlabelled_x_4 = image_data.filter(regex=("0.5.png")).iloc[0].iloc[0]
-    test_set_unlabelled_x_1 = numpy.concatenate((test_set_unlabelled_x_1[0].reshape(-1, 1, img_rows, img_cols),
-                                              test_set_unlabelled_x_1[1].reshape(-1, 1, img_rows, img_cols),
-                                              test_set_unlabelled_x_1[2].reshape(-1, 1, img_rows, img_cols)),
-                                             axis=1)
-    test_set_unlabelled_x_2 = numpy.concatenate((test_set_unlabelled_x_2[0].reshape(-1, 1, img_rows, img_cols),
-                                              test_set_unlabelled_x_2[1].reshape(-1, 1, img_rows, img_cols),
-                                              test_set_unlabelled_x_2[2].reshape(-1, 1, img_rows, img_cols)),
-                                             axis=1)
-    test_set_unlabelled_x_3 = numpy.concatenate((test_set_unlabelled_x_3[0].reshape(-1, 1, img_rows, img_cols),
-                                              test_set_unlabelled_x_3[1].reshape(-1, 1, img_rows, img_cols),
-                                              test_set_unlabelled_x_3[2].reshape(-1, 1, img_rows, img_cols)),
-                                             axis=1)
-    test_set_unlabelled_x_4 = numpy.concatenate((test_set_unlabelled_x_4[0].reshape(-1, 1, img_rows, img_cols),
-                                              test_set_unlabelled_x_4[1].reshape(-1, 1, img_rows, img_cols),
-                                              test_set_unlabelled_x_4[2].reshape(-1, 1, img_rows, img_cols)),
-                                             axis=1)
-    semantic_idx_model = load_model(semantic_model_name)
-    concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
-                            test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], True)
+
+    K.set_image_data_format(order_of_channels)
+    if order_of_channels == 'channels_last':
+        reshape_order = (-1, img_rows, img_cols, 3)
+    elif order_of_channels == 'channels_first':
+        reshape_order = (-1, 3, img_rows, img_cols)
+    else:
+        raise ValueError("Do not understand supplied channel order")
 
     half_second_images = sorted(image_data.filter(regex=("0.5.png")).keys())
+    one_second_images = sorted(image_data.filter(regex=("1.0.png")).keys())
+    two_second_images = sorted(image_data.filter(regex=("2.0.png")).keys())
+    four_second_images = sorted(image_data.filter(regex=("4.0.png")).keys())
+
+    if order_orig:
+        test_set_unlabelled_x_1 = numpy.vstack(image_data[one_second_images].iloc[0]).reshape(reshape_order)
+        test_set_unlabelled_x_2 = numpy.vstack(image_data[two_second_images].iloc[0]).reshape(reshape_order)
+        test_set_unlabelled_x_3 = numpy.vstack(image_data[four_second_images].iloc[0]).reshape(reshape_order)
+        test_set_unlabelled_x_4 = numpy.vstack(image_data[half_second_images].iloc[0]).reshape(reshape_order)
+    else:
+        test_set_unlabelled_x_1 = numpy.vstack(image_data[half_second_images].iloc[0]).reshape(reshape_order)
+        test_set_unlabelled_x_2 = numpy.vstack(image_data[one_second_images].iloc[0]).reshape(reshape_order)
+        test_set_unlabelled_x_3 = numpy.vstack(image_data[two_second_images].iloc[0]).reshape(reshape_order)
+        test_set_unlabelled_x_4 = numpy.vstack(image_data[four_second_images].iloc[0]).reshape(reshape_order)
+
+    semantic_idx_model = load_model(semantic_model_name)
+    concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
+                            test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], True, order_of_channels)
+
+    if preprocess_inputs:
+        concat_test_unlabelled = preprocess_input(concat_test_unlabelled)
 
     ids = []
     for uid in half_second_images:

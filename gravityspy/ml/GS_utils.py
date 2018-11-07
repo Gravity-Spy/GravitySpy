@@ -16,7 +16,8 @@ import numpy as np
 
 #4/2/2018
 def concatenate_views(image_set1, image_set2, image_set3,
-                      image_set4, image_size, rgb_flag):
+                      image_set4, image_size, rgb_flag,
+                      order_of_channels):
     """Create a merged view from a set of 4 views of one sample image
 
     Parameters:
@@ -57,17 +58,28 @@ def concatenate_views(image_set1, image_set2, image_set3,
     else:
         ch = 1
 
+    if order_of_channels == 'channels_last':
+        concat_images_set = np.zeros((len(image_set1), img_rows * 2, img_cols, ch))
+        concat_images_set2 = np.zeros((len(image_set3), img_rows * 2, img_cols, ch))
+        concat_row_axis = 0
+        concat_col_axis = 2
+    elif order_of_channels == 'channels_first':
+        concat_images_set = np.zeros((len(image_set1), ch, img_rows * 2, img_cols))
+        concat_images_set2 = np.zeros((len(image_set3), ch, img_rows * 2, img_cols))
+        concat_row_axis = 1
+        concat_col_axis = 3
+    else:
+        raise ValueError("Do not understand supplied channel order")
+
     assert len(image_set1) == len(image_set2)
-    concat_images_set = np.zeros((len(image_set1), ch, img_rows * 2, img_cols))
     for i in range(0, len(image_set1)):
-        concat_images_set[i, :, :, :] = np.append(image_set1[i, :, :, :], image_set2[i, :, :, :], axis=1)
+        concat_images_set[i, :, :, :] = np.append(image_set1[i, :, :, :], image_set2[i, :, :, :], axis=concat_row_axis)
 
     assert len(image_set3) == len(image_set4)
-    concat_images_set2 = np.zeros((len(image_set3), ch, img_rows * 2, img_cols))
     for i in range(0, len(image_set3)):
-        concat_images_set2[i, :, :, :] = np.append(image_set3[i, :, :, :], image_set4[i, :, :, :], axis=1)
+        concat_images_set2[i, :, :, :] = np.append(image_set3[i, :, :, :], image_set4[i, :, :, :], axis=concat_row_axis)
 
-    out = np.append(concat_images_set,concat_images_set2, axis=3)
+    out = np.append(concat_images_set,concat_images_set2, axis=concat_col_axis)
     return out
 
 #4/2/2018
@@ -146,6 +158,20 @@ def cosine_distance(vects):
     y = K.l2_normalize(y, axis=-1)
     return 1.0 - K.sum(x * y, axis=1, keepdims=True)
 
+def canberra_distance(vects):
+    """Calculate the cosine distance of an array
+
+    Parameters:
+
+        vect (array):
+    """
+    x, y = vects
+    x = K.maximum(x, K.epsilon())
+    y = K.maximum(y, K.epsilon())
+    x = K.l2_normalize(x, axis=-1)
+    y = K.l2_normalize(y, axis=-1)
+    return K.sum(K.abs(x - y), axis=1, keepdims=True) / K.sum(x + y, axis=1, keepdims=True)
+
 
 def siamese_acc(thred):
     """Calculate simaese accuracy
@@ -156,7 +182,7 @@ def siamese_acc(thred):
     """
     def inner_siamese_acc(y_true, y_pred):
         pred_res = y_pred < thred
-        acc = K.mean(K.cast(K.equal(K.cast(pred_res, dtype='int32'), y_true), dtype='float32'))
+        acc = K.mean(K.cast(K.equal(K.cast(pred_res, dtype='int32'), K.cast(y_true, dtype='int32')), dtype='float32'))
         return acc
 
     return inner_siamese_acc

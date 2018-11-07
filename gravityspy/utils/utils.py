@@ -344,6 +344,9 @@ def get_features(plot_directory, path_to_semantic_model, **kwargs):
     -------
     """
     verbose = kwargs.pop('verbose', False)
+    order_of_channels = kwargs.pop('order_of_channels', 'channels_first')
+    preprocess_inputs = kwargs.pop('preprocess_inputs', True)
+    order_orig = kwargs.pop('order_orig', True)
 
     if verbose:
         logger = log.Logger('Gravity Spy: Extracting Feature Space')
@@ -372,9 +375,12 @@ def get_features(plot_directory, path_to_semantic_model, **kwargs):
     features, ids = label_glitches.get_multiview_feature_space(image_data=image_data_for_si,
                                        semantic_model_name='{0}'.format(path_to_semantic_model),
                                        image_size=[140, 170],
-                                       verbose=verbose)
+                                       verbose=verbose,
+                                       order_orig=order_orig,
+                                       preprocess_inputs=preprocess_inputs,
+                                       order_of_channels=order_of_channels)
 
-    scores_table = GravitySpyTable(features, names=numpy.arange(0, features.size).astype(str))
+    scores_table = GravitySpyTable(features, names=numpy.arange(0, features.shape[1]).astype(str))
 
     scores_table['gravityspy_id'] = ids
 
