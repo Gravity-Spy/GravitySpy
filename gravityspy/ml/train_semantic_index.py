@@ -15,6 +15,7 @@ from .read_image import read_rgb
 import numpy
 import os
 import pandas
+import random
 
 def pickle_trainingset(path_to_trainingset,
                        save_address='pickleddata/trainingset.pkl',
@@ -193,6 +194,25 @@ def make_model(data,
 
     logger.info('The size of the images being trained {0}'.format(image_size))
 
+    # Tell user what classes are known for similarity search training and what
+    # are unknown
+    logger.info('Selecting images to be considered in the known '
+                'domain of samples which are {0}'.format(known_classes_labels))
+
+    logger.info('Selecting images to be considered in the unknown '
+                'domain of samples which are {0}'.format(unknown_classes_labels))
+
+    # Create dict matching string labels to idx labels
+    logger.info('Removing NOA images from the training set.')
+
+    data = data.loc[data.Label != 'None_of_the_Above']
+    tmp = dict(enumerate(sorted(data.Label.unique())))
+    str_to_idx = dict((str(v),k) for k,v in tmp.items())
+    data['idx_label'] = data.Label.apply(lambda x: str_to_idx[x])
+
+    known_classes_labels_idx = [str_to_idx[v] for v in known_classes_labels]
+    unknown_classes_labels_idx = [str_to_idx[v] for v in unknown_classes_labels]
+
     if order_of_channels == 'channels_last':
         reshape_order = (-1, img_rows, img_cols, 3)
         channels_order = (img_rows, img_cols, 3)
@@ -207,33 +227,22 @@ def make_model(data,
     else:
         known_df = data.loc[data.Label.isin(known_classes_labels)]
 
-    known_df = known_df.groupby('Label').apply(lambda x:
-                                               x.sample(frac=0.25,
-                                                        random_state=random_seed)
-                                              ).reset_index(drop=True).reset_index()
-    known_df = known_df.sample(frac=1, random_state=random_seed)
-
-    logger.info('Given unknown images here is what is to be considered in '
-                'the known '
-                'domain of samples which are {0}'.format(known_df.Label.unique()))
-
-    logger.info('Selecting images to be considered in the unknown '
-                'domain of samples which are {0}'.format(unknown_classes_labels))
     unknown_df = data.loc[data.Label.isin(unknown_classes_labels)]
-    unknown_df = unknown_df.groupby('Label').apply(lambda x: x.sample(frac=0.25,random_state=random_seed)).reset_index(drop=True).reset_index()
-    unknown_df = unknown_df.sample(frac=1, random_state=random_seed)
 
-    known_x_1 = numpy.vstack(known_df['0.5.png'].values).reshape(reshape_order)
-    unknown_x_1 = numpy.vstack(unknown_df['0.5.png'].values).reshape(reshape_order)
+    known_data_label = known_df['idx_label'].values
+    unknown_data_label = unknown_df['idx_label'].values
 
-    known_x_2 = numpy.vstack(known_df['1.0.png'].values).reshape(reshape_order)
-    unknown_x_2 = numpy.vstack(unknown_df['1.0.png'].values).reshape(reshape_order)
+    known_x_1 = numpy.vstack(known_df['1.0.png'].values).reshape(reshape_order)
+    unknown_x_1 = numpy.vstack(unknown_df['1.0.png'].values).reshape(reshape_order)
 
-    known_x_3 = numpy.vstack(known_df['2.0.png'].values).reshape(reshape_order)
-    unknown_x_3 = numpy.vstack(unknown_df['2.0.png'].values).reshape(reshape_order)
+    known_x_2 = numpy.vstack(known_df['2.0.png'].values).reshape(reshape_order)
+    unknown_x_2 = numpy.vstack(unknown_df['2.0.png'].values).reshape(reshape_order)
 
-    known_x_4 = numpy.vstack(known_df['4.0.png'].values).reshape(reshape_order)
-    unknown_x_4 = numpy.vstack(unknown_df['4.0.png'].values).reshape(reshape_order)
+    known_x_3 = numpy.vstack(known_df['4.0.png'].values).reshape(reshape_order)
+    unknown_x_3 = numpy.vstack(unknown_df['4.0.png'].values).reshape(reshape_order)
+
+    known_x_4 = numpy.vstack(known_df['0.5.png'].values).reshape(reshape_order)
+    unknown_x_4 = numpy.vstack(unknown_df['0.5.png'].values).reshape(reshape_order)
 
     if multi_view:
         known_classes = concatenate_views(known_x_1, known_x_2,
@@ -249,48 +258,19 @@ def make_model(data,
         known_classes = known_x_2
         unknown_classes = unknown_x_2
 
-    known_classes = known_classes.astype(numpy.float32)
-    unknown_classes = unknown_classes.astype(numpy.float32)
-
     known_classes = preprocess_input(known_classes)
     unknown_classes = preprocess_input(unknown_classes)
 
+    known_classes = known_classes.astype(numpy.float32)
+    unknown_classes = unknown_classes.astype(numpy.float32)
+
+    known_classes_indices_for_metric_learning = [numpy.where(known_data_label == i)[0] for i in known_classes_labels_idx]
+    unknown_classes_indices_for_metric_learning = [numpy.where(unknown_data_label == i)[0] for i in unknown_classes_labels_idx]
     # create binary pairs for known classes
-    all_pairs_known = numpy.array(list(combinations(known_df['index'],2)))
-    same_pairs_known = numpy.concatenate(known_df.groupby('Label')['index'].apply(lambda x : list(combinations(x.values,2))))
-    s_pairs_known = set(map(tuple, same_pairs_known))
-    a_pairs_known = set(map(tuple, all_pairs_known))
-    diff_pairs_known = numpy.array(list(a_pairs_known-s_pairs_known))
-
-    # initialize empty array of ones for pairs that are the same
-    # last column will be label and first and second columns index of pair
-    same_pairs_known_w_label = numpy.ones((same_pairs_known.shape[0], 3))
-    same_pairs_known_w_label[:,:-1] = same_pairs_known
-    # initialize empty array of zeros for pairs that are different
-    # last column will be label and first and second columns index of pair
-    diff_pairs_known_w_label = numpy.zeros((diff_pairs_known.shape[0], 3))
-    diff_pairs_known_w_label[:,:-1] = diff_pairs_known
-
-    # create binary pairs for unknown classes
-    all_pairs_unknown = numpy.array(list(combinations(unknown_df['index'],2)))
-    same_pairs_unknown = numpy.concatenate(unknown_df.groupby('Label')['index'].apply(lambda x : list(combinations(x.values,2))))
-    s_pairs_unknown = set(map(tuple, same_pairs_unknown))
-    a_pairs_unknown = set(map(tuple, all_pairs_unknown))
-    diff_pairs_unknown = numpy.array(list(a_pairs_unknown-s_pairs_unknown))
-
-    # initialize empty array of ones for pairs that are the same
-    # last column will be label and first and second columns index of pair
-    same_pairs_unknown_w_label = numpy.ones((same_pairs_unknown.shape[0], 3))
-    same_pairs_unknown_w_label[:,:-1] = same_pairs_unknown
-    # initialize empty array of zeros for pairs that are different
-    # last column will be label and first and second columns index of pair
-    diff_pairs_unknown_w_label = numpy.zeros((diff_pairs_unknown.shape[0], 3))
-    diff_pairs_unknown_w_label[:,:-1] = diff_pairs_unknown
-
-    train_generator = generate_pairs(known_classes, same_pairs_known_w_label,
-                                     diff_pairs_known_w_label, batch_size)
-    valid_generator = generate_pairs(unknown_classes, same_pairs_unknown_w_label,
-                                      diff_pairs_unknown_w_label, batch_size)
+    train_generator = create_pairs3_gen(known_classes, known_classes_indices_for_metric_learning,
+                                         batch_size)
+    valid_generator = create_pairs3_gen(unknown_classes, unknown_classes_indices_for_metric_learning,
+                                        batch_size)
 
     # Create the model
     vgg16 = VGG16(weights='imagenet', include_top=False,
@@ -401,3 +381,39 @@ def generate_pairs(image_data, same_pair_labels, diff_pair_labels, batch_size):
     labels = stacked_idxs[:, 2]
     while True:
         yield [pairs1, pairs2], labels
+
+def create_pairs3_gen(data, class_indices, batch_size):
+    pairs1 = []
+    pairs2 = []
+    labels = []
+    number_of_classes = len(class_indices)
+    counter = 0
+    while True:
+        for d in range(len(class_indices)):
+            for i in range(len(class_indices[d])):
+                counter += 1
+                # positive pair
+                j = random.randrange(0, len(class_indices[d]))
+                z1, z2 = class_indices[d][i], class_indices[d][j]
+
+                pairs1.append(data[z1])
+                pairs2.append(data[z2])
+                labels.append(1)
+
+                # negative pair
+                inc = random.randrange(1, number_of_classes)
+                other_class_id = (d + inc) % number_of_classes
+                j = random.randrange(0, len(class_indices[other_class_id])-1)
+                z1, z2 = class_indices[d][i], class_indices[other_class_id][j]
+
+                pairs1.append(data[z1])
+                pairs2.append(data[z2])
+                labels.append(0)
+
+                if counter == batch_size:
+                    #yield np.array(pairs), np.array(labels)
+                    yield [numpy.asarray(pairs1, numpy.float32), numpy.asarray(pairs2, numpy.float32)], numpy.asarray(labels, numpy.int32)
+                    counter = 0
+                    pairs1 = []
+                    pairs2 = []
+                    labels = []
