@@ -148,7 +148,7 @@ def main(channel_name, frametype, event_time, gid, plot_directory,
     elif hdf5:
         results.convert_unicode_to_bytestring()
         results.write(os.path.join(final_path, 'classification.hdf5'),
-                      path='/{0}'.format(idstring), format='hdf5', append=True))
+                      path='/{0}'.format(idstring), format='hdf5', append=True)
         if path_to_similarity_search is not None:
             features.convert_unicode_to_bytestring()
             features.write(os.path.join(final_path, 'features.hdf5'),
