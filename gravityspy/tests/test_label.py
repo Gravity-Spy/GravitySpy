@@ -120,6 +120,5 @@ class TestGravitySpyML(object):
                                                               MODEL_NAME_FEATURE_MULTIVIEW),
                                                         [140, 170],
                                                         False)
-
         numpy.testing.assert_array_almost_equal(features, MULTIVIEW_FEATURES,
                                                 decimal=3)
