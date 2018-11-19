@@ -103,6 +103,7 @@ def make_model(data,
                                      'Scratchy', 'Tomte',
                                      'Violin_Mode', 'Wandering_Line',
                                      'Whistle'],
+               train_vgg=False,
                distance_method='cosine',
                multi_view=True,
                batch_size=22, nb_epoch=50,
@@ -127,7 +128,7 @@ def make_model(data,
 
         unknown_classes_labels (list, optional):
             Defaults to
-            ``['Paired_Doves', 'Power_Line', '1080Lines', '1400Ripples', 
+            ``['Paired_Doves', 'Power_Line', '1080Lines', '1400Ripples',
                'Scratchy', 'Repeating_Blips', 'Helix']``
             A list of classes to be considered as the unknown
             domain for which clustering will be performed
@@ -135,7 +136,7 @@ def make_model(data,
             has been trained.
 
         known_classes_labels (list, optional):
-            Defaults to 
+            Defaults to
             ``['1080Lines', '1400Ripples',
                'Air_Compressor', 'Blip', 'Chirp',
                'Extremely_Loud', 'Helix', 'Koi_Fish',
@@ -317,9 +318,10 @@ def make_model(data,
     similarity_model = Model(inputs=[input_a, input_b], outputs=distance)
     semantic_idx_model = Model(inputs=[input_a], outputs=processed_a)
 
-    number_of_cnn_from_vgg = 0
-    for i in range(len(vgg16.layers)-number_of_cnn_from_vgg):
-        vgg16.layers[i].trainable = False
+    if not train_vgg:
+        number_of_cnn_from_vgg = 0
+	for i in range(len(vgg16.layers)-number_of_cnn_from_vgg):
+	    vgg16.layers[i].trainable = False
 
     similarity_model.summary()
     semantic_idx_model.summary()
