@@ -389,11 +389,11 @@ def create_pairs3_gen(data, class_indices, batch_size):
     number_of_classes = len(class_indices)
     counter = 0
     while True:
-        for d in range(len(class_indices)):
+        for d in numpy.random.randint(0, number_of_classes, size=number_of_classes):
             for i in range(len(class_indices[d])):
                 counter += 1
                 # positive pair
-                j = random.randrange(0, len(class_indices[d]))
+                j = numpy.random.randint(0, high=len(class_indices[d]))
                 z1, z2 = class_indices[d][i], class_indices[d][j]
 
                 pairs1.append(data[z1])
@@ -401,9 +401,9 @@ def create_pairs3_gen(data, class_indices, batch_size):
                 labels.append(1)
 
                 # negative pair
-                inc = random.randrange(1, number_of_classes)
+                inc = numpy.random.randint(1, high=number_of_classes)
                 other_class_id = (d + inc) % number_of_classes
-                j = random.randrange(0, len(class_indices[other_class_id])-1)
+                j = numpy.random.randint(0, high=len(class_indices[other_class_id])-1)
                 z1, z2 = class_indices[d][i], class_indices[other_class_id][j]
 
                 pairs1.append(data[z1])
