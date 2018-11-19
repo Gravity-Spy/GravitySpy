@@ -320,8 +320,8 @@ def make_model(data,
 
     if not train_vgg:
         number_of_cnn_from_vgg = 0
-	for i in range(len(vgg16.layers)-number_of_cnn_from_vgg):
-	    vgg16.layers[i].trainable = False
+        for i in range(len(vgg16.layers)-number_of_cnn_from_vgg):
+            vgg16.layers[i].trainable = False
 
     similarity_model.summary()
     semantic_idx_model.summary()
