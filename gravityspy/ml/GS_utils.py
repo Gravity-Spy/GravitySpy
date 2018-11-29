@@ -16,7 +16,8 @@ import numpy as np
 
 #4/2/2018
 def concatenate_views(image_set1, image_set2, image_set3,
-                      image_set4, image_size, rgb_flag):
+                      image_set4, image_size, rgb_flag,
+                      order_of_channels):
     """Create a merged view from a set of 4 views of one sample image
 
     Parameters:
@@ -57,21 +58,32 @@ def concatenate_views(image_set1, image_set2, image_set3,
     else:
         ch = 1
 
+    if order_of_channels == 'channels_last':
+        concat_images_set = np.zeros((len(image_set1), img_rows * 2, img_cols, ch))
+        concat_images_set2 = np.zeros((len(image_set3), img_rows * 2, img_cols, ch))
+        concat_row_axis = 0
+        concat_col_axis = 2
+    elif order_of_channels == 'channels_first':
+        concat_images_set = np.zeros((len(image_set1), ch, img_rows * 2, img_cols))
+        concat_images_set2 = np.zeros((len(image_set3), ch, img_rows * 2, img_cols))
+        concat_row_axis = 1
+        concat_col_axis = 3
+    else:
+        raise ValueError("Do not understand supplied channel order")
+
     assert len(image_set1) == len(image_set2)
-    concat_images_set = np.zeros((len(image_set1), ch, img_rows * 2, img_cols))
     for i in range(0, len(image_set1)):
-        concat_images_set[i, :, :, :] = np.append(image_set1[i, :, :, :], image_set2[i, :, :, :], axis=1)
+        concat_images_set[i, :, :, :] = np.append(image_set1[i, :, :, :], image_set2[i, :, :, :], axis=concat_row_axis)
 
     assert len(image_set3) == len(image_set4)
-    concat_images_set2 = np.zeros((len(image_set3), ch, img_rows * 2, img_cols))
     for i in range(0, len(image_set3)):
-        concat_images_set2[i, :, :, :] = np.append(image_set3[i, :, :, :], image_set4[i, :, :, :], axis=1)
+        concat_images_set2[i, :, :, :] = np.append(image_set3[i, :, :, :], image_set4[i, :, :, :], axis=concat_row_axis)
 
-    out = np.append(concat_images_set,concat_images_set2, axis=3)
+    out = np.append(concat_images_set,concat_images_set2, axis=concat_col_axis)
     return out
 
 #4/2/2018
-def build_cnn(img_rows, img_cols):
+def build_cnn(channels_order):
     """This is where we use Keras to build a covolutional neural network (CNN)
 
     The CNN built here is described in the
@@ -101,7 +113,7 @@ def build_cnn(img_rows, img_cols):
     print('regularization parameter: ', W_reg)
     model = Sequential()
     model.add(Conv2D(16, (5, 5), padding='valid',
-              input_shape=(1, img_rows, img_cols),
+              input_shape=channels_order,
               kernel_regularizer=l2(W_reg)))
     model.add(Activation("relu"))
     model.add(MaxPooling2D(pool_size=(2, 2)))

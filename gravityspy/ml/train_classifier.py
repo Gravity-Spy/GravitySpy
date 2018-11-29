@@ -175,7 +175,8 @@ def pickle_trainingset(path_to_trainingset,
     return data
 
 
-def make_model(data, batch_size=22, nb_epoch=10,
+def make_model(data, order_of_channels="channels_last",
+               batch_size=22, nb_epoch=10,
                nb_classes=22, fraction_validation=.125, fraction_testing=None,
                best_model_based_validset=0, image_size=[140, 170],
                random_seed=1986, verbose=True):
@@ -235,8 +236,20 @@ def make_model(data, batch_size=22, nb_epoch=10,
     logger = log.Logger('Gravity Spy: Training '
                         'Model')
 
+    logger.info('You have selected the follow channel order : {0}'.format(order_of_channels))
+    K.set_image_data_format(order_of_channels)
+
+    if order_of_channels == 'channels_last':
+        reshape_order = (-1, img_rows, img_cols, 1)
+        channels_order = (img_rows, img_cols, 1)
+    elif order_of_channels == 'channels_first':
+        reshape_order = (-1, 1, img_rows, img_cols)
+        channels_order = (1, img_rows, img_cols)
+    else:
+        raise ValueError("Do not understand supplied channel order")
+
     logger.info('Using random seed {0}'.format(random_seed))
-    np.random.seed(random_seed)  # for reproducibility
+    numpy.random.seed(random_seed)  # for reproducibility
 
     logger.info('You data set contained {0} samples'.format(len(data)))
 
@@ -297,35 +310,23 @@ def make_model(data, batch_size=22, nb_epoch=10,
                                                            len(data)))
 
     # concatenate the pixels
-    train_set_x_1 = np.vstack(data['0.5.png'].values).reshape(
-                                                     -1, 1, img_rows, img_cols)
-    validation_x_1 = np.vstack(validationDF['0.5.png'].values).reshape(
-                                                     -1, 1, img_rows, img_cols)
+    train_set_x_1 = np.vstack(data['0.5.png'].values).reshape(reshape_order)
+    validation_x_1 = np.vstack(validationDF['0.5.png'].values).reshape(reshape_order)
 
-    train_set_x_2 = np.vstack(data['1.0.png'].values).reshape(
-                                                     -1, 1, img_rows, img_cols)
-    validation_x_2 = np.vstack(validationDF['1.0.png'].values).reshape(
-                                                     -1, 1, img_rows, img_cols)
+    train_set_x_2 = np.vstack(data['1.0.png'].values).reshape(reshape_order)
+    validation_x_2 = np.vstack(validationDF['1.0.png'].values).reshape(reshape_order)
 
-    train_set_x_3 = np.vstack(data['2.0.png'].values).reshape(
-                                                     -1, 1, img_rows, img_cols)
-    validation_x_3 = np.vstack(validationDF['2.0.png'].values).reshape(
-                                                     -1, 1, img_rows, img_cols)
+    train_set_x_3 = np.vstack(data['2.0.png'].values).reshape(reshape_order)
+    validation_x_3 = np.vstack(validationDF['2.0.png'].values).reshape(reshape_order)
 
-    train_set_x_4 = np.vstack(data['4.0.png'].values).reshape(
-                                                     -1, 1, img_rows, img_cols)
-    validation_x_4 = np.vstack(validationDF['4.0.png'].values).reshape(
-                                                     -1, 1, img_rows, img_cols)
+    train_set_x_4 = np.vstack(data['4.0.png'].values).reshape(reshape_order)
+    validation_x_4 = np.vstack(validationDF['4.0.png'].values).reshape(reshape_order)
 
     if fraction_testing:
-        testing_x_1 = np.vstack(testingDF['0.5.png'].values).reshape(
-                                                     -1, 1, img_rows, img_cols)
-        testing_x_2 = np.vstack(testingDF['1.0.png'].values).reshape(
-                                                     -1, 1, img_rows, img_cols)
-        testing_x_3 = np.vstack(testingDF['2.0.png'].values).reshape(
-                                                     -1, 1, img_rows, img_cols)
-        testing_x_4 = np.vstack(testingDF['4.0.png'].values).reshape(
-                                                     -1, 1, img_rows, img_cols)
+        testing_x_1 = np.vstack(testingDF['0.5.png'].values).reshape(reshape_order)
+        testing_x_2 = np.vstack(testingDF['1.0.png'].values).reshape(reshape_order)
+        testing_x_3 = np.vstack(testingDF['2.0.png'].values).reshape(reshape_order)
+        testing_x_4 = np.vstack(testingDF['4.0.png'].values).reshape(reshape_order)
 
     # Concatenate the labels
     trainingset_labels = np.vstack(data['Label'].values)
@@ -351,17 +352,21 @@ def make_model(data, batch_size=22, nb_epoch=10,
 
     logger.info('Concatenating multiple views ...')
     concat_train = concatenate_views(train_set_x_1, train_set_x_2,
-                            train_set_x_3, train_set_x_4, [img_rows, img_cols], False)
+                            train_set_x_3, train_set_x_4,
+                            [img_rows, img_cols], False,
+                            order_of_channels=order_of_channels)
     concat_valid = concatenate_views(validation_x_1, validation_x_2,
                             validation_x_3, validation_x_4,
-                            [img_rows, img_cols], False)
+                            [img_rows, img_cols], False,
+                            order_of_channels=order_of_channels)
 
     if fraction_testing:
         concat_test = concatenate_views(testing_x_1, testing_x_2,
                             testing_x_3, testing_x_4,
-                            [img_rows, img_cols], False)
+                            [img_rows, img_cols], False,
+                            order_of_channels=order_of_channels)
 
-    cnn1 = build_cnn(img_rows*2, img_cols*2)
+    cnn1 = build_cnn(channels_order)
     final_model = Sequential()
     final_model.add(cnn1)
     final_model.add(Dense(nb_classes, activation='softmax'))
