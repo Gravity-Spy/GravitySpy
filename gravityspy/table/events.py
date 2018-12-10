@@ -21,6 +21,7 @@ from gwpy.segments import DataQualityFlag
 from gwpy.table import GravitySpyTable
 from gwpy.utils import mp as mp_utils
 from sklearn.cluster import KMeans
+from astropy.table import Column
 
 from ..utils import log
 from ..utils import utils
@@ -54,14 +55,14 @@ class Events(GravitySpyTable):
         if 'gravityspy_id' not in tab.columns:
             tab['gravityspy_id'] = tab.apply(id_generator, 1)
             tab['image_status'] = 'testing'
-            tab['data_quality'] = 'no_flag'
+            tab['data_quality'] =  'no_flag'
             tab['upload_flag'] = 0
             tab['citizen_score'] = 0.0
             tab['links_subjects'] = 0
-            tab['url1'] = ''
-            tab['url2'] = ''
+            tab['url1'] = '' 
+            tab['url2'] = '' 
             tab['url3'] = ''
-            tab['url4'] = ''
+            tab['url4'] = '' 
 
         if etg == 'OMICRON':
             tab['event_id'] = tab['event_id'].apply(int)
@@ -203,7 +204,7 @@ class Events(GravitySpyTable):
         engine.execute(sql_command)
         return
 
-    def upload_to_zooniverse(self, subject_set_id=None):
+    def upload_to_zooniverse(self, subject_set_id=None, project='1104'):
         """Obtain omicron triggers to run gravityspy on
 
         Parameters:
@@ -212,6 +213,9 @@ class Events(GravitySpyTable):
         Returns:
             `Events` table
         """
+        for col in self.itercols():
+            if col.dtype.kind in 'SU':
+                self.replace_column(col.name, col.astype('object'))
         # First filter out images that have already been uploaded
         tab = self[self['upload_flag'] != 1]
         # If you want a specific subject set to be uploaded to then the
@@ -220,12 +224,9 @@ class Events(GravitySpyTable):
             tab['subjectset'] = subject_set_id
 
         if subject_set_id is None:
-            subset_ids = numpy.unique(tab['subjectset'])
+            subset_ids = numpy.unique(numpy.array(tab['subjectset'])) 
         else:
             subset_ids = numpy.atleast_1d(numpy.array(subject_set_id))
-
-        panoptes_client.Panoptes.connect()
-        project = panoptes_client.Project.find(slug='zooniverse/gravity-spy')
 
         for subset_id in subset_ids:
             subjectset = panoptes_client.SubjectSet.find(subset_id)
@@ -248,11 +249,11 @@ class Events(GravitySpyTable):
                 subject.metadata['Filename4'] = fn4.split('/')[-1]
                 subject.save()
                 subjects.append(subject)
-                self[self['gravityspy_id'] == gid]['links_subject'] = int(subject.id)
-                self[self['gravityspy_id'] == gid]['url1'] = subject.raw['locations'][0]['image/png'].split('?')[0]
-                self[self['gravityspy_id'] == gid]['url2'] = subject.raw['locations'][1]['image/png'].split('?')[0]
-                self[self['gravityspy_id'] == gid]['url3'] = subject.raw['locations'][2]['image/png'].split('?')[0]
-                self[self['gravityspy_id'] == gid]['url4'] = subject.raw['locations'][3]['image/png'].split('?')[0]
+                self['links_subjects'][self['gravityspy_id'] == gid] = int(subject.id)
+                self['url1'][self['gravityspy_id'] == gid] = subject.raw['locations'][0]['image/png'].split('?')[0]
+                self['url2'][self['gravityspy_id'] == gid] = subject.raw['locations'][1]['image/png'].split('?')[0]
+                self['url3'][self['gravityspy_id'] == gid] = subject.raw['locations'][2]['image/png'].split('?')[0]
+                self['url4'][self['gravityspy_id'] == gid] = subject.raw['locations'][3]['image/png'].split('?')[0]
                 self['upload_flag'][self['gravityspy_id'] == gid] = 1
             subjectset.add(subjects)
 

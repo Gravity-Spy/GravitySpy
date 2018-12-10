@@ -199,8 +199,6 @@ def get_multiview_feature_space(image_data, semantic_model_name,
 
     concat_test_unlabelled = preprocess_input(concat_test_unlabelled)
 
-    half_second_images = sorted(image_data.filter(regex=("0.5.png")).keys())
-
     ids = []
     for uid in half_second_images:
         ids.append(uid.split('_')[1])

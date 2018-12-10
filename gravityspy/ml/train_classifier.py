@@ -11,7 +11,7 @@ from gwpy.timeseries import TimeSeries
 
 import numpy as np
 import os
-import read_image
+from . import read_image
 import pandas as pd
 
 '''

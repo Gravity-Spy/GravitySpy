@@ -3,6 +3,7 @@ from skimage.color import rgb2gray
 from skimage.transform import rescale
 import numpy as np
 import os
+from functools import reduce
 
 
 def read_and_crop_image(filename, x, y):

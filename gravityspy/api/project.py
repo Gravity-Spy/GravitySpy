@@ -216,7 +216,7 @@ class ZooProject(object):
         workflowDictSubjectSets = {}
         workflowGoldenSetDict = self.get_golden_subject_sets()
 
-        if workflow:
+        if workflow is not None:
             workflows = [str(workflow)]
         else:
             workflows = self.workflow_info.keys()
@@ -263,7 +263,7 @@ class GravitySpyProject(ZooProject):
         for iworkflow in workflowDictSubjectSets.keys():
             # If it is final workflow level 4 subject sets are also linked
             # so need to filter for level 5 subject sets
-            if int(iworkflow) == 2117:
+            if int(iworkflow) == 7767:
                 subjectset_id = [iid for iid in \
                                 workflowDictSubjectSets[iworkflow] \
                                 if iid not in workflowDictSubjectSets['7766']]
