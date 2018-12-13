@@ -156,7 +156,7 @@ class Events(GravitySpyTable):
                                                    on=['gravityspy_id']))
         return results
 
-    def to_sql(self, table='glitches_v2d0', engine=None, **kwargs):
+    def to_sql(self, table='GSMetadata', engine=None, **kwargs):
         """Obtain omicron triggers to run gravityspy on
 
         Parameters:
@@ -166,7 +166,7 @@ class Events(GravitySpyTable):
         # connect if needed
         if engine is None:
             conn_kw = {}
-            for key in ('db', 'host', 'user', 'passwd'):
+            for key in ('db', 'host', 'user', 'passwd', 'server', 'port'):
                 try:
                     conn_kw[key] = kwargs.pop(key)
                 except KeyError:
@@ -174,6 +174,46 @@ class Events(GravitySpyTable):
             engine = create_engine(get_connection_str(**conn_kw))
 
         self.to_pandas().to_sql(table, engine, index=False, if_exists='append')
+        return
+
+    def to_glitch_db(self, table='GSMetadata', engine=None, **kwargs):
+        """Obtain omicron triggers to run gravityspy on
+
+        Parameters:
+            table (str): name of SQL table
+        """
+        from sqlalchemy.engine import create_engine
+
+        tab = self.to_pandas()
+        def makelink(x):
+            # This horrendous thing obtains the public html path for image
+            intermediate_path = '/'.join(filter(None,str(x.Filename1).split('/'))[3:-1])
+            if x.ifo == 'L1':
+                return 'https://ldas-jobs.ligo-la.caltech.edu/~gravityspy/{0}/{1}.png'.format(intermediate_path,x.gravityspy_id)
+            elif x.ifo == 'V1':
+                return 'https://ldas-jobs.ligo.caltech.edu/~gravityspy/{0}/{1}.png'.format(intermediate_path, x.gravityspy_id)
+            else:
+                return 'https://ldas-jobs.ligo-wa.caltech.edu/~gravityspy/{0}/{1}.png'.format(intermediate_path, x.gravityspy_id)
+
+        tab['imgUrl'] = tab[['ifo', 'gravityspy_id', 'Filename1']].apply(makelink, axis=1)
+        tab['pipeline'] = 'GravitySpy'
+        tab['flag'] = 0
+        # Get the right columns for glitch db from all the available colums
+        tab = tab[['gravityspy_id','ifo','ml_label', 'imgUrl', 'snr', 'amplitude','peak_frequency','central_freq','duration','bandwidth','chisq','chisq_dof','event_time','confidence', 'image_status', 'pipeline', 'citizen_score', 'flag', 'data_quality', 'q_value']]
+        tab.columns = ['id', 'ifo', 'label', 'imgUrl', 'snr', 'amplitude', 'peakFreq', 'centralFreq', 'duration', 'bandwidth', 'chisq', 'chisqDof', 'GPStime','confidence', 'imageStatus', 'pipeline', 'citizenScore', 'flag', 'dqflag', 'qvalue']
+
+        # connect if needed
+        if engine is None:
+            conn_kw = {}
+            for key in ('db', 'host', 'user', 'passwd', 'server', 'port'):
+                try:
+                    conn_kw[key] = kwargs.pop(key)
+                except KeyError:
+                    pass
+            engine = create_engine(get_connection_str(**conn_kw))
+
+        tab.to_sql(con=engine, name=table, if_exists='append',
+                   index=False, chunksize=100)
         return
 
     def update_sql(self, table='glitches_v2d0', engine=None):
@@ -568,6 +608,8 @@ def id_generator(x, size=10,
 
 def get_connection_str(db='gravityspy',
                        host='gravityspy.ciera.northwestern.edu',
+                       port='5432',
+                       server='postgresql',
                        user=None,
                        passwd=None):
     """Create string to pass to create_engine
@@ -584,7 +626,8 @@ def get_connection_str(db='gravityspy',
                          'https://secrets.ligo.org/secrets/144/'
                          ' description is username and secret is password.')
 
-    return 'postgresql://{0}:{1}@{2}:5432/{3}'.format(user, passwd, host, db)
+    return '{0}://{1}:{2}@{3}:{4}/{5}'.format(server, user, passwd,
+                                              host, port, db)
 
 # define multiprocessing method
 def _make_single_qscan(inputs):

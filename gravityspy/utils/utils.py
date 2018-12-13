@@ -374,7 +374,7 @@ def get_features(plot_directory, path_to_semantic_model, **kwargs):
                                        image_size=[140, 170],
                                        verbose=verbose)
 
-    scores_table = GravitySpyTable(features, names=numpy.arange(0, features.size).astype(str))
+    scores_table = GravitySpyTable(features, names=numpy.arange(0, features.shape[1]).astype(str))
 
     scores_table['gravityspy_id'] = ids
 
