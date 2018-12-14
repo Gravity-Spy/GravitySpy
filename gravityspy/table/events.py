@@ -274,7 +274,7 @@ class Events(GravitySpyTable):
 
             tab1 = tab[tab['subjectset'] == subset_id]
 
-            for fn1, fn2, fn3, fn4, gid in tab1['Filename1', 'Filename2', 'Filename3', 'Filename4', 'gravityspy_id']:
+            for fn1, fn2, fn3, fn4, gid, qval in tab1['Filename1', 'Filename2', 'Filename3', 'Filename4', 'gravityspy_id', 'q_value']:
                 subject = panoptes_client.Subject()
                 subject.links.project = project
                 subject.add_location(str(fn1))
@@ -287,6 +287,7 @@ class Events(GravitySpyTable):
                 subject.metadata['Filename2'] = fn2.split('/')[-1]
                 subject.metadata['Filename3'] = fn3.split('/')[-1]
                 subject.metadata['Filename4'] = fn4.split('/')[-1]
+                subject.metadata['q_value'] = str(qval)
                 subject.save()
                 subjects.append(subject)
                 self['links_subjects'][self['gravityspy_id'] == gid] = int(subject.id)
