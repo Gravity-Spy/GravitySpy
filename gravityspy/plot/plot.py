@@ -175,15 +175,8 @@ def plot_qtransform(specsgrams, plot_normalized_energy_range, plot_time_ranges,
         iax.set_ylim(frange)
         iax.yaxis.set_major_formatter(ScalarFormatter())
         iax.ticklabel_format(axis='y', style='plain')
+        iax.colorbar(clim=plot_normalized_energy_range)
         count = count + 1
-
-
-    divider = make_axes_locatable(iax)
-    cax = divider.append_axes("right", size="5%", pad="3%")
-
-    cbar = super_fig.colorbar(cax=cax, cmap='viridis',
-                              label='Normalized energy',
-                              clim=plot_normalized_energy_range)
 
     super_fig.suptitle(title, fontsize=mylabelfontsize, color=my_color, x=0.51)
 
