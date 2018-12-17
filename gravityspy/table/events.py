@@ -199,7 +199,7 @@ class Events(GravitySpyTable):
         tab['pipeline'] = 'GravitySpy'
         tab['flag'] = 0
         # Get the right columns for glitch db from all the available colums
-        tab = tab[['gravityspy_id','ifo','ml_label', 'imgUrl', 'snr', 'amplitude','peak_frequency','central_freq','duration','bandwidth','chisq','chisq_dof','event_time','confidence', 'image_status', 'pipeline', 'citizen_score', 'flag', 'data_quality', 'q_value']]
+        tab = tab[['gravityspy_id','ifo','ml_label', 'imgUrl', 'snr', 'amplitude','peak_frequency','central_freq','duration','bandwidth','chisq','chisq_dof','event_time','ml_confidence', 'image_status', 'pipeline', 'citizen_score', 'flag', 'data_quality', 'q_value']]
         tab.columns = ['id', 'ifo', 'label', 'imgUrl', 'snr', 'amplitude', 'peakFreq', 'centralFreq', 'duration', 'bandwidth', 'chisq', 'chisqDof', 'GPStime','confidence', 'imageStatus', 'pipeline', 'citizenScore', 'flag', 'dqflag', 'qvalue']
 
         # connect if needed
