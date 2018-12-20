@@ -283,8 +283,8 @@ def make_model(data,
     # let's add a fully-connected layer
     x = Dense(1024, kernel_regularizer=regularizers.l2(reglularization))(x)
     if activation_layer == 'leakyrelu':
-	x = Dense(200)(x)
-	predictions = LeakyReLU(alpha=0.3)(x)
+        x = Dense(200)(x)
+        predictions = LeakyReLU(alpha=0.3)(x)
     elif activation_layer == 'tanh':
         predictions = Dense(200, activation='tanh')(x)
     else:
