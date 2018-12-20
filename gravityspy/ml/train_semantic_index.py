@@ -6,6 +6,7 @@ from keras import regularizers
 from keras.applications.vgg16 import VGG16, preprocess_input
 from keras.layers import Input, Dense, GlobalAveragePooling2D, Lambda
 from keras.models import Model,load_model
+from keras.layers.advanced_activations import LeakyReLU
 from keras.optimizers import RMSprop
 from itertools import combinations
 
@@ -104,6 +105,7 @@ def make_model(data,
                                      'Violin_Mode', 'Wandering_Line',
                                      'Whistle'],
                train_vgg=False,
+               activation_layer='leakyrelu',
                distance_method='cosine',
                multi_view=True,
                batch_size=22, nb_epoch=50,
@@ -280,7 +282,13 @@ def make_model(data,
     x = GlobalAveragePooling2D()(x)
     # let's add a fully-connected layer
     x = Dense(1024, kernel_regularizer=regularizers.l2(reglularization))(x)
-    predictions = Dense(200, activation='relu')(x)
+    if activation_layer == 'leakyrelu':
+	x = Dense(200)(x)
+	predictions = LeakyReLU(alpha=0.3)(x)
+    elif activation_layer == 'tanh':
+        predictions = Dense(200, activation='tanh')(x)
+    else:
+        raise ValueError('Activation Layer type not defined')
 
     #Then create the corresponding model
     base_network = Model(inputs=vgg16.input, outputs=predictions)
@@ -392,10 +400,14 @@ def create_pairs3_gen(data, class_indices, batch_size):
     counter = 0
     while True:
         for d in numpy.random.randint(0, number_of_classes, size=number_of_classes):
-            for i in range(len(class_indices[d])):
+            num_images_in_class_d = len(class_indices[d])
+            for i in numpy.random.randint(0, num_images_in_class_d, size=num_images_in_class_d):
                 counter += 1
                 # positive pair
                 j = numpy.random.randint(0, high=len(class_indices[d]))
+                if j == i:
+                    # Pick another image from same class then
+                    j = numpy.random.randint(0, high=len(class_indices[d]))
                 z1, z2 = class_indices[d][i], class_indices[d][j]
 
                 pairs1.append(data[z1])
