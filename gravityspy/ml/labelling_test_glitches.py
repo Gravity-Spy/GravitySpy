@@ -1,9 +1,10 @@
-from .GS_utils import concatenate_views
+from .GS_utils import concatenate_views, contrastive_loss
 from keras import backend as K
 K.set_image_dim_ordering('th')
 from keras.models import load_model
 from scipy.misc import imresize
 from keras.applications.vgg16 import preprocess_input
+from keras.optimizers import RMSprop
 
 import numpy
 import os
@@ -41,7 +42,9 @@ def main(image_data, model_adr, image_size=[140, 170], verbose=False):
     return dw[0], numpy.argmax(dwslice)
 
 
-def label_glitches(image_data, model_name, image_size=[140, 170],
+def label_glitches(image_data, model_name,
+                   order_of_channels="channels_last",
+                   image_size=[140, 170],
                    verbose=False):
     """Obtain 1XNclasses confidence vector and label for image
 
@@ -74,16 +77,19 @@ def label_glitches(image_data, model_name, image_size=[140, 170],
     img_rows, img_cols = image_size[0], image_size[1]
 
     # load a model and weights
-    if verbose:
-        print ('Retrieving the trained ML classifier')
+    K.set_image_data_format(order_of_channels)
+    if order_of_channels == 'channels_last':
+        reshape_order = (-1, img_rows, img_cols, 1)
+    elif order_of_channels == 'channels_first':
+        reshape_order = (-1, 1, img_rows, img_cols)
+    else:
+        raise ValueError("Do not understand supplied channel order")
+
     final_model = load_model(model_name)
 
     final_model.compile(loss='categorical_crossentropy',
                         optimizer='adadelta',
                         metrics=['accuracy'])
-
-    if verbose:
-        print ('Scoring unlabelled glitches')
 
     half_second_images = sorted(image_data.filter(regex=("0.5.png")).keys())
     one_second_images = sorted(image_data.filter(regex=("1.0.png")).keys())
@@ -91,20 +97,13 @@ def label_glitches(image_data, model_name, image_size=[140, 170],
     four_second_images = sorted(image_data.filter(regex=("4.0.png")).keys())
     
     # read in 4 durations
-    test_set_unlabelled_x_1 = numpy.vstack(image_data[half_second_images].iloc[0].values)
-    test_set_unlabelled_x_1 = test_set_unlabelled_x_1.reshape(-1, 1, img_rows, img_cols)
-
-    test_set_unlabelled_x_2 = numpy.vstack(image_data[four_second_images].iloc[0].values)
-    test_set_unlabelled_x_2 = test_set_unlabelled_x_2.reshape(-1, 1, img_rows, img_cols)
-
-    test_set_unlabelled_x_3 = numpy.vstack(image_data[one_second_images].iloc[0].values)
-    test_set_unlabelled_x_3 = test_set_unlabelled_x_3.reshape(-1, 1, img_rows, img_cols)
-
-    test_set_unlabelled_x_4 = numpy.vstack(image_data[two_second_images].iloc[0].values)
-    test_set_unlabelled_x_4 = test_set_unlabelled_x_4.reshape(-1, 1, img_rows, img_cols)
+    test_set_unlabelled_x_1 = numpy.vstack(image_data[half_second_images].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_2 = numpy.vstack(image_data[one_second_images].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_3 = numpy.vstack(image_data[two_second_images].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_4 = numpy.vstack(image_data[four_second_images].iloc[0]).reshape(reshape_order)
 
     concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
-                            test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], False)
+                            test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], False, order_of_channels)
 
     confidence_array = final_model.predict_proba(concat_test_unlabelled, verbose=0)
     index_label = confidence_array.argmax(1)
@@ -157,6 +156,7 @@ def get_feature_space(image_data, semantic_model_name, image_size=[140, 170],
 
 
 def get_multiview_feature_space(image_data, semantic_model_name,
+                                order_of_channels="channels_last",
                                 image_size=[140, 170], verbose=False):
     """Obtain N dimensional feature space of sample
 
@@ -183,19 +183,30 @@ def get_multiview_feature_space(image_data, semantic_model_name,
             a 200 dimensional feature space vector
     """
     img_rows, img_cols = image_size[0], image_size[1]
+
+    K.set_image_data_format(order_of_channels)
+    if order_of_channels == 'channels_last':
+        reshape_order = (-1, img_rows, img_cols, 3)
+    elif order_of_channels == 'channels_first':
+        reshape_order = (-1, 3, img_rows, img_cols)
+    else:
+        raise ValueError("Do not understand supplied channel order")
+
     half_second_images = sorted(image_data.filter(regex=("0.5.png")).keys())
     one_second_images = sorted(image_data.filter(regex=("1.0.png")).keys())
     two_second_images = sorted(image_data.filter(regex=("2.0.png")).keys())
     four_second_images = sorted(image_data.filter(regex=("4.0.png")).keys())
 
-    test_set_unlabelled_x_1 = numpy.vstack(image_data[one_second_images].iloc[0]).reshape(-1, 3, img_rows, img_cols)
-    test_set_unlabelled_x_2 = numpy.vstack(image_data[two_second_images].iloc[0]).reshape(-1, 3, img_rows, img_cols)
-    test_set_unlabelled_x_3 = numpy.vstack(image_data[four_second_images].iloc[0]).reshape(-1, 3, img_rows, img_cols)
-    test_set_unlabelled_x_4 = numpy.vstack(image_data[half_second_images].iloc[0]).reshape(-1, 3, img_rows, img_cols)
+    test_set_unlabelled_x_1 = numpy.vstack(image_data[half_second_images].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_2 = numpy.vstack(image_data[one_second_images].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_3 = numpy.vstack(image_data[two_second_images].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_4 = numpy.vstack(image_data[four_second_images].iloc[0]).reshape(reshape_order)
 
     semantic_idx_model = load_model(semantic_model_name)
+    rms = RMSprop()
+    similarity_model.compile(loss=contrastive_loss, optimizer=rms,)
     concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
-                            test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], True)
+                            test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], True, order_of_channels)
 
     concat_test_unlabelled = preprocess_input(concat_test_unlabelled)
 
