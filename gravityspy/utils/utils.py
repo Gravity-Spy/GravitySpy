@@ -205,8 +205,7 @@ def save_q_scans(plot_directory, specsgrams,
                                  )
                     )
 
-    super_fig.save(os.path.join(plot_directory, id_string + '.png'),
-                   bbox_inches='tight')
+    super_fig.save(os.path.join(plot_directory, id_string + '.png'),)
 
     plt.close('all')
 
@@ -222,6 +221,7 @@ def label_q_scans(plot_directory, path_to_cnn, **kwargs):
     -------
     """
     verbose = kwargs.pop('verbose', False)
+    order_of_channels = kwargs.pop('order_of_channels', 'channels_last')
     f = h5py.File(path_to_cnn, 'r')
     # load the api gravityspy project cached class
     classes = kwargs.pop('classes',
@@ -255,6 +255,7 @@ def label_q_scans(plot_directory, path_to_cnn, **kwargs):
          label_glitches.label_glitches(image_data=image_data_for_cnn,
                                        model_name='{0}'.format(path_to_cnn),
                                        image_size=[140, 170],
+                                       order_of_channels=order_of_channels,
                                        verbose=verbose)
 
     labels = numpy.array(classes)[ml_label]
@@ -282,6 +283,7 @@ def label_select_images(filename1, filename2, filename3, filename4,
     -------
     """
     verbose = kwargs.pop('verbose', False)
+    order_of_channels = kwargs.pop('order_of_channels', 'channels_last')
 
     # determine class names
     f = h5py.File(path_to_cnn, 'r')
@@ -322,6 +324,7 @@ def label_select_images(filename1, filename2, filename3, filename4,
          label_glitches.label_glitches(image_data=image_data_for_cnn,
                                        model_name='{0}'.format(path_to_cnn),
                                        image_size=[140, 170],
+                                       order_of_channels=order_of_channels,
                                        verbose=verbose)
 
     labels = numpy.array(classes)[ml_label]
@@ -344,9 +347,7 @@ def get_features(plot_directory, path_to_semantic_model, **kwargs):
     -------
     """
     verbose = kwargs.pop('verbose', False)
-    order_of_channels = kwargs.pop('order_of_channels', 'channels_first')
-    preprocess_inputs = kwargs.pop('preprocess_inputs', True)
-    order_orig = kwargs.pop('order_orig', True)
+    order_of_channels = kwargs.pop('order_of_channels', 'channels_last')
 
     if verbose:
         logger = log.Logger('Gravity Spy: Extracting Feature Space')
@@ -376,8 +377,6 @@ def get_features(plot_directory, path_to_semantic_model, **kwargs):
                                        semantic_model_name='{0}'.format(path_to_semantic_model),
                                        image_size=[140, 170],
                                        verbose=verbose,
-                                       order_orig=order_orig,
-                                       preprocess_inputs=preprocess_inputs,
                                        order_of_channels=order_of_channels)
 
     scores_table = GravitySpyTable(features, names=numpy.arange(0, features.shape[1]).astype(str))

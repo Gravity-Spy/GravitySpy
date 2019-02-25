@@ -1,6 +1,5 @@
 from .GS_utils import build_cnn, concatenate_views
 from keras import backend as K
-K.set_image_dim_ordering('th')
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.utils import np_utils
@@ -237,6 +236,9 @@ def make_model(data, batch_size=22, nb_epoch=10,
 
     logger.info('Using random seed {0}'.format(random_seed))
     np.random.seed(random_seed)  # for reproducibility
+
+    logger.info('You have selected the follow channel order : {0}'.format(order_of_channels))
+    K.set_image_data_format(order_of_channels)
 
     logger.info('You data set contained {0} samples'.format(len(data)))
 
