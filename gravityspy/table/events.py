@@ -215,7 +215,7 @@ class Events(GravitySpyTable):
                    index=False, chunksize=100)
         return
 
-    def update_sql(self, table='glitches_v2d0', engine=None):
+    def update_sql(self, table='glitches_v2d0', engine=None, **kwargs):
         """Obtain omicron triggers to run gravityspy on
 
         Parameters:
@@ -232,15 +232,16 @@ class Events(GravitySpyTable):
                     pass
             engine = create_engine(get_connection_str(**conn_kw))
 
-        column_dict = self.to_pandas().to_dict(orient='records')[0]
-        sql_command = 'UPDATE {0} SET '.format(table)
-        for column_name in column_dict:
-            if isinstance(column_dict[column_name], str):
-                sql_command = sql_command + '''\"{0}\" = \'{1}\', '''.format(column_name, column_dict[column_name])
-            else:
-                sql_command = sql_command + '''\"{0}\" = {1}, '''.format(column_name, column_dict[column_name])
-        sql_command = sql_command[:-2] + ' WHERE \"gravityspy_id\" = \'' + self['gravityspy_id'].iloc[0] + "'"
-        engine.execute(sql_command)
+        ientry = self.to_pandas().to_dict(orient='records')
+        for column_dict in ientry:
+            sql_command = 'UPDATE {0} SET '.format(table)
+            for column_name in column_dict:
+                if isinstance(column_dict[column_name], str):
+                    sql_command = sql_command + '''\"{0}\" = \'{1}\', '''.format(column_name, column_dict[column_name])
+                else:
+                    sql_command = sql_command + '''\"{0}\" = {1}, '''.format(column_name, column_dict[column_name])
+            sql_command = sql_command[:-2] + ' WHERE \"gravityspy_id\" = \'' + column_dict['gravityspy_id'] + "'"
+            engine.execute(sql_command)
         return
 
     def upload_to_zooniverse(self, subject_set_id=None, project='1104'):
