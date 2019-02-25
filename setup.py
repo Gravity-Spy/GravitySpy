@@ -87,6 +87,7 @@ install_requires = [
     'lalsuite >= 6.49',
     'scikit-learn >= 0.20.0',
     'dqsegdb >= 1.5.0',
+    'mysqlclient >= 1.4.0'
 ]
 
 tests_require = [

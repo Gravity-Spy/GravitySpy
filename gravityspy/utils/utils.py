@@ -105,17 +105,17 @@ def make_q_scans(event_time, **kwargs):
 
     # Read in the data
     if timeseries:
-        data = timeseries.crop(start_time, stop_time)
+        data = timeseries.crop(start_time, stop_time, verbose=verbose)
     elif source:
         if verbose:
             logger.info('Reading Data From Source ...')
         data = TimeSeries.read(source=source, channel=channel_name,
-                               start=start_time, end=stop_time)
+                               start=start_time, end=stop_time, verbose=verbose)
     else:
         if verbose:
             logger.info('Fetching Data...')
         data = TimeSeries.get(channel_name, start_time, stop_time,
-                              frametype=frametype).astype('float64')
+                              frametype=frametype, verbose=verbose).astype('float64')
 
     # resample data
     if verbose:

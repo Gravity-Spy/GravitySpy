@@ -6,7 +6,6 @@ For example ``tile_raster_images`` helps in generating a easy to grasp
 image from a set of samples or weights.
 """
 from keras import backend as K
-K.set_image_dim_ordering('th')
 from keras.regularizers import l2
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten

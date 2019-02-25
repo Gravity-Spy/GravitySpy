@@ -108,17 +108,16 @@ class Events(GravitySpyTable):
         source = kwargs.pop('source', None)
         channel_name = kwargs.pop('channel_name', None)
         frametype = kwargs.pop('frametype', None)
+        # calculate maximum number of processes
+        nproc = kwargs.pop('nproc', 1)
 
         # make a list of event times
         inputs = zip(self['event_time'], self['ifo'],
                      self['gravityspy_id'])
 
         inputs = ((etime, ifo, gid, config, plot_directory,
-                   timeseries, source, channel_name, frametype)
+                   timeseries, source, channel_name, frametype, nproc)
                   for etime, ifo, gid in inputs)
-
-        # calculate maximum number of processes
-        nproc = kwargs.pop('nproc', 1)
 
         # make q_scans
         output = mp_utils.multiprocess_with_queues(nproc,
@@ -156,7 +155,7 @@ class Events(GravitySpyTable):
                                                    on=['gravityspy_id']))
         return results
 
-    def to_sql(self, table='GSMetadata', engine=None, **kwargs):
+    def to_sql(self, table='glitches_v2d0', engine=None, **kwargs):
         """Obtain omicron triggers to run gravityspy on
 
         Parameters:
@@ -189,7 +188,7 @@ class Events(GravitySpyTable):
             # This horrendous thing obtains the public html path for image
             intermediate_path = '/'.join(filter(None,str(x.Filename1).split('/'))[3:-1])
             if x.ifo == 'L1':
-                return 'https://ldas-jobs.ligo-la.caltech.edu/~gravityspy/{0}/{1}.png'.format(intermediate_path,x.gravityspy_id)
+                return 'https://ldas-jobs.ligo-wa.caltech.edu/~gravityspy/{0}/{1}.png'.format(intermediate_path,x.gravityspy_id)
             elif x.ifo == 'V1':
                 return 'https://ldas-jobs.ligo.caltech.edu/~gravityspy/{0}/{1}.png'.format(intermediate_path, x.gravityspy_id)
             else:
@@ -641,6 +640,7 @@ def _make_single_qscan(inputs):
     source = inputs[6]
     channel_name = inputs[7]
     frametype = inputs[8]
+    nproc = inputs[9]
 
     # Parse Ini File
     plot_time_ranges = config.plot_time_ranges
