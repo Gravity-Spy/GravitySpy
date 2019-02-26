@@ -87,11 +87,11 @@ def training_set_raw_data(filename, format, duration=8, sample_frequency=4096,
                         ' Data For Trainingset')
     trainingset_table = EventTable.fetch('gravityspy',
                                          'trainingsetv1d1',
-                                         columns=['peakGPS', 'ifo',
-                                                  'Label'])
+                                         columns=['event_time', 'ifo',
+                                                  'true_label'])
     for ifo, gps, label in zip(trainingset_table['ifo'],
-                               trainingset_table['peakGPS'],
-                               trainingset_table['Label']):
+                               trainingset_table['event_time'],
+                               trainingset_table['true_label']):
         logger.info('Obtaining sample {0} with gps {1} from '
                     '{2}'.format(label, gps, ifo))
         data = fetch_data(ifo, gps, duration=duration,
@@ -128,7 +128,7 @@ def pickle_trainingset(path_to_trainingset,
             with rows of samples
             and columns containing the pixelated 0.5, 1.0, 2.0,
             and 4.0 duration images as well as a column with the True
-            Label and a column with an ID that uniquely identifies that sample
+            true_label and a column with an ID that uniquely identifies that sample
     """
 
     logger = log.Logger('Gravity Spy: Pickling '
@@ -162,8 +162,8 @@ def pickle_trainingset(path_to_trainingset,
                                               iclass, idur), resolution=0.3)
                 information_on_image = idur.split('_')
                 tmpDF[information_on_image[-1]] = [image_data]
-            tmpDF['uniqueID'] = information_on_image[1]
-            tmpDF['Label'] = iclass
+            tmpDF['gravityspy_id'] = information_on_image[1]
+            tmpDF['true_label'] = iclass
             data = data.append(tmpDF)
 
         logger.info('Finished converting {0} into b/w info'.format(iclass))
@@ -247,7 +247,7 @@ def make_model(data, batch_size=22, nb_epoch=10,
 
     logger.info('The size of the images being trained {0}'.format(image_size))
 
-    classes = sorted(data.Label.unique())
+    classes = sorted(data.true_label.unique())
 
     if len(classes) != nb_classes:
         raise ValueError('Youre supplied data set does not match the number of'
@@ -260,22 +260,22 @@ def make_model(data, batch_size=22, nb_epoch=10,
                 'idx to str label mapping: {0}'.format(classes))
 
     logger.info('converting string to idx...')
-    data.Label = data.Label.apply(lambda x: classes[x])
+    data.true_label = data.true_label.apply(lambda x: classes[x])
 
     logger.info('Selecting samples for validation ...')
     logger.info('You have selected to set aside {0} percent of '
                 'images per class for validation.'.format(
                                        fraction_validation * 100))
 
-    validationDF = data.groupby('Label').apply(
+    validationDF = data.groupby('true_label').apply(
                        lambda x: x.sample(frac=fraction_validation,
                        random_state=random_seed)
                        ).reset_index(drop=True)
 
     logger.info('Removing validation images from training DF ...')
 
-    data = data.loc[~data.uniqueID.isin(
-                                    validationDF.uniqueID)]
+    data = data.loc[~data.gravityspy_id.isin(
+                                    validationDF.gravityspy_id)]
 
     logger.info('There are now {0} samples remaining'.format(
                                                        len(data)))
@@ -286,15 +286,15 @@ def make_model(data, batch_size=22, nb_epoch=10,
                 'images per class for validation.'.format(
 
                                        fraction_testing * 100))
-        testingDF = data.groupby('Label').apply(
+        testingDF = data.groupby('true_label').apply(
                    lambda x: x.sample(frac=fraction_testing,
                              random_state=random_seed)
                    ).reset_index(drop=True)
 
         logger.info('Removing testing images from training DF ...')
 
-        data = data.loc[~data.uniqueID.isin(
-                                        testingDF.uniqueID)]
+        data = data.loc[~data.gravityspy_id.isin(
+                                        testingDF.gravityspy_id)]
 
         logger.info('There are now {0} samples remaining'.format(
                                                            len(data)))
@@ -325,16 +325,16 @@ def make_model(data, batch_size=22, nb_epoch=10,
         testing_x_4 = np.vstack(testingDF['4.0.png'].values).reshape(reshape_order)
 
     # Concatenate the labels
-    trainingset_labels = np.vstack(data['Label'].values)
-    validation_labels = np.vstack(validationDF['Label'].values)
+    trainingset_labels = np.vstack(data['true_label'].values)
+    validation_labels = np.vstack(validationDF['true_label'].values)
     if fraction_testing:
-        testing_labels = np.vstack(testingDF['Label'].values)
+        testing_labels = np.vstack(testingDF['true_label'].values)
 
     # Concatenate the name
-    trainingset_names = np.vstack(data['uniqueID'].values)
-    validation_names = np.vstack(validationDF['uniqueID'].values)
+    trainingset_names = np.vstack(data['gravityspy_id'].values)
+    validation_names = np.vstack(validationDF['gravityspy_id'].values)
     if fraction_testing:
-        testing_names = np.vstack(testingDF['uniqueID'].values)
+        testing_names = np.vstack(testingDF['gravityspy_id'].values)
 
     # Categorize labels
     trainingset_labels = np_utils.to_categorical(
@@ -358,7 +358,7 @@ def make_model(data, batch_size=22, nb_epoch=10,
                             testing_x_3, testing_x_4,
                             [img_rows, img_cols], False,order_of_channels)
 
-    cnn1 = build_cnn(img_rows*2, img_cols*2)
+    cnn1 = build_cnn(img_rows*2, img_cols*2, order_of_channels)
     final_model = Sequential()
     final_model.add(cnn1)
     final_model.add(Dense(nb_classes, activation='softmax'))

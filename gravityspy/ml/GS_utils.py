@@ -82,7 +82,7 @@ def concatenate_views(image_set1, image_set2, image_set3,
     return out
 
 #4/2/2018
-def build_cnn(img_rows, img_cols):
+def build_cnn(img_rows, img_cols, order_of_channels):
     """This is where we use Keras to build a covolutional neural network (CNN)
 
     The CNN built here is described in the
@@ -110,9 +110,15 @@ def build_cnn(img_rows, img_cols):
     """
     W_reg = 1e-4
     print('regularization parameter: ', W_reg)
+    if order_of_channels == 'channels_last':
+        input_shape = (img_rows, img_cols, 1)
+    elif order_of_channels == 'channels_first':
+        input_shape = (1, img_rows, img_cols)
+    else:
+        raise ValueError("Do not understand supplied channel order")
     model = Sequential()
     model.add(Conv2D(16, (5, 5), padding='valid',
-              input_shape=(1, img_rows, img_cols),
+              input_shape=input_shape,
               kernel_regularizer=l2(W_reg)))
     model.add(Activation("relu"))
     model.add(MaxPooling2D(pool_size=(2, 2)))

@@ -43,7 +43,7 @@ def pickle_trainingset(path_to_trainingset,
             with rows of samples
             and columns containing the pixelated 0.5, 1.0, 2.0,
             and 4.0 duration images as well as a column with the True
-            Label and a column with an ID that uniquely identifies that sample
+            true_label and a column with an ID that uniquely identifies that sample
     """
 
     logger = log.Logger('Gravity Spy: Pickling '
@@ -78,8 +78,8 @@ def pickle_trainingset(path_to_trainingset,
                                                                      resolution=0.3)
                 information_on_image = idur.split('_')
                 tmpdf[information_on_image[-1]] = [[image_data_r, image_data_g, image_data_b]]
-            tmpdf['uniqueID'] = information_on_image[1]
-            tmpdf['Label'] = iclass
+            tmpdf['gravityspy_id'] = information_on_image[1]
+            tmpdf['true_label'] = iclass
             data = data.append(tmpdf)
 
         logger.info('Finished converting {0} into b/w info'.format(iclass))
@@ -204,10 +204,10 @@ def make_model(data,
     # Create dict matching string labels to idx labels
     logger.info('Removing NOA images from the training set.')
 
-    data = data.loc[data.Label != 'None_of_the_Above']
-    tmp = dict(enumerate(sorted(data.Label.unique())))
+    data = data.loc[data.true_label != 'None_of_the_Above']
+    tmp = dict(enumerate(sorted(data.true_label.unique())))
     str_to_idx = dict((str(v),k) for k,v in tmp.items())
-    data['idx_label'] = data.Label.apply(lambda x: str_to_idx[x])
+    data['idx_label'] = data.true_label.apply(lambda x: str_to_idx[x])
 
     known_classes_labels_idx = [str_to_idx[v] for v in known_classes_labels]
     unknown_classes_labels_idx = [str_to_idx[v] for v in unknown_classes_labels]
@@ -222,11 +222,11 @@ def make_model(data,
         raise ValueError("Do not understand supplied channel order")
 
     if known_classes_labels is None:
-        known_df = data.loc[~data.Label.isin(unknown_classes_labels)]
+        known_df = data.loc[~data.true_label.isin(unknown_classes_labels)]
     else:
-        known_df = data.loc[data.Label.isin(known_classes_labels)]
+        known_df = data.loc[data.true_label.isin(known_classes_labels)]
 
-    unknown_df = data.loc[data.Label.isin(unknown_classes_labels)]
+    unknown_df = data.loc[data.true_label.isin(unknown_classes_labels)]
 
     known_data_label = known_df['idx_label'].values
     unknown_data_label = unknown_df['idx_label'].values

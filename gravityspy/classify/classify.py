@@ -23,7 +23,7 @@ from ..table import Events
 import os
 
 def classify(event_time, channel_name,
-             path_to_cnn, verbose=True, **kwargs):
+             path_to_cnn, **kwargs):
     """classify an excess noise event
 
     Note:

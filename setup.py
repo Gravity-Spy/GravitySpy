@@ -65,7 +65,7 @@ setup_requires = [
 
 install_requires = [
     'gwpy >= 0.12',
-    'numpy >= 1.7.1',
+    'numpy >= 1.7.1, <=1.15.4',
     'scipy >= 0.12.1',
     'matplotlib >= 1.2.0, != 2.1.0, != 2.1.1',
     'astropy >= 1.1.1, < 3.0.0 ; python_version < \'3\'',
@@ -102,8 +102,8 @@ extras_require = {
         'sphinx_rtd_theme',
         'sphinxcontrib_programoutput',
     ],
-    "tf": ["tensorflow>=1.10.0"],
-    "tf_gpu": ["tensorflow-gpu>=1.10.0"],
+    "tf": ["tensorflow>=1.13.0"],
+    "tf_gpu": ["tensorflow-gpu>=1.13.0"],
 }
 
 # enum34 required for python < 3.4
