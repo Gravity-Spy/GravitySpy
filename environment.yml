@@ -30,6 +30,7 @@ dependencies:
   - gtk2=2.24.31=hb68c50a_1001
   - gwosc=0.3.4=py_0
   - gwpy=0.13.1=py36_0
+  - gxx_linux-64
   - h5py=2.9.0=nompi_py36hf008753_1102
   - harfbuzz=2.3.1=h6824563_0
   - hdf5=1.10.4=nompi_h11e915b_1105
@@ -140,7 +141,6 @@ dependencies:
     - future==0.17.1
     - gast==0.2.2
     - google-pasta==0.1.4
-    - gravityspy==0+untagged.619.g2dc79a4.dirty
     - grpcio==1.18.0
     - gwdatafind==1.0.3
     - gwtrigfind==0.7.0
