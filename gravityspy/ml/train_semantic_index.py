@@ -45,7 +45,6 @@ def pickle_trainingset(path_to_trainingset,
             and 4.0 duration images as well as a column with the True
             true_label and a column with an ID that uniquely identifies that sample
     """
-
     logger = log.Logger('Gravity Spy: Pickling '
                         'Trainingset RGB')
 
@@ -105,7 +104,6 @@ def make_model(data,
                                      'Violin_Mode', 'Wandering_Line',
                                      'Whistle'],
                train_vgg=False,
-               activation_layer='leakyrelu',
                multi_view=True,
                batch_size=22, nb_epoch=50,
                training_steps_per_epoch=1000,
@@ -278,13 +276,8 @@ def make_model(data,
     x = GlobalAveragePooling2D()(x)
     # let's add a fully-connected layer
     x = Dense(1024, kernel_regularizer=regularizers.l2(reglularization))(x)
-    if activation_layer == 'leakyrelu':
-        x = Dense(200)(x)
-        predictions = LeakyReLU(alpha=0.3)(x)
-    elif activation_layer == 'tanh':
-        predictions = Dense(200, activation='tanh')(x)
-    else:
-        raise ValueError('Activation Layer type not defined')
+    x = Dense(200)(x)
+    predictions = LeakyReLU(alpha=0.3)(x)
 
     #Then create the corresponding model
     base_network = Model(inputs=vgg16.input, outputs=predictions)
@@ -314,6 +307,7 @@ def make_model(data,
                       )
 
     similarity_model = Model(inputs=[input_a, input_b], outputs=distance)
+    semantic_idx_model = Model(inputs=[input_a], outputs=processed_a)
 
     if not train_vgg:
         number_of_cnn_from_vgg = 0
@@ -321,6 +315,7 @@ def make_model(data,
             vgg16.layers[i].trainable = False
 
     similarity_model.summary()
+    semantic_idx_model.summary()
     rms = RMSprop()
 
     similarity_model.compile(loss=contrastive_loss, optimizer=rms,
@@ -358,7 +353,7 @@ def make_model(data,
                                                validation_steps_per_epoch)
     logger.info(res2)
 
-    return similarity_model
+    return semantic_idx_model, similarity_model
 
 def create_pairs3_gen(data, class_indices, batch_size):
     pairs1 = []

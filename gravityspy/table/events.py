@@ -173,6 +173,7 @@ class Events(GravitySpyTable):
             engine = create_engine(get_connection_str(**conn_kw))
 
         self.to_pandas().to_sql(table, engine, index=False, if_exists='append')
+        engine.dispose()
         return
 
     def to_glitch_db(self, table='GSMetadata', engine=None, **kwargs):

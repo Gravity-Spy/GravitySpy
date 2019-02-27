@@ -1,4 +1,4 @@
-from .GS_utils import concatenate_views, contrastive_loss
+from .GS_utils import concatenate_views
 from keras import backend as K
 K.set_image_dim_ordering('th')
 from keras.models import load_model
@@ -106,8 +106,6 @@ def label_glitches(image_data, model_name,
                             test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], False, order_of_channels)
 
     confidence_array = final_model.predict_proba(concat_test_unlabelled, verbose=0)
-    import pdb
-    pdb.set_trace()
     index_label = confidence_array.argmax(1)
 
     ids = []
@@ -204,9 +202,6 @@ def get_multiview_feature_space(image_data, semantic_model_name,
     test_set_unlabelled_x_3 = numpy.vstack(image_data[two_second_images].iloc[0]).reshape(reshape_order)
     test_set_unlabelled_x_4 = numpy.vstack(image_data[four_second_images].iloc[0]).reshape(reshape_order)
 
-    semantic_idx_model = load_model(semantic_model_name)
-    rms = RMSprop()
-    similarity_model.compile(loss=contrastive_loss, optimizer=rms,)
     concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
                             test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], True, order_of_channels)
 
@@ -216,6 +211,7 @@ def get_multiview_feature_space(image_data, semantic_model_name,
     for uid in half_second_images:
         ids.append(uid.split('_')[1])
 
+    semantic_idx_model = load_model(semantic_model_name)
     features = semantic_idx_model.predict([concat_test_unlabelled])
 
     return features, ids
