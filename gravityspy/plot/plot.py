@@ -90,8 +90,10 @@ def plot_qtransform(specsgrams, plot_normalized_energy_range, plot_time_ranges,
         title = title + ' - post O2 pre ER13'
     elif 1228838418 < start_time < 1229176818:
         title = title + ' - ER13'
-    elif 1229176818 < start_time:
+    elif 1229176818 < start_time < 1235750418:
         title = title + ' - post ER13 pre O3'
+    elif 1235750418:
+        title = title + ' - ER14'
     else:
         raise ValueError('Time outside science or engineering run '
                          'or more likely code not updated to reflect '
