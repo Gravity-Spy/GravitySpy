@@ -189,7 +189,7 @@ class Events(GravitySpyTable):
             # This horrendous thing obtains the public html path for image
             intermediate_path = '/'.join(filter(None,str(x.Filename1).split('/'))[3:-1])
             if x.ifo == 'L1':
-                return 'https://ldas-jobs.ligo-wa.caltech.edu/~gravityspy/{0}/{1}.png'.format(intermediate_path,x.gravityspy_id)
+                return 'https://ldas-jobs.ligo-la.caltech.edu/~gravityspy/{0}/{1}.png'.format(intermediate_path,x.gravityspy_id)
             elif x.ifo == 'V1':
                 return 'https://ldas-jobs.ligo.caltech.edu/~gravityspy/{0}/{1}.png'.format(intermediate_path, x.gravityspy_id)
             else:
