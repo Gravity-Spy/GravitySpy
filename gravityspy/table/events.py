@@ -108,6 +108,7 @@ class Events(GravitySpyTable):
         source = kwargs.pop('source', None)
         channel_name = kwargs.pop('channel_name', None)
         frametype = kwargs.pop('frametype', None)
+        verbose = kwargs.pop('verbose', False)
         # calculate maximum number of processes
         nproc = kwargs.pop('nproc', 1)
 
@@ -116,7 +117,7 @@ class Events(GravitySpyTable):
                      self['gravityspy_id'])
 
         inputs = ((etime, ifo, gid, config, plot_directory,
-                   timeseries, source, channel_name, frametype, nproc)
+                   timeseries, source, channel_name, frametype, nproc, verbose)
                   for etime, ifo, gid in inputs)
 
         # make q_scans
@@ -138,6 +139,7 @@ class Events(GravitySpyTable):
 
         results = utils.label_q_scans(plot_directory=plot_directory,
                                       path_to_cnn=path_to_cnn,
+                                      verbose=verbose,
                                       **kwargs)
 
         results = results.to_pandas()
@@ -643,6 +645,7 @@ def _make_single_qscan(inputs):
     channel_name = inputs[7]
     frametype = inputs[8]
     nproc = inputs[9]
+    verbose = inputs[10]
 
     # Parse Ini File
     plot_time_ranges = config.plot_time_ranges
@@ -651,19 +654,22 @@ def _make_single_qscan(inputs):
         if timeseries is not None:
             specsgrams, q_value = utils.make_q_scans(event_time=event_time,
                                                      config=config,
-                                                     timeseries=timeseries)
+                                                     timeseries=timeseries,
+                                                     verbose=verbose)
         if source is not None:
             specsgrams, q_value = utils.make_q_scans(event_time=event_time,
                                                      config=config,
-                                                     source=source)
+                                                     source=source,
+                                                     verbose=verbose)
         if channel_name is not None:
             specsgrams, q_value = utils.make_q_scans(event_time=event_time,
                                                      config=config,
                                                      channel_name=channel_name,
-                                                     frametype=frametype)
+                                                     frametype=frametype,
+                                                     verbose=verbose)
         utils.save_q_scans(plot_directory, specsgrams,
                            plot_normalized_energy_range, plot_time_ranges,
-                           ifo, event_time, id_string=gid)
+                           ifo, event_time, id_string=gid, verbose=verbose)
 
         return event_time, q_value
     except Exception as exc:  # pylint: disable=broad-except
