@@ -222,6 +222,8 @@ def label_q_scans(plot_directory, path_to_cnn, **kwargs):
     """
     verbose = kwargs.pop('verbose', False)
     order_of_channels = kwargs.pop('order_of_channels', 'channels_last')
+    original_order = kwargs.pop('original_order', False)
+
     f = h5py.File(path_to_cnn, 'r')
     # load the api gravityspy project cached class
     classes = kwargs.pop('classes',
@@ -256,6 +258,7 @@ def label_q_scans(plot_directory, path_to_cnn, **kwargs):
                                        model_name='{0}'.format(path_to_cnn),
                                        image_size=[140, 170],
                                        order_of_channels=order_of_channels,
+                                       original_order=original_order,
                                        verbose=verbose)
 
     labels = numpy.array(classes)[ml_label]

@@ -44,6 +44,7 @@ def main(image_data, model_adr, image_size=[140, 170], verbose=False):
 
 def label_glitches(image_data, model_name,
                    order_of_channels="channels_last",
+                   original_order=False,
                    image_size=[140, 170],
                    verbose=False):
     """Obtain 1XNclasses confidence vector and label for image
@@ -97,10 +98,16 @@ def label_glitches(image_data, model_name,
     four_second_images = sorted(image_data.filter(regex=("4.0.png")).keys())
     
     # read in 4 durations
-    test_set_unlabelled_x_1 = numpy.vstack(image_data[half_second_images].iloc[0]).reshape(reshape_order)
-    test_set_unlabelled_x_2 = numpy.vstack(image_data[one_second_images].iloc[0]).reshape(reshape_order)
-    test_set_unlabelled_x_3 = numpy.vstack(image_data[two_second_images].iloc[0]).reshape(reshape_order)
-    test_set_unlabelled_x_4 = numpy.vstack(image_data[four_second_images].iloc[0]).reshape(reshape_order)
+    if original_order:
+        test_set_unlabelled_x_1 = numpy.vstack(image_data[half_second_images].iloc[0]).reshape(reshape_order)
+        test_set_unlabelled_x_2 = numpy.vstack(image_data[four_second_images].iloc[0]).reshape(reshape_order)
+        test_set_unlabelled_x_3 = numpy.vstack(image_data[one_second_images].iloc[0]).reshape(reshape_order)
+        test_set_unlabelled_x_4 = numpy.vstack(image_data[two_second_images].iloc[0]).reshape(reshape_order)
+    else:
+        test_set_unlabelled_x_1 = numpy.vstack(image_data[half_second_images].iloc[0]).reshape(reshape_order)
+        test_set_unlabelled_x_2 = numpy.vstack(image_data[one_second_images].iloc[0]).reshape(reshape_order)
+        test_set_unlabelled_x_3 = numpy.vstack(image_data[two_second_images].iloc[0]).reshape(reshape_order)
+        test_set_unlabelled_x_4 = numpy.vstack(image_data[four_second_images].iloc[0]).reshape(reshape_order)
 
     concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
                             test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], False, order_of_channels)
