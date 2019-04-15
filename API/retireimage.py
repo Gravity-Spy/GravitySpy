@@ -17,7 +17,8 @@ argp = argparse.ArgumentParser()
 argp.add_argument("-f", "--file-name", default='', type=str, help="File stem for output data")
 argp.add_argument("-mp", "--multiproc", action="store_true", help="Specifies if you want to parallelize over multiple cores by splitting the images up. Default is off")
 argp.add_argument("-nc", "--num-cores", default=None, type=int, help="Specify the number of cores that the retirement code will be parallelized over. Only used if multiproc is specified")
-argp.add_argument("-i", "--index", default=None, type=int, help="Index which indicates the chunk of image files that retirement will be calculated for. Only used if multiproc is specified")
+argp.add_argument("-i", "--index", default=None, type=int, help="Index which indicates the chunk of image files that retirement will be calculated for. Only used if multiproc is specified. NOTE: the indices start at 1 (so, for submitting over 500 cores, one would use msub -t [1-500] submit.sh)")
+argp.add_argument("-s", "--starting-index", default=1, type=int, help="Starting index for checkpointing and restarting. Default=1.")
 
 argp.add_argument("--min-label", default=1, type=int, help="Minimum number of citizen labels that an image must receive before it is retired. Default=1")
 argp.add_argument("--max-label", default=50, type=int, help="Maximum number of citizen labels that an image must receive before it is retired as NOA. Default=50")
@@ -184,20 +185,28 @@ print('determining retired images...')
 subjects = combined_data.links_subjects.unique()
 subjects.sort()
 
+
 # implementation for multiprocessing
 if args.multiproc:
     breakdown = np.linspace(0,len(subjects),args.num_cores+1)
-    subjects = subjects[int(np.floor(breakdown[args.index-1])):int(np.floor(breakdown[args.index]))]
-    image_db = image_db.loc[subjects]
+    indices = np.arange(args.starting_index,args.num_cores+1)
+    for j in indices:
+        print('Index: %i' % j)
+        #subjects = subjects[int(np.floor(breakdown[args.index-1])):int(np.floor(breakdown[args.index]))]
+        subjects_cut = subjects[int(np.floor(breakdown[j-1])):int(np.floor(breakdown[j]))]
+        #image_db = image_db.loc[subjects]
 
-# do the loop
-for idx, g in enumerate(subjects):
-    get_post_contribution(g)
-    if idx%100 == 0:
-        print('%.2f%% complete' % (100*float(idx)/len(subjects)))
+        # do the loop
+        for idx, g in enumerate(subjects_cut):
+            get_post_contribution(g)
+            if idx%100 == 0:
+                print('%.2f%% complete' % (100*float(idx)/len(subjects_cut)))
 
-# save image and retirement data as hdf5 files
-if args.multiproc:
-    image_db.to_hdf('../output/retired_'+args.file_name+str(args.index)+'.hdf5', key='retired')
-else:
-    image_db.to_hdf('../output/retired_'+args.file_name+'.hdf5', key='retired')
+        image_db_cut = image_db.loc[subjects_cut]
+
+        # save image and retirement data as hdf5 files
+        if args.multiproc:
+            #image_db.to_hdf('../output/retired_'+args.file_name+str(args.index)+'.hdf5', key='retired')
+            image_db_cut.to_hdf('../output/retired_'+args.file_name+str(j)+'.hdf5', key='retired')
+        else:
+            image_db.to_hdf('../output/retired_'+args.file_name+'.hdf5', key='retired')
