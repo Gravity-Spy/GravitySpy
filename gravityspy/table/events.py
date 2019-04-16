@@ -247,6 +247,42 @@ class Events(GravitySpyTable):
             engine.execute(sql_command)
         return
 
+    def update_ldvw(self, table='GSMetadata', engine=None, **kwargs):
+        """Obtain omicron triggers to run gravityspy on
+
+        Parameters:
+            table (str): name of SQL tabl
+        """
+        from sqlalchemy.engine import create_engine
+        # connect if needed
+        if engine is None:
+            conn_kw = {}
+            for key in ('db', 'host', 'user', 'passwd'):
+                try:
+                    conn_kw[key] = kwargs.pop(key)
+                except KeyError:
+                    pass
+            engine = create_engine(get_connection_str(**conn_kw))
+
+        tab = self.to_pandas()
+        # Get the right columns for glitch db from all the available colums
+        tab = tab[['gravityspy_id', 'ml_label', 'ml_confidence']]
+        tab.columns = ['id', 'label', 'confidence']
+
+        ientry = tab.to_dict(orient='records')
+        for column_dict in ientry:
+            sql_command = 'UPDATE {0} SET '.format(table)
+            for column_name in column_dict:
+                if column_name == 'id':
+                    continue
+                if isinstance(column_dict[column_name], str):
+                    sql_command = sql_command + '''{0} = \'{1}\', '''.format(column_name, column_dict[column_name])
+                else:
+                    sql_command = sql_command + '''{0} = {1}, '''.format(column_name, column_dict[column_name])
+            sql_command = sql_command[:-2] + ' WHERE id = \'' + column_dict['id'] + "'"
+            engine.execute(sql_command)
+        return
+
     def upload_to_zooniverse(self, subject_set_id=None, project='1104'):
         """Obtain omicron triggers to run gravityspy on
 
@@ -324,6 +360,28 @@ class Events(GravitySpyTable):
                                             path_to_cnn=path_to_cnn, **kwargs)
 
 
+
+        return Events(results)
+
+    def update_features(self, path_to_semantic_model, nproc=1, **kwargs):
+        """Obtain omicron triggers to run gravityspy on
+
+        Parameters:
+            path_to_semantic_model (str): filename of model
+
+        Returns:
+            `Events` table with columns containing new scores
+        """
+        if not all(elem in self.keys() for elem in ['Filename1', 'Filename2',
+                                                    'Filename3', 'Filename4']):
+            raise ValueError("This method only works if the file paths "
+                             "of the images of the images are known.")
+
+        results = utils.get_features_select_images(filename1=self['Filename1'],
+                                            filename2=self['Filename2'],
+                                            filename3=self['Filename3'],
+                                            filename4=self['Filename4'],
+                                            path_to_semantic_model=path_to_semantic_model, **kwargs)
 
         return Events(results)
 

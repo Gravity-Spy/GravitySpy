@@ -287,6 +287,7 @@ def label_select_images(filename1, filename2, filename3, filename4,
     """
     verbose = kwargs.pop('verbose', False)
     order_of_channels = kwargs.pop('order_of_channels', 'channels_last')
+    original_order = kwargs.pop('original_order', False)
 
     # determine class names
     f = h5py.File(path_to_cnn, 'r')
@@ -328,6 +329,7 @@ def label_select_images(filename1, filename2, filename3, filename4,
                                        model_name='{0}'.format(path_to_cnn),
                                        image_size=[140, 170],
                                        order_of_channels=order_of_channels,
+                                       original_order=original_order,
                                        verbose=verbose)
 
     labels = numpy.array(classes)[ml_label]
@@ -337,6 +339,55 @@ def label_select_images(filename1, filename2, filename3, filename4,
     scores_table['gravityspy_id'] = ids
     scores_table['ml_label'] = labels
     scores_table['ml_confidence'] = scores.max(1)
+
+    return scores_table
+
+def get_features_select_images(filename1, filename2, filename3, filename4,
+                               path_to_semantic_model, **kwargs):
+    """Classify triggers in this table
+
+    Parameters:
+    ----------
+
+    Returns
+    -------
+    """
+    verbose = kwargs.pop('verbose', False)
+    order_of_channels = kwargs.pop('order_of_channels', 'channels_last')
+
+    # determine class names
+    if verbose:
+        logger = log.Logger('Gravity Spy: Extracting features select images')
+
+    list_of_images_all = [filename1,
+                          filename2,
+                          filename3,
+                          filename4]
+
+    list_of_images_all = zip(list_of_images_all[0], list_of_images_all[1],
+                             list_of_images_all[2], list_of_images_all[3])
+
+    image_data_for_cnn = pandas.DataFrame()
+
+    for list_of_images in list_of_images_all:
+        for image in list_of_images:
+            image_name = image.split('/')[-1]
+            if verbose:
+                logger.info('Converting {0}'.format(image_name))
+
+            image_data_r, image_data_g, image_data_b = read_image.read_rgb(image,
+                                                                           resolution=0.3)
+            image_data_for_cnn[image] = [[image_data_r, image_data_g, image_data_b]]
+
+    features, ids = label_glitches.get_multiview_feature_space(image_data=image_data_for_cnn,
+                                       semantic_model_name='{0}'.format(path_to_semantic_model),
+                                       image_size=[140, 170],
+                                       verbose=verbose,
+                                       order_of_channels=order_of_channels)
+
+    scores_table = GravitySpyTable(features, names=numpy.arange(0, features.shape[1]).astype(str))
+
+    scores_table['gravityspy_id'] = ids
 
     return scores_table
 
