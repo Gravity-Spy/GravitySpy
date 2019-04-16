@@ -411,7 +411,7 @@ class GravitySpyProject(ZooProject):
             rows = []
             cols = []
             entry = []
-            for ilabel in userlabels.itertuples():
+            for ilabel in userlabels.sort_values('id').itertuples():
                 rows.append(ilabel[2])
                 cols.append(ilabel[1])
                 entry.append(1)
