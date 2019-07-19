@@ -102,6 +102,7 @@ extras_require = {
         'sphinx_rtd_theme',
         'sphinxcontrib_programoutput',
     ],
+    "google-api": ['google-api-python-client'],
     "tf": ["tensorflow>=1.13.0"],
     "tf_gpu": ["tensorflow-gpu>=1.13.0"],
 }
