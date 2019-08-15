@@ -4,6 +4,7 @@ import argparse
 import pandas
 import numpy
 import httplib2
+import datetime
 
 from apiclient.discovery import build
 from oauth2client import client
@@ -75,21 +76,22 @@ def response_to_table(response):
     columns = response['reports'][0]['columnHeader']['dimensions']
     rows = numpy.vstack(pandas.DataFrame(response['reports'][0]['data']['rows'])['dimensions'].values)
     return pandas.DataFrame(rows,columns=columns)
-  
-# ---- Import standard modules to the python path.
+
 def get_report(analytics, userID, subjectID=None, date_range=None, **kwargs):
     # Use the Analytics Service Object to query the Analytics Reporting API V4.
     verbose = kwargs.pop('verbose', False)
     dimensions = kwargs.pop('dimensions',  [{"name": "ga:eventAction"},
-                        {"name": "ga:eventLabel"}, 
-                         {"name": "ga:dimension4"}, 
+                        {"name": "ga:eventLabel"},
+                         {"name": "ga:dimension4"},
                          {"name": 'ga:dateHourMinute'},
                         ])
-    
+   
     if date_range is not None:
-        assert(type(date_range[0]) == 'str')
-        assert(type(date_range[1]) == 'str')
-        
+        if type(date_range[0]) != str:
+            raise ValueError('Dates must be strings')
+        elif type(date_range[1]) != str:
+            raise ValueError('Dates must be strings')
+
     if date_range is None:
         date_range_passed = False
         date_range_dict = {"startDate": "7daysAgo", "endDate": "today"}
@@ -99,21 +101,27 @@ def get_report(analytics, userID, subjectID=None, date_range=None, **kwargs):
             # first try YYYYDDMM
             startDate = datetime.datetime.strptime(date_range[0], '%Y%m%d')
             endDate = datetime.datetime.strptime(date_range[1], '%Y%m%d')
-            if verbose:
-                print('You are requesting analytics data for a time period '
-                      'beginning {0} and ending {1}'.format(startDate, endDate))
         except:
             # then try YYYYDDMMHHMM
             startDate = datetime.datetime.strptime(date_range[0], '%Y%m%d%H%M')
             endDate = datetime.datetime.strptime(date_range[1], '%Y%m%d%H%M')
-            if verbose:
-                print('You are requesting analytics data for a time period '
-                      'beginning {0} and ending {1}'.format(startDate, endDate))
-        finally:
-            raise ValueError('Date must be in either YYYYDDMM or YYYYDDMMHHMM')
+            
+        if verbose:
+            print('You are requesting analytics data for a time period '
+                  'beginning {0} and ending {1}'.format(startDate, endDate))
             
         startDate_string = startDate.strftime("%Y%m%d")
         endDate_string = endDate.strftime("%Y%m%d")
+        
+        if startDate_string == endDate_string:
+            endDate_string = str(int(endDate_string)+1)
+            
+        startDate = datetime.datetime.strptime(startDate_string, '%Y%m%d')
+        endDate = datetime.datetime.strptime(endDate_string, '%Y%m%d')
+            
+        startDate_string = startDate.strftime("%Y-%m-%d")
+        endDate_string = endDate.strftime("%Y-%m-%d")
+
         dateHourMinuteStart_string = startDate.strftime('%Y%m%d%H%M')
         dateHourMinuteEnd_string = endDate.strftime('%Y%m%d%H%M')
         date_range_dict = {"startDate": "{0}".format(startDate_string), "endDate": "{}".format(endDate_string)}
@@ -121,53 +129,29 @@ def get_report(analytics, userID, subjectID=None, date_range=None, **kwargs):
     report_dict = {}
     # Date Range requested for report
     report_dict.update({'viewId': VIEW_ID})
+    print(date_range_dict)
     report_dict.update({'dateRanges': [date_range_dict]})
     report_dict.update({'metrics': [{'expression': 'ga:users'}]})
     report_dict.update({'dimensions': dimensions})
+    report_dict.update({'pageSize': 10000})
     
-    if date_range_passed:
-        dimensionFilterClauses = kwargs.pop('dimensionFilterClauses', [{
-                                                                      "filters": [
-                                                                          {
-                                                                          "dimensionName": "ga:dimension3",
-                                                                          "operator": "EXACT",
-                                                                          "expressions": "zooniverse/gravity-spy"
-                                                                          }],
-                                                                      "filters": [
-                                                                          {
-                                                                          "dimensionName": "ga:dimension4",
-                                                                          "operator": "EXACT",
-                                                                          "expressions": "{0}".format(userID)
-                                                                          }],
-                                                                      "filters": [
-                                                                          {
-                                                                          "dimensionName": "ga:dateHourMinute",
-                                                                          "operator": "NUMERIC_GREATER_THAN",
-                                                                          "expressions": "{0}".format(dateHourMinuteStart_string)
-                                                                          }],
-                                                                      "filters": [
-                                                                          {
-                                                                          "dimensionName": "ga:dateHourMinute",
-                                                                          "operator": "NUMERIC_LESS_THAN",
-                                                                          "expressions": "{0}".format(dateHourMinuteEnd_string)
-                                                                          }],
-                                                                  }])
-    else:
-        dimensionFilterClauses = kwargs.pop('dimensionFilterClauses', [{
-                                                                      "filters": [
-                                                                          {
-                                                                          "dimensionName": "ga:dimension3",
-                                                                          "operator": "EXACT",
-                                                                          "expressions": "zooniverse/gravity-spy"
-                                                                          }],
-                                                                      "filters": [
-                                                                          {
-                                                                          "dimensionName": "ga:dimension4",
-                                                                          "operator": "EXACT",
-                                                                          "expressions": "{0}".format(userID)
-                                                                          }],
-                                                                  }])
+   
+
+    dimensionFilterClauses = kwargs.pop('dimensionFilterClauses', [{
+                                                                  "filters": [
+                                                                      {
+                                                                      "dimensionName": "ga:dimension3",
+                                                                      "operator": "EXACT",
+                                                                      "expressions": "zooniverse/gravity-spy"
+                                                                      }],
+                                                                  "filters": [
+                                                                      {
+                                                                      "dimensionName": "ga:dimension4",
+                                                                      "operator": "EXACT",
+                                                                      "expressions": "{0}".format(userID)
+                                                                      }],
+                                                              }])
 
     report_dict.update({'dimensionFilterClauses': dimensionFilterClauses})
-    
+   
     return analytics.reports().batchGet(body={'reportRequests': [report_dict]}).execute()
