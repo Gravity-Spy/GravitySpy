@@ -4,10 +4,11 @@
 *.ipynb_checkpoints
 
 # build products
-/pyomega/version.py
+/gravityspy/version.py
 /build/
 /dist/
-/pyomega.egg-info
+/gravityspy.egg-info
+/plots/
 /.eggs/
 
 # documentation products
