@@ -89,7 +89,7 @@ else:
     fraction_testing = args.fraction_testing
 
 # Train model
-class_names = sorted(data.Label.unique())
+class_names = sorted(data.true_label.unique())
 class_names = [n.encode("ascii", "ignore") for n in class_names]
 
 # Train model
