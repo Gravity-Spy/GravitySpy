@@ -1,6 +1,6 @@
 from .GS_utils import concatenate_views
 from keras import backend as K
-K.set_image_dim_ordering('th')
+K.set_image_data_format("channels_last")
 from keras.models import load_model
 from scipy.misc import imresize
 from keras.applications.vgg16 import preprocess_input
@@ -44,7 +44,7 @@ def main(image_data, model_adr, image_size=[140, 170], verbose=False):
 
 def label_glitches(image_data, model_name,
                    order_of_channels="channels_last",
-                   original_order=False,
+                   image_order=['0.5.png', '1.0.png', '2.0.png', '4.0.png'],
                    image_size=[140, 170],
                    verbose=False):
     """Obtain 1XNclasses confidence vector and label for image
@@ -92,22 +92,16 @@ def label_glitches(image_data, model_name,
                         optimizer='adadelta',
                         metrics=['accuracy'])
 
-    half_second_images = sorted(image_data.filter(regex=("0.5.png")).keys())
-    one_second_images = sorted(image_data.filter(regex=("1.0.png")).keys())
-    two_second_images = sorted(image_data.filter(regex=("2.0.png")).keys())
-    four_second_images = sorted(image_data.filter(regex=("4.0.png")).keys())
+    first_image_in_panel = sorted(image_data.filter(regex=(image_order[0])).keys())
+    second_image_in_panel = sorted(image_data.filter(regex=(image_order[1])).keys())
+    third_image_in_panel = sorted(image_data.filter(regex=(image_order[2])).keys())
+    fourth_image_in_panel = sorted(image_data.filter(regex=(image_order[3])).keys())
     
     # read in 4 durations
-    if original_order:
-        test_set_unlabelled_x_1 = numpy.vstack(image_data[half_second_images].iloc[0]).reshape(reshape_order)
-        test_set_unlabelled_x_2 = numpy.vstack(image_data[four_second_images].iloc[0]).reshape(reshape_order)
-        test_set_unlabelled_x_3 = numpy.vstack(image_data[one_second_images].iloc[0]).reshape(reshape_order)
-        test_set_unlabelled_x_4 = numpy.vstack(image_data[two_second_images].iloc[0]).reshape(reshape_order)
-    else:
-        test_set_unlabelled_x_1 = numpy.vstack(image_data[half_second_images].iloc[0]).reshape(reshape_order)
-        test_set_unlabelled_x_2 = numpy.vstack(image_data[one_second_images].iloc[0]).reshape(reshape_order)
-        test_set_unlabelled_x_3 = numpy.vstack(image_data[two_second_images].iloc[0]).reshape(reshape_order)
-        test_set_unlabelled_x_4 = numpy.vstack(image_data[four_second_images].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_1 = numpy.vstack(image_data[first_image_in_panel].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_2 = numpy.vstack(image_data[second_image_in_panel].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_3 = numpy.vstack(image_data[third_image_in_panel].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_4 = numpy.vstack(image_data[fourth_image_in_panel].iloc[0]).reshape(reshape_order)
 
     concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
                             test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], False, order_of_channels)

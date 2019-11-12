@@ -17,4 +17,4 @@
 # along with gravityspy.  If not, see <http://www.gnu.org/licenses/>.
 
 from keras import backend as K
-K.set_image_dim_ordering('th')
+K.set_image_data_format("channels_last")
