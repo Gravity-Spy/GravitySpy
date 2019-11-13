@@ -110,10 +110,10 @@ def label_glitches(image_data, model_name,
     index_label = confidence_array.argmax(1)
 
     ids = []
-    for uid in half_second_images:
+    for uid in first_image_in_panel:
         ids.append(uid.split('_')[1])
 
-    return confidence_array, index_label, ids, half_second_images, one_second_images, two_second_images, four_second_images
+    return confidence_array, index_label, ids, first_image_in_panel, second_image_in_panel, third_image_in_panel, fourth_image_in_panel
 
 def get_feature_space(image_data, semantic_model_name, image_size=[140, 170],
                       verbose=False):

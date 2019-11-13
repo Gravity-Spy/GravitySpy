@@ -65,11 +65,7 @@ setup_requires = [
 
 install_requires = [
     'gwpy >= 0.12',
-    'numpy >= 1.7.1, <=1.15.4',
-    'scipy >= 0.12.1',
-    'matplotlib >= 1.2.0, != 2.1.0, != 2.1.1',
-    'astropy >= 1.1.1, < 3.0.0 ; python_version < \'3\'',
-    'astropy >= 1.1.1 ; python_version >= \'3\'',
+    'scipy >= 0.12.1, <=1.2.1',
     'configparser',
     'pandas >= 0.22 ; python_version >= \'3.5\'',
     'pandas < 0.21 ; python_version == \'3.4\'',
@@ -80,12 +76,9 @@ install_requires = [
     'psycopg2-binary >= 2.7.5',
     'sqlalchemy >= 1.2.12',
     'scikit_image >= 0.14.0',
-    'keras == 2.1.6',
-    'Theano == 1.0.1',
     'gwtrigfind >= 0.7',
-    'lscsoft-glue >= 1.59.3 ',
-    'lalsuite >= 6.49',
-    'scikit-learn >= 0.20.0',
+    'lscsoft-glue >= 1.59.3',
+    'scikit-learn >= 0.20.0, <=0.20.2',
     'dqsegdb >= 1.5.0',
     'mysqlclient >= 1.4.0'
 ]
