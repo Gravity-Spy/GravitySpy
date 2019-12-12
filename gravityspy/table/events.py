@@ -20,6 +20,8 @@ from gwtrigfind import find_trigger_files
 from gwpy.segments import DataQualityFlag
 from gwpy.table import GravitySpyTable
 from gwpy.utils import mp as mp_utils
+from gwpy.table.filter import filter_table
+from gwpy.table.filters import in_segmentlist
 from sklearn.cluster import KMeans
 from astropy.table import Column
 
@@ -525,8 +527,6 @@ class Events(GravitySpyTable):
         logger.info("Number of triggers "
                     "before any filtering: {0}".format(len(triggers)))
 
-        masks = numpy.ones(len(triggers), dtype=bool)
-
         logger.info("duration filter "
                     "[{0}, {1}]".format(duration_min, duration_max))
 
@@ -537,19 +537,18 @@ class Events(GravitySpyTable):
                     "[{0}, {1}]".format(snr_min, snr_max))
 
         if not duration_max is None:
-            masks &= (triggers['duration'] <= duration_max)
+            triggers = triggers.filter('duration <= {0}'.format(duration_max))
         if not duration_min is None:
-            masks &= (triggers['duration'] >= duration_min)
+            triggers = triggers.filter('duration >= {0}'.format(duration_min))
         if not frequency_max is None:
-            masks &= (triggers['peak_frequency'] <= frequency_max)
+            triggers = triggers.filter('peak_frequency <= {0}'.format(frequency_max))
         if not frequency_min is None:
-            masks &= (triggers['peak_frequency'] >= frequency_min)
+            triggers = triggers.filter('peak_frequency >= {0}'.format(frequency_min))
         if not snr_max is None:
-            masks &= (triggers['snr'] <= snr_max)
+            triggers = triggers.filter('snr <= {0}'.format(snr_max))
         if not snr_min is None:
-            masks &= (triggers['snr'] >= snr_min)
+            triggers = triggers.filter('snr >= {0}'.format(snr_min))
 
-        triggers = triggers[masks]
         # Set peakGPS
 
         logger.info("Number of triggers after "
@@ -558,8 +557,7 @@ class Events(GravitySpyTable):
                     "{1}".format(dqflag, len(triggers)))
 
         # Filter the raw omicron triggers against the ANALYSIS READY flag.
-        vetoed = triggers['event_time'].in_segmentlist(analysis_ready.active)
-        triggers = triggers[vetoed]
+        triggers = filter_table(triggers, ('event_time', in_segmentlist, analysis_ready.active))
 
         logger.info("Final trigger length: {0}".format(len(triggers)))
 
