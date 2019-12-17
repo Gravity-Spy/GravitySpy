@@ -64,7 +64,7 @@ setup_requires = [
 ]
 
 install_requires = [
-    'gwpy >= 0.12',
+    'gwpy >= 1.0.0',
     'scipy >= 0.12.1, <=1.2.1',
     'configparser',
     'pandas >= 0.22 ; python_version >= \'3.5\'',
