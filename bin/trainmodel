@@ -41,7 +41,7 @@ def parse_commandline():
                              "than you want channels_last and if "
                              "theano channels_first",
                         default='channels_last')
-    parser.add_argument("--batch-size", type=int, default=30,
+    parser.add_argument("--batch-size", type=int, default=500,
                         help="defines the batch size, 30 is a reasonable size")
     parser.add_argument("--nb-epoch", type=int, default=20,
                         help="defines the number of iterations, "
