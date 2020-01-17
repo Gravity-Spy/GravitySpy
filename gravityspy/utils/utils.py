@@ -202,7 +202,7 @@ def save_q_scans(plot_directory, specsgrams,
                                   plot_directory,
                                   detector_name + '_' + id_string
                                   + '_spectrogram_' + str(dur) +'.png'
-                                 )
+                                 ), dpi=100,
                     )
 
     super_fig.save(os.path.join(plot_directory, id_string + '.png'),)
