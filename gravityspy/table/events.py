@@ -522,9 +522,7 @@ class Events(GravitySpyTable):
         files = find_trigger_files(channel,'Omicron',
                                    float(start),float(end))
 
-        # convert to HDF5
-        files = [i.replace('.xml.gz', '.h5') for i in files]
-        triggers = cls.read(files, format='hdf5', path='triggers')
+        triggers = cls.read(files, tablename='sngl_burst', format='ligolw')
 
         logger.info("Number of triggers "
                     "before any filtering: {0}".format(len(triggers)))
