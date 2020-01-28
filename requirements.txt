@@ -10,6 +10,6 @@ SQLAlchemy
 scikit_image
 keras==2.1.6
 Theano==1.0.1
-tensorflow-gpu==1.7.0
+tensorflow-gpu==1.15.2
 tables
 enum34
