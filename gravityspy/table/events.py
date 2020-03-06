@@ -40,6 +40,7 @@ import subprocess
 import string
 import random
 import os
+import h5py
 
 class Events(GravitySpyTable):
     """This class provides method for classifying events with gravityspy
@@ -669,6 +670,11 @@ class Events(GravitySpyTable):
         def byte_to_numpy(byte_image_data):
             return numpy.load(io.BytesIO(byte_image_data))['x']
 
+        # determine class names
+        f = h5py.File(path_to_cnn, 'r')
+        classes = kwargs.pop('classes',
+                             numpy.array(f['/labels/labels']).astype(str).T[0])
+
         df = self.to_pandas()
 
         if 'image_panel' not in df.columns
@@ -682,6 +688,10 @@ class Events(GravitySpyTable):
                            optimizer='adadelta',
                            metrics=['accuracy'])
         confidence_array = final_model.predict_proba(image_data, **kwargs)
+
+        self['ml_label']  = numpy.array(classes)[confidence_array.argmax(1)]
+        self['ml_confidence'] = confidence_array.max(1)
+
 
 def id_generator(x, size=10,
                  chars=(string.ascii_uppercase +
