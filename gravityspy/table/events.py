@@ -677,7 +677,7 @@ class Events(GravitySpyTable):
 
         df = self.to_pandas()
 
-        if 'image_panel' not in df.columns
+        if 'image_panel' not in df.columns:
             raise ValueError('Please fetch the test_storing_images table') 
 
         image_data = numpy.vstack(df['image_panel'].apply(byte_to_numpy).values)
