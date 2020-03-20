@@ -81,7 +81,7 @@ install_requires = [
     'scikit-learn >= 0.20.0, <=0.20.2',
     'dqsegdb >= 1.5.0',
     'mysqlclient >= 1.4.0'
-    'python-ligo-lw',
+    'python-ligo-lw >= 1.6.0',
 ]
 
 tests_require = [
@@ -96,8 +96,8 @@ extras_require = {
         'sphinx_rtd_theme',
         'sphinxcontrib_programoutput',
     ],
-    "tf": ["tensorflow>=1.13.0"],
-    "tf_gpu": ["tensorflow-gpu>=1.13.0"],
+    "tf": ["tensorflow>=2.0.0"],
+    "tf_gpu": ["tensorflow-gpu>=2.0.0"],
 }
 
 # enum34 required for python < 3.4
@@ -137,9 +137,10 @@ setup(name=DISTNAME,
           'Development Status :: 4 - Beta',
           'Programming Language :: Python',
           'Programming Language :: Python :: 2.7',
-          'Programming Language :: Python :: 3.4',
           'Programming Language :: Python :: 3.5',
           'Programming Language :: Python :: 3.6',
+          'Programming Language :: Python :: 3.7',
+          'Programming Language :: Python :: 3.8',
           'Intended Audience :: Science/Research',
           'Intended Audience :: End Users/Desktop',
           'Intended Audience :: Science/Research',
