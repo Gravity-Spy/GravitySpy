@@ -4,7 +4,7 @@ os: linux
 env:
   global:
     - PIP_FLAGS="--quiet"
-    - KERAS_BACKEND="theano"
+    - KERAS_BACKEND="tensorflow"
     - MPLBACKEND='agg'
 
 python:
@@ -25,6 +25,7 @@ before_install:
   - source "${HOME}/miniconda/etc/profile.d/conda.sh"
   - conda config --set always_yes yes --set changeps1 no
   - conda config --add channels conda-forge
+  - conda config --add channels anaconda
   - travis_retry conda update --quiet --yes conda
   - conda info --all
 
@@ -32,23 +33,24 @@ install:
   # install runtime dependencies into conda environment
   - travis_retry conda create --quiet --name ci python=${TRAVIS_PYTHON_VERSION} pip setuptools
   - travis_retry conda install --quiet --yes --name ci
-        "dqsegdb>=1.5.0"
-        "gwpy>=1.0.0"
-        "gwtrigfind>=0.7"
-        "h5py>=1.3"
-        "keras=2.0.8"
-        "lscsoft-glue>=1.59.3"
-        "mysqlclient>=1.4.0"
-        "pandas"
-        "psycopg2>=2.7.5"
-        "python-ligo-lw>=1.6.0"
-        "pytables>=3.0.0"
-        "scikit-image"
-        "scikit-learn=0.20.0"
-        "scipy>=0.12.1,<=1.2.1"
-        "sqlalchemy>=1.2.12"
-        "tensorflow-gpu>=2.0.0"
-        "theano=0.9.0"
+        "configparser"
+        "dqsegdb >= 1.5.0"
+        "gwpy >= 1.0.0"
+        "gwtrigfind >= 0.7"
+        "h5py >= 1.3"
+        "Keras >= 2.3.1"
+        "lscsoft-glue >= 1.59.3"
+        "mysqlclient >= 1.4.0"
+        "pandas >= 0.22"
+        "psycopg2 >= 2.7.5"
+        "python-ligo-lw >= 1.6.0"
+        "scikit-image >= 0.14.0"
+        "scikit-learn >= 0.20.0"
+        "scipy >= 1.0.0"
+        "sqlalchemy >= 1.2.12"
+        "pytables > 3.0.0"
+        "tensorflow-gpu >= 2.0.0"
+
   - conda activate ci
   # install this package
   - python -m pip install . --editable

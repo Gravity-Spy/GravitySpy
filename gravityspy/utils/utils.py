@@ -105,7 +105,7 @@ def make_q_scans(event_time, **kwargs):
 
     # Read in the data
     if timeseries:
-        data = timeseries.crop(start_time, stop_time, verbose=verbose)
+        data = timeseries.crop(start_time, stop_time,)
     elif source:
         if verbose:
             logger.info('Reading Data From Source ...')

@@ -2,7 +2,7 @@ from .GS_utils import concatenate_views
 from keras import backend as K
 K.set_image_data_format("channels_last")
 from keras.models import load_model
-from scipy.misc import imresize
+from PIL import Image
 from keras.applications.vgg16 import preprocess_input
 from keras.optimizers import RMSprop
 
@@ -148,7 +148,7 @@ def get_feature_space(image_data, semantic_model_name, image_size=[140, 170],
     test_data = numpy.repeat(test_data, 3, axis=3)
     new_data2 = []
     for i in test_data:
-        new_data2.append(imresize(i, (224, 224)))
+        new_data2.append(numpy.array(Image.fromarray(i).resize(224, 224)))
         img_cols = 224
         img_rows = 224
         test_data = numpy.asarray(new_data2)
