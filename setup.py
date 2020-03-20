@@ -80,7 +80,7 @@ install_requires = [
     'lscsoft-glue >= 1.59.3',
     'scikit-learn >= 0.20.0, <=0.20.2',
     'dqsegdb >= 1.5.0',
-    'mysqlclient >= 1.4.0'
+    'mysqlclient >= 1.4.0',
     'python-ligo-lw >= 1.6.0',
 ]
 
