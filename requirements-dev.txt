@@ -1,9 +1,10 @@
 # docs
+ipython
 numpydoc
 pytest >= 3.1.0
 pytest-cov
 pytest-runner
 sphinx
-sphinx-bootstrap-theme
+sphinx_bootstrap_theme
 sphinx_rtd_theme
 sphinxcontrib-programoutput

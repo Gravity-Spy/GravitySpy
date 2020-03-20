@@ -53,7 +53,7 @@ install:
 
   - conda activate ci
   # install this package
-  - python -m pip install . --editable
+  - python -m pip install --editable .
 
 before_script:
   # install testing requirements

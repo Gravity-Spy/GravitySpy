@@ -48,7 +48,7 @@ def make_q_scans(event_time, **kwargs):
     """Classify triggers in this table
 
     Parameters:
-    ----------
+    -----------
 
     Returns
     -------
@@ -166,7 +166,7 @@ def save_q_scans(plot_directory, specsgrams,
     """Classify triggers in this table
 
     Parameters:
-    ----------
+    -----------
 
     Returns
     -------
@@ -215,7 +215,7 @@ def label_q_scans(plot_directory, path_to_cnn, **kwargs):
     """Classify triggers in this table
 
     Parameters:
-    ----------
+    -----------
 
     Returns
     -------
@@ -280,7 +280,7 @@ def label_select_images(filename1, filename2, filename3, filename4,
     """Classify triggers in this table
 
     Parameters:
-    ----------
+    -----------
 
     Returns
     -------
@@ -347,7 +347,7 @@ def get_features_select_images(filename1, filename2, filename3, filename4,
     """Classify triggers in this table
 
     Parameters:
-    ----------
+    -----------
 
     Returns
     -------
@@ -395,7 +395,7 @@ def get_features(plot_directory, path_to_semantic_model, **kwargs):
     """Classify triggers in this table
 
     Parameters:
-    ----------
+    -----------
 
     Returns
     -------
@@ -443,7 +443,7 @@ def get_deeplayer(plot_directory, path_to_cnn, **kwargs):
     """Classify triggers in this table
 
     Parameters:
-    ----------
+    -----------
 
     Returns
     -------

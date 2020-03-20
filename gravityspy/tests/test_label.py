@@ -4,7 +4,6 @@
 __author__ = 'Scott Coughlin <scott.coughlin@ligo.org>'
 
 import os
-os.environ["KERAS_BACKEND"] = "theano"
 
 import gravityspy.ml.read_image as read_image
 import gravityspy.ml.labelling_test_glitches as label_glitches
@@ -16,11 +15,9 @@ import numpy
 TEST_IMAGES_PATH = os.path.join(os.path.split(__file__)[0], 'data',
 'images')
 MODEL_NAME_CNN = os.path.join(os.path.split(__file__)[0], '..', '..', 'models',
-                              'multi_view_classifier.h5')
-MODEL_NAME_FEATURE_SINGLE_VIEW = os.path.join(os.path.split(__file__)[0], '..', '..', 'models',
-                                              'single_view_model.h5')
+                              'O3-multiview-classifer.h5')
 MODEL_NAME_FEATURE_MULTIVIEW = os.path.join(os.path.split(__file__)[0], '..', '..', 'models',
-                                            'semantic_idx_model.h5')
+                                            'similarity-model-O3.h5')
 MULTIVIEW_FEATURES_FILE = os.path.join(os.path.split(__file__)[0], 'data',
                                        'MULTIVIEW_FEATURES.npy')
 
@@ -73,28 +70,6 @@ class TestGravitySpyML(object):
 
         confidence = float(scores[0][MLlabel])
         assert confidence == SCORE
-
-
-    def test_feature_space(self):
-        list_of_images = []
-        for ifile in os.listdir(TEST_IMAGES_PATH):
-            if 'spectrogram' in ifile:
-                list_of_images.append(ifile)
-
-        # Get ML semantic index image data
-        image_dataDF = pd.DataFrame()
-        for idx, image in enumerate(list_of_images):
-            if '1.0.png' in image:
-                image_data = read_image.read_grayscale(os.path.join(TEST_IMAGES_PATH, image), resolution=0.3)
-                image_dataDF[image] = [image_data]
-
-        # Determine features
-        features = label_glitches.get_feature_space(image_data=image_dataDF,
-                                              semantic_model_name='{0}'.format(MODEL_NAME_FEATURE_SINGLE_VIEW),
-                                              image_size=[140, 170],
-                                              verbose=False)
-
-        numpy.testing.assert_array_almost_equal(features, FEATURES, decimal=3)
 
 
     def test_multiview_rgb(self):
