@@ -7,7 +7,6 @@ import pandas as pd
 import ast
 import numpy as np
 import os, sys
-import pdb
 import datetime
 import collections
 import operator
@@ -145,7 +144,7 @@ if not classificationsList:
 
 # Now we want to make a panda data structure with all this information
 classifications = pd.DataFrame(classificationsList)
-classifications = classifications.convert_objects(convert_numeric=True)
+classifications = classifications.apply(pd.to_numeric, axis=0, errors='ignore')
 classifications.created_at = pd.to_datetime(classifications.created_at,infer_datetime_format=True)
 classifications.metadata_started_at = pd.to_datetime(classifications.metadata_started_at,infer_datetime_format=True)
 classifications.metadata_finished_at = pd.to_datetime(classifications.metadata_finished_at,infer_datetime_format=True)
