@@ -37,6 +37,9 @@ def parse_commandline():
     parser.add_argument("--last-id", type=int,
                         help="The id after which you would like "
                         "the next 100 classifications")
+    parser.add_argument("--id-file",
+                        help="The id after which you would like "
+                        "the next 100 classifications")
 
     args = parser.parse_args()
 
@@ -108,12 +111,13 @@ level_workflow_dict = dict(enumerate(workflow_order))
 engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu'
                        ':5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],
                                                  os.environ['GRAVITYSPY_DATABASE_PASSWD']))
-if args.last_id is None:
+if os.path.isfile(args.id_file):
+    last_id = pd.read_csv('{0}'.format(args.id_file)).iloc[0].iloc[0]
+elif args.last_id is None:
     last_id = pd.read_sql("select max(id) from classificationsdev",engine).iloc[0].iloc[0]
     print(last_id)
 else:
     last_id = args.last_id
-
 # Connect to panoptes and query all classifications done on project 1104 (i.e. GravitySpy)
 Panoptes.connect()
 
@@ -173,7 +177,7 @@ classifications = classifications[['created_at','id','links_project','links_subj
 classifications.loc[classifications.links_user.isnull(),'links_user'] = 0
 classifications.links_user = classifications.links_user.astype(int)
 print(classifications['created_at'].iloc[0])
-
+pd.DataFrame({'last_id': classifications['id'].max()}, index=[0]).to_csv('/home/gravityspy/runs/zooniverse/last_id.csv', index=False)
 if sql:
     classifications.to_sql('{0}'.format(args.database), engine,
                            index=False,if_exists='append',chunksize=100)
