@@ -26,5 +26,5 @@ On CIT, LLO, and LHO
 
 .. code-block:: bash
 
-   $ source ~gravityspy/.gravityspy_py36
-   $ source ~gravityspy/.gravityspy_py27
+   $ source /cvmfs/oasis.opensciencegrid.org/ligo/sw/conda/etc/profile.d/conda.sh
+   $ conda activate /home/gravityspy/.conda/envs/gravityspy-gpu-py37/
