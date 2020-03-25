@@ -81,6 +81,7 @@ install_requires = [
     'scipy >= 1.0.0',
     'sqlalchemy >= 1.2.12',
     'tables > 3.0.0',
+    'tensorflow-gpu>=2.0.0',
 ]
 
 tests_require = [
@@ -95,8 +96,6 @@ extras_require = {
         'sphinx_rtd_theme',
         'sphinxcontrib_programoutput',
     ],
-    "tf": ["tensorflow>=2.0.0"],
-    "tf_gpu": ["tensorflow-gpu>=2.0.0"],
 }
 
 # enum34 required for python < 3.4
@@ -130,16 +129,14 @@ setup(name=DISTNAME,
       tests_require=tests_require,
       extras_require=extras_require,
       test_suite='gravityspy.tests',
-      python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4',
+      python_requires='>2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <3.8',
       use_2to3=True,
       classifiers=[
           'Development Status :: 4 - Beta',
           'Programming Language :: Python',
-          'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3.5',
           'Programming Language :: Python :: 3.6',
           'Programming Language :: Python :: 3.7',
-          'Programming Language :: Python :: 3.8',
           'Intended Audience :: Science/Research',
           'Intended Audience :: End Users/Desktop',
           'Intended Audience :: Science/Research',
@@ -149,7 +146,6 @@ setup(name=DISTNAME,
           'Topic :: Scientific/Engineering :: Physics',
           'Operating System :: POSIX',
           'Operating System :: Unix',
-          'Operating System :: MacOS',
           'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
       ],
 )

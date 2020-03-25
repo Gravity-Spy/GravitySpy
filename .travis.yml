@@ -8,11 +8,9 @@ env:
     - MPLBACKEND='agg'
 
 python:
-  - '2.7'
   - '3.5'
   - '3.6'
   - '3.7'
-  - '3.8'
 
 before_install:
   # install miniconda

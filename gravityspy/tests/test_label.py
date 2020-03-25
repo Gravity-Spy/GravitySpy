@@ -21,7 +21,7 @@ MODEL_NAME_FEATURE_MULTIVIEW = os.path.join(os.path.split(__file__)[0], '..', '.
 MULTIVIEW_FEATURES_FILE = os.path.join(os.path.split(__file__)[0], 'data',
                                        'MULTIVIEW_FEATURES.npy')
 
-SCORE = 0.9997797608375549 
+SCORE = 0.9987664222717285
 
 FEATURES = numpy.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 136.32681274414062, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -62,11 +62,12 @@ class TestGravitySpyML(object):
 
         # Now label the image
         scores, MLlabel, _, _, _, _, _, = label_glitches.label_glitches(
-                                                                        image_dataDF,
-                                                                        '{0}'.format(
-                                                                        MODEL_NAME_CNN),
-                                                                        [140, 170],
-                                                                        False)
+                                                        image_data=image_dataDF,
+                                                        model_name='{0}'.format(MODEL_NAME_CNN),
+                                                        order_of_channels="channels_last",
+                                                        image_order=['0.5.png', '1.0.png', '2.0.png', '4.0.png'],
+                                                        image_size=[140, 170],
+                                                        verbose=False)
 
         confidence = float(scores[0][MLlabel])
         assert confidence == SCORE
@@ -90,10 +91,10 @@ class TestGravitySpyML(object):
 
         # Now label the image
         features, _ = label_glitches.get_multiview_feature_space(
-                                                        image_dataDF,
-                                                        '{0}'.format(
-                                                              MODEL_NAME_FEATURE_MULTIVIEW),
-                                                        [140, 170],
-                                                        False)
+                                image_data=image_dataDF,
+                                semantic_model_name='{0}'.format(MODEL_NAME_FEATURE_MULTIVIEW),
+                                order_of_channels="channels_last",
+                                image_size=[140, 170], verbose=False)
+
         numpy.testing.assert_array_almost_equal(features, MULTIVIEW_FEATURES,
                                                 decimal=3)
