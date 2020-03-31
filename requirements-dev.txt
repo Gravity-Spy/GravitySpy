@@ -1,6 +1,10 @@
 # docs
-sphinx
+ipython
 numpydoc
-sphinx-bootstrap-theme
-sphinxcontrib-programoutput
+pytest >= 3.1.0
+pytest-cov
+pytest-runner
+sphinx
+sphinx_bootstrap_theme
 sphinx_rtd_theme
+sphinxcontrib-programoutput

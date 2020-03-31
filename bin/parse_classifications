@@ -7,7 +7,6 @@ import pandas as pd
 import ast
 import numpy as np
 import os, sys
-import pdb
 import datetime
 import collections
 import operator
@@ -36,6 +35,9 @@ def parse_commandline():
                         help="Are workflow answers out of date?"
                         )
     parser.add_argument("--last-id", type=int,
+                        help="The id after which you would like "
+                        "the next 100 classifications")
+    parser.add_argument("--id-file",
                         help="The id after which you would like "
                         "the next 100 classifications")
 
@@ -109,12 +111,13 @@ level_workflow_dict = dict(enumerate(workflow_order))
 engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu'
                        ':5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],
                                                  os.environ['GRAVITYSPY_DATABASE_PASSWD']))
-if args.last_id is None:
+if os.path.isfile(args.id_file):
+    last_id = pd.read_csv('{0}'.format(args.id_file)).iloc[0].iloc[0]
+elif args.last_id is None:
     last_id = pd.read_sql("select max(id) from classificationsdev",engine).iloc[0].iloc[0]
     print(last_id)
 else:
     last_id = args.last_id
-
 # Connect to panoptes and query all classifications done on project 1104 (i.e. GravitySpy)
 Panoptes.connect()
 
@@ -145,11 +148,12 @@ if not classificationsList:
 
 # Now we want to make a panda data structure with all this information
 classifications = pd.DataFrame(classificationsList)
-classifications = classifications.convert_objects(convert_numeric=True)
+classifications = classifications.apply(pd.to_numeric, axis=0, errors='ignore')
 classifications.created_at = pd.to_datetime(classifications.created_at,infer_datetime_format=True)
 classifications.metadata_started_at = pd.to_datetime(classifications.metadata_started_at,infer_datetime_format=True)
 classifications.metadata_finished_at = pd.to_datetime(classifications.metadata_finished_at,infer_datetime_format=True)
 classifications = classifications.loc[~classifications.annotations_value_choice.isnull()]
+classifications = classifications.loc[~classifications['annotations_value_choice'].isin(['70HZLINE', 'HIGHFREQUENCYBURST', 'CROWN'])]
 
 # Now we have to handle follow up question parsing very carefully.
 # It is something that is very useful but can be a headache to parse.
@@ -173,7 +177,7 @@ classifications = classifications[['created_at','id','links_project','links_subj
 classifications.loc[classifications.links_user.isnull(),'links_user'] = 0
 classifications.links_user = classifications.links_user.astype(int)
 print(classifications['created_at'].iloc[0])
-
+pd.DataFrame({'last_id': classifications['id'].max()}, index=[0]).to_csv('/home/gravityspy/runs/zooniverse/last_id.csv', index=False)
 if sql:
     classifications.to_sql('{0}'.format(args.database), engine,
                            index=False,if_exists='append',chunksize=100)

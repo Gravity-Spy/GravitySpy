@@ -48,7 +48,7 @@ def make_q_scans(event_time, **kwargs):
     """Classify triggers in this table
 
     Parameters:
-    ----------
+    -----------
 
     Returns
     -------
@@ -105,7 +105,7 @@ def make_q_scans(event_time, **kwargs):
 
     # Read in the data
     if timeseries:
-        data = timeseries.crop(start_time, stop_time, verbose=verbose)
+        data = timeseries.crop(start_time, stop_time,)
     elif source:
         if verbose:
             logger.info('Reading Data From Source ...')
@@ -166,7 +166,7 @@ def save_q_scans(plot_directory, specsgrams,
     """Classify triggers in this table
 
     Parameters:
-    ----------
+    -----------
 
     Returns
     -------
@@ -202,7 +202,7 @@ def save_q_scans(plot_directory, specsgrams,
                                   plot_directory,
                                   detector_name + '_' + id_string
                                   + '_spectrogram_' + str(dur) +'.png'
-                                 )
+                                 ), dpi=100,
                     )
 
     super_fig.save(os.path.join(plot_directory, id_string + '.png'),)
@@ -215,14 +215,14 @@ def label_q_scans(plot_directory, path_to_cnn, **kwargs):
     """Classify triggers in this table
 
     Parameters:
-    ----------
+    -----------
 
     Returns
     -------
     """
     verbose = kwargs.pop('verbose', False)
     order_of_channels = kwargs.pop('order_of_channels', 'channels_last')
-    original_order = kwargs.pop('original_order', False)
+    image_order = kwargs.pop('image_order', ['0.5.png', '1.0.png', '2.0.png', '4.0.png'])
 
     f = h5py.File(path_to_cnn, 'r')
     # load the api gravityspy project cached class
@@ -258,7 +258,7 @@ def label_q_scans(plot_directory, path_to_cnn, **kwargs):
                                        model_name='{0}'.format(path_to_cnn),
                                        image_size=[140, 170],
                                        order_of_channels=order_of_channels,
-                                       original_order=original_order,
+                                       image_order=image_order,
                                        verbose=verbose)
 
     labels = numpy.array(classes)[ml_label]
@@ -280,14 +280,14 @@ def label_select_images(filename1, filename2, filename3, filename4,
     """Classify triggers in this table
 
     Parameters:
-    ----------
+    -----------
 
     Returns
     -------
     """
     verbose = kwargs.pop('verbose', False)
     order_of_channels = kwargs.pop('order_of_channels', 'channels_last')
-    original_order = kwargs.pop('original_order', False)
+    image_order = kwargs.pop('image_order', ['0.5.png', '1.0.png', '2.0.png', '4.0.png'])
 
     # determine class names
     f = h5py.File(path_to_cnn, 'r')
@@ -329,7 +329,7 @@ def label_select_images(filename1, filename2, filename3, filename4,
                                        model_name='{0}'.format(path_to_cnn),
                                        image_size=[140, 170],
                                        order_of_channels=order_of_channels,
-                                       original_order=original_order,
+                                       image_order=image_order,
                                        verbose=verbose)
 
     labels = numpy.array(classes)[ml_label]
@@ -347,7 +347,7 @@ def get_features_select_images(filename1, filename2, filename3, filename4,
     """Classify triggers in this table
 
     Parameters:
-    ----------
+    -----------
 
     Returns
     -------
@@ -395,7 +395,7 @@ def get_features(plot_directory, path_to_semantic_model, **kwargs):
     """Classify triggers in this table
 
     Parameters:
-    ----------
+    -----------
 
     Returns
     -------
@@ -443,7 +443,7 @@ def get_deeplayer(plot_directory, path_to_cnn, **kwargs):
     """Classify triggers in this table
 
     Parameters:
-    ----------
+    -----------
 
     Returns
     -------

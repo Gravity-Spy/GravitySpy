@@ -6,14 +6,12 @@ import os
 import pandas
 
 MODEL_NAME_CNN = os.path.join(os.path.split(__file__)[0], '..', '..', 'models',
-                              'multi_view_classifier.h5')
+                              'O3-multiview-classifer.h5')
 
 SCRATCHY_TIMESERIES_PATH = os.path.join(os.path.split(__file__)[0], 'data',
                                         'timeseries',
                                         'scratchy_timeseries_test.h5')
 
-PROJECT_PICKLE = os.path.join(os.path.split(__file__)[0], 'data',
-                              'API', '1104.pkl')
 
 SCRATCHY_TIMESERIES = TimeSeries.read(SCRATCHY_TIMESERIES_PATH)
 EVENT_TIME = 1127700030.877928972
@@ -29,7 +27,6 @@ class TestUtils(object):
 
         results = classify(event_time=EVENT_TIME,
                            channel_name='L1:GDS-CALIB_STRAIN',
-                           project_info_pickle=PROJECT_PICKLE,
                            path_to_cnn=MODEL_NAME_CNN,
                            timeseries=SCRATCHY_TIMESERIES)
 

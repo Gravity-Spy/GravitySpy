@@ -20,8 +20,13 @@ from gwtrigfind import find_trigger_files
 from gwpy.segments import DataQualityFlag
 from gwpy.table import GravitySpyTable
 from gwpy.utils import mp as mp_utils
+from gwpy.table.filter import filter_table
+from gwpy.table.filters import in_segmentlist
 from sklearn.cluster import KMeans
 from astropy.table import Column
+from keras import backend as K
+K.set_image_data_format("channels_last")
+from keras.models import load_model
 
 from ..utils import log
 from ..utils import utils
@@ -35,6 +40,7 @@ import subprocess
 import string
 import random
 import os
+import h5py
 
 class Events(GravitySpyTable):
     """This class provides method for classifying events with gravityspy
@@ -525,8 +531,6 @@ class Events(GravitySpyTable):
         logger.info("Number of triggers "
                     "before any filtering: {0}".format(len(triggers)))
 
-        masks = numpy.ones(len(triggers), dtype=bool)
-
         logger.info("duration filter "
                     "[{0}, {1}]".format(duration_min, duration_max))
 
@@ -537,19 +541,18 @@ class Events(GravitySpyTable):
                     "[{0}, {1}]".format(snr_min, snr_max))
 
         if not duration_max is None:
-            masks &= (triggers['duration'] <= duration_max)
+            triggers = triggers.filter('duration <= {0}'.format(duration_max))
         if not duration_min is None:
-            masks &= (triggers['duration'] >= duration_min)
+            triggers = triggers.filter('duration >= {0}'.format(duration_min))
         if not frequency_max is None:
-            masks &= (triggers['peak_frequency'] <= frequency_max)
+            triggers = triggers.filter('peak_frequency <= {0}'.format(frequency_max))
         if not frequency_min is None:
-            masks &= (triggers['peak_frequency'] >= frequency_min)
+            triggers = triggers.filter('peak_frequency >= {0}'.format(frequency_min))
         if not snr_max is None:
-            masks &= (triggers['snr'] <= snr_max)
+            triggers = triggers.filter('snr <= {0}'.format(snr_max))
         if not snr_min is None:
-            masks &= (triggers['snr'] >= snr_min)
+            triggers = triggers.filter('snr >= {0}'.format(snr_min))
 
-        triggers = triggers[masks]
         # Set peakGPS
 
         logger.info("Number of triggers after "
@@ -558,8 +561,7 @@ class Events(GravitySpyTable):
                     "{1}".format(dqflag, len(triggers)))
 
         # Filter the raw omicron triggers against the ANALYSIS READY flag.
-        vetoed = triggers['event_time'].in_segmentlist(analysis_ready.active)
-        triggers = triggers[vetoed]
+        triggers = filter_table(triggers, ('event_time', in_segmentlist, analysis_ready.active))
 
         logger.info("Final trigger length: {0}".format(len(triggers)))
 
@@ -654,6 +656,42 @@ class Events(GravitySpyTable):
                 dagfile.write('RETRY {0} {1}\n'.format(job_number, retry_number))
                 dagfile.write('VARS {0} jobNumber="{0}" event_time="{1}"'.format(job_number, repr(event_time)))
                 dagfile.write('\n\n')
+
+    def relabel_sample(self, path_to_cnn, **kwargs):
+        """This assumes you fetch image data from test_storing_image
+
+            Parameters:
+                path_to_cnn (`str`): path to file with weights of trained model
+
+                **kwargs: anything you can pass to keras.model.predict_proba
+        """
+        # first convert to pandas
+        import io
+        def byte_to_numpy(byte_image_data):
+            return numpy.load(io.BytesIO(byte_image_data))['x']
+
+        # determine class names
+        f = h5py.File(path_to_cnn, 'r')
+        classes = kwargs.pop('classes',
+                             numpy.array(f['/labels/labels']).astype(str).T[0])
+
+        df = self.to_pandas()
+
+        if 'image_panel' not in df.columns:
+            raise ValueError('Please fetch the test_storing_images table') 
+
+        image_data = numpy.vstack(df['image_panel'].apply(byte_to_numpy).values)
+
+        final_model = load_model(path_to_cnn)
+
+        final_model.compile(loss='categorical_crossentropy',
+                           optimizer='adadelta',
+                           metrics=['accuracy'])
+        confidence_array = final_model.predict_proba(image_data, **kwargs)
+
+        self['ml_label']  = numpy.array(classes)[confidence_array.argmax(1)]
+        self['ml_confidence'] = confidence_array.max(1)
+
 
 def id_generator(x, size=10,
                  chars=(string.ascii_uppercase +

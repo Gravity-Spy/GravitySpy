@@ -26,6 +26,7 @@ In the following we demonstrate an example of the *Scratchy* excess noise event.
 we will refer to these excess noise events as *glitches*.
 
 .. ipython::
+    :okwarning:
 
     In [1]: from gwpy.timeseries import TimeSeries
 
@@ -36,7 +37,7 @@ we will refer to these excess noise events as *glitches*.
     In [4]: event_time = 1127700030.877928972
 
     In [4]: results = classify(event_time=event_time, channel_name='L1:GDS-CALIB_STRAIN',
-       ...:                    path_to_cnn='../models/multi_view_classifier.h5',
+       ...:                    path_to_cnn='../models/O3-multiview-classifer.h5',
        ...:                    timeseries=timeseries)
 
     In [5]: print(results)
@@ -52,6 +53,8 @@ It is best here to break down the steps in the above. The process goes as follow
 - utilize the four *views* of the image to create a single **multiview** image to be passed to the CNN
 
 .. ipython::
+    :okwarning:
+
 
     In [2]: from gravityspy.utils import utils
 
@@ -64,6 +67,7 @@ It is best here to break down the steps in the above. The process goes as follow
 Now we plot all 4 of the spectrograms as png
 
 .. ipython::
+    :okwarning:
 
     In [1]: from gravityspy.plot import plot_qtransform
 
