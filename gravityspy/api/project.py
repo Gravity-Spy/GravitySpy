@@ -5,9 +5,11 @@
 from panoptes_client import SubjectSet, Project, Workflow
 from scipy.sparse import coo_matrix
 from gwpy.table import EventTable
+from sqlalchemy.engine import create_engine
 
 import re, pickle
-import pandas as pd
+import os
+import pandas
 import numpy as np
 
 __all__ = ['ZooProject', 'flatten', 'GravitySpyProject',
@@ -305,45 +307,41 @@ class GravitySpyProject(ZooProject):
         # Ignore NONEOFTHEABOVE classificatios when constructing confusion
         # matrix
         # Make sure to the subject classified was a golden image
-        query = 'classificationsdev WHERE \"annotations_value_choiceINT\" != \
-            -1 AND \"links_user\" != 0 AND \
-            \"annotations_value_choiceINT\" != 12 AND \
-            CAST(links_subjects AS FLOAT) IN \
-            (SELECT \"links_subjects\" FROM goldenimages)'
 
-        columns = ['id', 'links_user', 'links_subjects', 'links_workflow',
-                   'annotations_value_choiceINT']
-        classifications = EventTable.fetch('gravityspy', query,
-                                           columns = columns)
+        query = ("SELECT classificationsdev.id, classificationsdev.links_user, "
+                "classificationsdev.links_subjects, classificationsdev.links_workflow, "
+                "classificationsdev.\"annotations_value_choiceINT\", goldenimages.goldlabel "
+                "FROM classificationsdev INNER JOIN goldenimages ON classificationsdev.links_subjects = goldenimages.links_subjects "
+                "WHERE classificationsdev.\"annotations_value_choiceINT\" != -1 AND "
+                "classificationsdev.\"annotations_value_choiceINT\" != 12 AND "
+                "classificationsdev.links_user != 0")
 
-        classifications = classifications.to_pandas()
+        engine = create_engine(
+                               'postgresql://{0}:{1}@gravityspyplus.ciera.northwestern.edu:5432/gravityspy'.format(
+                                                os.environ['GRAVITYSPYPLUS_DATABASE_USER'],
+                                                os.environ['GRAVITYSPYPLUS_DATABASE_PASSWD']))
+
+        classifications = pandas.read_sql(query, engine)
         classifications = classifications.sort_values('id')
-        golden_images = EventTable.fetch('gravityspy', 'goldenimages')
-        golden_images_df = golden_images.to_pandas()
-
-        # From answers Dict determine number of classes
-        numClasses = len(self.get_answers(workflow=7766).values()[0])
-
-        # merge the golden image DF with th classification (this merge is on
-        # links_subject (i.e. the zooID of the image classified)
-        image_and_classification = classifications.merge(golden_images_df,
-                                                         on=['links_subjects'])
 
         # This is where the power of pandas comes in...on the fly in very quick
         # order we can fill all users confusion matrices
         # by smartly chosen groupby
-        test = image_and_classification.groupby(['links_user',
-                                                 'annotations_value_choiceINT',
-                                                 'GoldLabel'])
+        test = classifications.groupby(['links_user',
+                                         'annotations_value_choiceINT',
+                                         'goldlabel'])
         test = test.count().links_subjects.to_frame().reset_index()
+
+        # From answers Dict determine number of classes
+        numClasses = len(self.get_answers(workflow=7766).values()[0])
 
         # Create "Sparse Matrices" and perform a normalization task on them.
         # Afterwards determine if the users diagonal
         # is above the threshold set above
-        confusion_matrices = pd.DataFrame()
+        conf_dict = {'userID' : [], 'conf_matrix' : [], 'alpha' : []}
         for iUser in test.groupby('links_user'):
             columns = iUser[1].annotations_value_choiceINT
-            rows = iUser[1]['GoldLabel']
+            rows = iUser[1]['goldlabel']
             entry = iUser[1]['links_subjects']
             tmp = coo_matrix((entry, (rows,columns)), shape=(numClasses,
                                                              numClasses))
@@ -351,14 +349,11 @@ class GravitySpyProject(ZooProject):
                 np.linalg.lstsq(np.diagflat(tmp.sum(axis=1)),
                                             tmp.todense())
 
-            conf_dict = {'userID' : iUser[0], 'conf_matrix' : [conf_divided],
-                  'alpha' : [np.diag(conf_divided)]}
+            conf_dict['userID'].append(iUser[0])
+            conf_dict['conf_matrix'].append([conf_divided])
+            conf_dict['alpha'].append([np.diag(conf_divided)])
 
-            confusion_matrices = \
-                confusion_matrices.append(pd.DataFrame(
-                                                       conf_dict,
-                                                       index=[iUser[0]]))
-
+        confusion_matrices = pandas.DataFrame(conf_dict).set_index('userID', drop=False)
         self.confusion_matrices = confusion_matrices
         return confusion_matrices
 
@@ -387,11 +382,11 @@ class GravitySpyProject(ZooProject):
         columns = ['id', 'links_user', 'links_subjects', 'links_workflow',
                    'annotations_value_choiceINT']
         classifications = EventTable.fetch('gravityspy', query,
-                                           columns = columns)
+                                           columns = columns, host='gravityspyplus.ciera.northwestern.edu')
 
         classifications = classifications.to_pandas()
         classifications = classifications.sort_values('id')
-        golden_images = EventTable.fetch('gravityspy', 'goldenimages')
+        golden_images = EventTable.fetch('gravityspy', 'goldenimages', host='gravityspyplus.ciera.northwestern.edu')
         golden_images_df = golden_images.to_pandas()
 
         # From answers Dict determine number of classes
@@ -403,7 +398,7 @@ class GravitySpyProject(ZooProject):
                                                          on=['links_subjects'])
 
         # groupby users to get there gold classifications
-        tmp = image_and_classification.groupby('links_user')[['annotations_value_choiceINT','GoldLabel', 'id']]
+        tmp = image_and_classification.groupby('links_user')[['annotations_value_choiceINT','goldlabel', 'id']]
         user_confusion_matrices = {}
         for key, item in tmp:
             user_confusion_matrices[key] = {}
@@ -441,7 +436,7 @@ class GravitySpyProject(ZooProject):
         promotion_Level4 = set([answers_dict[answer] for answer in answers['7765'].keys() if answer not in ['NONEOFTHEABOVE']])
         promotion_Level5 = set([answers_dict[answer] for answer in answers['7766'].keys() if answer not in ['NONEOFTHEABOVE']])
 
-        
+
         level_dict = dict(enumerate(self.workflow_order))
         workflow_level_dict = dict((v, k + 1) for k, v in
                                    level_dict.items())
@@ -463,7 +458,7 @@ class GravitySpyProject(ZooProject):
         for (iuser, ialpha) in zip(self.confusion_matrices.userID,
                                    self.confusion_matrices.alpha):
 
-            proficiencyidx = set(np.where(ialpha > alpha)[0])
+            proficiencyidx = set(np.where(ialpha > alpha)[1])
             # determine whether a user is proficient at >= number
             # of answers on a level. If yes, the check next level
             # until < at which point you know which level the user
@@ -485,7 +480,7 @@ class GravitySpyProject(ZooProject):
             level.append([curr_workflow, curr_level, iuser])
 
         columns = ['curr_workflow', 'curr_level', 'userID']
-        return pd.DataFrame(level, columns = columns)
+        return pandas.DataFrame(level, columns = columns)
 
 
     def check_level_by_classification(self):
@@ -497,7 +492,7 @@ class GravitySpyProject(ZooProject):
 
         query = 'classificationsdev GROUP BY links_user, links_workflow'
         userlevels = EventTable.fetch('gravityspy', query,
-                         columns = ['links_user', 'links_workflow'])
+                         columns = ['links_user', 'links_workflow'], host='gravityspyplus.ciera.northwestern.edu')
 
         userlevels = userlevels.to_pandas()
         userlevels['Level'] = userlevels.links_workflow.apply(
@@ -508,6 +503,6 @@ class GravitySpyProject(ZooProject):
         init_user_levels_dict = {'userID' : init_user_levels.index.tolist(),
                                 'workflowInit' : init_user_levels.tolist()}
 
-        userStatusInit = pd.DataFrame(init_user_levels_dict)
+        userStatusInit = pandas.DataFrame(init_user_levels_dict)
         self.userStatusInit = userStatusInit
         return userStatusInit

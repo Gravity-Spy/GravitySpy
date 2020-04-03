@@ -47,7 +47,7 @@ level_workflow_dict[2117] = 7
 # Obtain what level a user should be on based ont he highest level
 # they have done a classificaiton in before
 init_user_levels = EventTable.fetch('gravityspy', 'classificationsdev GROUP BY links_user, links_workflow',
-                                     columns = ['links_user', 'links_workflow']).to_pandas()
+                                     columns = ['links_user', 'links_workflow'], host='gravityspyplus.ciera.northwestern.edu').to_pandas()
 init_user_levels['init_level'] = init_user_levels['links_workflow'].apply(lambda x: level_workflow_dict[x])
 init_levels = init_user_levels.groupby('links_user').max().init_level
 user_status_init = pandas.DataFrame({'userID' : init_levels.index.tolist(),
@@ -60,7 +60,7 @@ user_confusion_matrices = gspyproject.calculate_confusion_matrices()
 
 user_levels = gspyproject.determine_level()
 
-engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],os.environ['GRAVITYSPY_DATABASE_PASSWD']))
+engine = create_engine('postgresql://{0}:{1}@gravityspyplus.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],os.environ['GRAVITYSPY_DATABASE_PASSWD']))
 query = 'WITH foo as (SELECT id, links_user, links_workflow FROM classificationsdev WHERE links_workflow IN (2360, 7766)) SELECT links_user, count(id) FROM foo GROUP BY links_user HAVING count(id) > 25'
 virgo_promotion = pandas.read_sql(query, engine)
 # Special virgo promotion
