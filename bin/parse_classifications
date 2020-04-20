@@ -92,6 +92,9 @@ answers_dict_level4['SCATTERED'] = 16
 answers_dict_level4['KOI FISH'] = 7
 answers_dict_level4['VIOLIN MODE HARMONIC'] = 19
 answers_dict_level4['POWER LINE (60 HZ)'] = 14
+answers_dict_level4['BLP'] = answers_dict_level4['BLIP']
+answers_dict_level4['WHSTL'] = answers_dict_level4['WHISTLE']
+answers_dict_level4['NNFTHBV'] = answers_dict_level4['NONEOFTHEABOVE']
 
 
 answers_virgo = gspyproject.get_answers(workflow=7501)
@@ -108,10 +111,10 @@ level_workflow_dict = dict(enumerate(workflow_order))
 
 # Load last_id that was parsed
 #last_id = "16822410"
-engine = create_engine('postgresql://{0}:{1}@gravityspy.ciera.northwestern.edu'
-                       ':5432/gravityspy'.format(os.environ['GRAVITYSPY_DATABASE_USER'],
-                                                 os.environ['GRAVITYSPY_DATABASE_PASSWD']))
-if os.path.isfile(args.id_file):
+engine = create_engine('postgresql://{0}:{1}@gravityspyplus.ciera.northwestern.edu'
+                       ':5432/gravityspy'.format(os.environ['GRAVITYSPYPLUS_DATABASE_USER'],
+                                                 os.environ['GRAVITYSPYPLUS_DATABASE_PASSWD']))
+if args.id_file is not None and os.path.isfile(args.id_file):
     last_id = pd.read_csv('{0}'.format(args.id_file)).iloc[0].iloc[0]
 elif args.last_id is None:
     last_id = pd.read_sql("select max(id) from classificationsdev",engine).iloc[0].iloc[0]
