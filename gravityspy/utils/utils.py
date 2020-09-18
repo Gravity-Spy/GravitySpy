@@ -301,7 +301,7 @@ def get_gspy_triggers(start_time, end_time, ifo, label=False, confidence=0.0,
        Returns
        -------
        tabular data : 'pandas.core.frame.DataFrame'
-       a catalogue of triggers classifed by GravitySpyi
+       a catalogue of triggers classifed by GravitySpy
     """
 
     table = 'glitches_v2d0'
