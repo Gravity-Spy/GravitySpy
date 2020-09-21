@@ -316,7 +316,7 @@ def gspy_triggers(start_time, end_time, ifo, label=False, confidence=0.0,
                    '{0:d}<event_time<{1:d}'.format(int(start_time),
                                                    int(end_time))]
         filename = '{0}_{1}_{2}_{3}_{4}.csv'.format(ifo, label, start_time,
-                   end_time, confidence)
+                                                    end_time, confidence)
     else:
         filters = ['{0}<=ml_confidence<=1.0'.format(confidence),
                    '{0}<=snr<={1}'.format(snr_low, snr_high),
