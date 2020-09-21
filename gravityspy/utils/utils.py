@@ -277,8 +277,8 @@ def label_q_scans(plot_directory, path_to_cnn, **kwargs):
     return scores_table
 
 
-def get_gspy_triggers(start_time, end_time, ifo, label=False, confidence=0.0,
-                      savefile=False):
+def gspy_triggers(start_time, end_time, ifo, label=False, confidence=0.0,
+                  snr_low=7.50, snr_high=30000.0, savefile=False):
     """Fetches triggers classified by GravitySpy.
 
        This utility returns a  pandas dataframe of triggers as classified by
@@ -309,6 +309,7 @@ def get_gspy_triggers(start_time, end_time, ifo, label=False, confidence=0.0,
     if label:
         filters = ['ml_label={}'.format(label),
                    '{0}<=ml_confidence<=1.0'.format(confidence),
+                   '{0}<=snr<={1}'.format(snr_low, snr_high),
                    'ifo={0}'.format(ifo),
                    '{0:d}<event_time<{1:d}'.format(int(start_time),
                                                    int(end_time))]
@@ -316,6 +317,7 @@ def get_gspy_triggers(start_time, end_time, ifo, label=False, confidence=0.0,
                    end_time, confidence)
     else:
         filters = ['{0}<=ml_confidence<=1.0'.format(confidence),
+                   '{0}<=snr<={1}'.format(snr_low, snr_high),
                    'ifo={0}'.format(ifo),
                    '{0:d}<event_time<{1:d}'.format(int(start_time),
                                                    int(end_time))]
@@ -328,7 +330,7 @@ def get_gspy_triggers(start_time, end_time, ifo, label=False, confidence=0.0,
     dft = t.to_pandas()
     cols = ['event_time', 'snr', 'peak_frequency', 'duration',
             'amplitude', 'central_freq', 'bandwidth', 'chisq', 'chisq_dof',
-            'q_value', 'channel', 'gravityspy_id', 'q_value',
+            'channel', 'gravityspy_id', 'q_value',
             'ml_label', 'ml_confidence', 'ifo']
 
     dft = dft[cols]
