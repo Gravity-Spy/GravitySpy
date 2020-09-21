@@ -295,6 +295,8 @@ def gspy_triggers(start_time, end_time, ifo, label=False, confidence=0.0,
            glitch class label, e.g. ``'Blip'``
        confidence : 'float', optional
            minimum machine learning confidence, between 0.0 and 1.0
+       snr_low, snr_high : 'float', optional
+           minimum and maximum SNR for the analysis
        savefile : 'bool', optional
            if True, will save the data in a csv file
 
