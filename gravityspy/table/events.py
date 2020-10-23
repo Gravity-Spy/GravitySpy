@@ -163,7 +163,7 @@ class Events(GravitySpyTable):
                                                    on=['gravityspy_id']))
         return results
 
-    def to_sql(self, table='glitches_v2d0', engine=None, **kwargs):
+    def to_sql(self, table='glitches_v2d0', engine=None, if_exists='append', **kwargs):
         """Obtain omicron triggers to run gravityspy on
 
         Parameters:
@@ -180,7 +180,7 @@ class Events(GravitySpyTable):
                     pass
             engine = create_engine(get_connection_str(**conn_kw))
 
-        self.to_pandas().to_sql(table, engine, index=False, if_exists='append')
+        self.to_pandas().to_sql(table, engine, index=False, if_exists=if_exists)
         engine.dispose()
         return
 
@@ -222,6 +222,7 @@ class Events(GravitySpyTable):
 
         tab.to_sql(con=engine, name=table, if_exists='append',
                    index=False, chunksize=100)
+        engine.dispose()
         return
 
     def update_sql(self, table='glitches_v2d0', engine=None, **kwargs):
@@ -241,16 +242,10 @@ class Events(GravitySpyTable):
                     pass
             engine = create_engine(get_connection_str(**conn_kw))
 
-        ientry = self.to_pandas().to_dict(orient='records')
-        for column_dict in ientry:
-            sql_command = 'UPDATE {0} SET '.format(table)
-            for column_name in column_dict:
-                if isinstance(column_dict[column_name], str):
-                    sql_command = sql_command + '''\"{0}\" = \'{1}\', '''.format(column_name, column_dict[column_name])
-                else:
-                    sql_command = sql_command + '''\"{0}\" = {1}, '''.format(column_name, column_dict[column_name])
-            sql_command = sql_command[:-2] + ' WHERE \"gravityspy_id\" = \'' + column_dict['gravityspy_id'] + "'"
-            engine.execute(sql_command)
+        self.to_sql(table='tmp_new_label', if_exists='replace', **conn_kw)
+        sql_command = 'UPDATE {0} SET ml_label = tmp_new_label.ml_label, ml_confidence = tmp_new_label.ml_confidence FROM tmp_new_label WHERE tmp_new_label.gravityspy_id = {0}.gravityspy_id'.format(table)
+        engine.execute(sql_command)
+        engine.dispose()
         return
 
     def update_ldvw(self, table='GSMetadata', engine=None, **kwargs):
@@ -287,6 +282,7 @@ class Events(GravitySpyTable):
                     sql_command = sql_command + '''{0} = {1}, '''.format(column_name, column_dict[column_name])
             sql_command = sql_command[:-2] + ' WHERE id = \'' + column_dict['id'] + "'"
             engine.execute(sql_command)
+        engine.dispose()
         return
 
     def upload_to_zooniverse(self, subject_set_id=None, project='1104'):
