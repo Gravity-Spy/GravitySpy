@@ -333,7 +333,7 @@ class GravitySpyProject(ZooProject):
         test = test.count().links_subjects.to_frame().reset_index()
 
         # From answers Dict determine number of classes
-        numClasses = len(self.get_answers(workflow=7766).values()[0])
+        numClasses = len(self.get_answers(workflow=7766)["7766"])
 
         # Create "Sparse Matrices" and perform a normalization task on them.
         # Afterwards determine if the users diagonal
@@ -367,38 +367,36 @@ class GravitySpyProject(ZooProject):
         A dict with keys of workflow IDs and values list
         of golden sets associated with that workflow
         """
+
         # Load classifications, and golden images from DB
         # Make sure choice is a valid index
         # Make sure to evaluate only logged in users
         # Ignore NONEOFTHEABOVE classificatios when constructing confusion
         # matrix
         # Make sure to the subject classified was a golden image
-        query = 'classificationsdev WHERE \"annotations_value_choiceINT\" != \
-            -1 AND \"links_user\" != 0 AND \
-            \"annotations_value_choiceINT\" != 12 AND \
-            CAST(links_subjects AS FLOAT) IN \
-            (SELECT \"links_subjects\" FROM goldenimages)'
 
-        columns = ['id', 'links_user', 'links_subjects', 'links_workflow',
-                   'annotations_value_choiceINT']
-        classifications = EventTable.fetch('gravityspy', query,
-                                           columns = columns, host='gravityspyplus.ciera.northwestern.edu')
+        query = ("SELECT classificationsdev.id, classificationsdev.links_user, "
+                "classificationsdev.links_subjects, classificationsdev.links_workflow, "
+                "classificationsdev.\"annotations_value_choiceINT\", goldenimages.goldlabel "
+                "FROM classificationsdev INNER JOIN goldenimages ON classificationsdev.links_subjects = goldenimages.links_subjects "
+                "WHERE classificationsdev.\"annotations_value_choiceINT\" != -1 AND "
+                "classificationsdev.\"annotations_value_choiceINT\" != 12 AND "
+                "classificationsdev.links_user != 0")
 
-        classifications = classifications.to_pandas()
+        engine = create_engine(
+                               'postgresql://{0}:{1}@gravityspyplus.ciera.northwestern.edu:5432/gravityspy'.format(
+                                                os.environ['GRAVITYSPYPLUS_DATABASE_USER'],
+                                                os.environ['GRAVITYSPYPLUS_DATABASE_PASSWD']))
+
+        classifications = pandas.read_sql(query, engine)
         classifications = classifications.sort_values('id')
-        golden_images = EventTable.fetch('gravityspy', 'goldenimages', host='gravityspyplus.ciera.northwestern.edu')
-        golden_images_df = golden_images.to_pandas()
+
 
         # From answers Dict determine number of classes
-        numClasses = len(self.get_answers(workflow=7766).values()[0])
-
-        # merge the golden image DF with th classification (this merge is on
-        # links_subject (i.e. the zooID of the image classified)
-        image_and_classification = classifications.merge(golden_images_df,
-                                                         on=['links_subjects'])
+        numClasses = len(self.get_answers(workflow=7766)["7766"])
 
         # groupby users to get there gold classifications
-        tmp = image_and_classification.groupby('links_user')[['annotations_value_choiceINT','goldlabel', 'id']]
+        tmp = classifications.groupby('links_user')[['annotations_value_choiceINT','goldlabel', 'id']]
         user_confusion_matrices = {}
         for key, item in tmp:
             user_confusion_matrices[key] = {}
