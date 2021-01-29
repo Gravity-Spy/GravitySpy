@@ -67,8 +67,6 @@ classifications.drop_duplicates(['links_subjects','links_user'], keep='first', i
 
 # Load confusion matrices
 huge_dict = gspyproject.calculate_confusion_matrices_per_classification()
-classifications[classifications.id.isin(glitch.id)]
-breakpoint()
 
 # Create imageDB
 columnsForImageDB = sorted(workflowDictSubjectSets["7766"].keys())
@@ -84,13 +82,16 @@ image_db['cumWeight'] = 0.0
 
 def extract_user_conf_matrix(user_id, classification_id):
     user_conf_matrix_time_series = huge_dict[user_id]
-    np.user_conf_matrix_time_series.keys()
+    classification_list = list(user_conf_matrix_time_series.keys())
+    conf_index = np.searchsorted(classification_list, classification_id)
+    return user_conf_matrix_time_series[classification_list[conf_index]]
 
 def get_post_contribution(x):
-    breakpoint()
     # NOTE: the variable 'x' is the subject link
     # find all classifications for a particular subject
     glitch = classifications[classifications.links_subjects==x]
+    breakpoint()
+    glitch.apply(lambda x: extract_user_conf_matrix(x["links_user"], x["id"]))
     # ensure each classification id has a confusion matrix
     matrices = classifications[classifications.id.isin(glitch.id)]
     glitch = glitch[glitch.id.isin(matrices.id)]
