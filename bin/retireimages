@@ -127,7 +127,7 @@ def get_post_contribution(x):
         post_contribution = matrix/np.sum(matrix, axis=1)
 
         # If this user hasn't classified any golden images of this type, move on
-        if np.isnan(post_contribution[row,:]).any():
+        if np.isnan(post_contribution[row,:]).all():
             # if this is the last user in the group, save pertinent info
             if idx == len(glitch)-1:
                 # first, make sure someone has contributed to the posterior for this image
@@ -143,6 +143,8 @@ def get_post_contribution(x):
             else:
                 continue
 
+        # some entries may be nans but just need to convert ot 0s.
+        post_contribution[np.isnan(post_contribution)] = 0
         # calculate the weight of the user for this glitch classification
         weight = weighting.default(classifications, person, x)
         # keep track of weighting counter for normalization purposes
