@@ -188,11 +188,15 @@ if not os.path.isdir(args.output):
     os.makedirs(args.output)
 
 # implementation for multiprocessing
-with Pool(args.num_cores) as pool:
-    #image_db = image_db.loc[subjects]
+if args.num_cores == 1:
+    for g in tqdm(subjects):
+        get_post_contribution(g)
+else:
+    with Pool(args.num_cores) as pool:
+        #image_db = image_db.loc[subjects]
 
-    pool.map(get_post_contribution, subjects)
+        pool.map(get_post_contribution, subjects)
 
-    # save image and retirement data as hdf5 files
-    image_db.to_hdf('{0}/retired_{1}.hdf5'.format(args.output, args.file_name), key='retired')
+# save image and retirement data as hdf5 files
+image_db.to_hdf('{0}/retired_{1}.hdf5'.format(args.output, args.file_name), key='retired')
 
