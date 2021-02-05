@@ -11,6 +11,8 @@ import pandas
 from sqlalchemy.engine import create_engine
 from gravityspy.api import params
 from gravityspy.api.project import GravitySpyProject
+from tqdm import tqdm
+from multiprocessing import Pool
 
 engine = create_engine('postgresql://{0}:{1}@gravityspyplus.ciera.northwestern.edu:5432/gravityspy'.format(os.environ['GRAVITYSPYPLUS_DATABASE_USER'],os.environ['GRAVITYSPYPLUS_DATABASE_PASSWD']))
 priors = params.Priors()
@@ -20,12 +22,9 @@ weighting = params.Weighting()
 
 argp = argparse.ArgumentParser()
 argp.add_argument("-f", "--file-name", default='', type=str, help="File stem for output data")
+argp.add_argument("--output", required=True, type=str, help="Where do you want the results to go?")
 argp.add_argument("-p", "--project-pickle", type=str, help="Project information pickle")
-argp.add_argument("-mp", "--multiproc", action="store_true", help="Specifies if you want to parallelize over multiple cores by splitting the images up. Default is off")
-argp.add_argument("-nc", "--num-cores", default=None, type=int, help="Specify the number of cores that the retirement code will be parallelized over. Only used if multiproc is specified")
-argp.add_argument("-i", "--index", default=None, type=int, help="Index which indicates the chunk of image files that retirement will be calculated for. Only used if multiproc is specified. NOTE: the indices start at 1 (so, for submitting over 500 cores, one would use msub -t [1-500] submit.sh)")
-argp.add_argument("-s", "--starting-index", default=1, type=int, help="Starting index for checkpointing and restarting. Default=1.")
-
+argp.add_argument("-nc", "--num-cores", default=1, type=int, help="Specify the number of cores that the retirement code will be parallelized over")
 argp.add_argument("--min-label", default=1, type=int, help="Minimum number of citizen labels that an image must receive before it is retired. Default=1")
 argp.add_argument("--max-label", default=50, type=int, help="Maximum number of citizen labels that an image must receive before it is retired as NOA. Default=50")
 argp.add_argument("--ret-thresh", default=0.8, help="Retirement threshold that must be achieved to retire a particular class. Can be a float, or a 22-length vector of floats. Default = 0.8")
@@ -36,9 +35,12 @@ args = argp.parse_args()
 # Obtain number of classes from API
 gspyproject = GravitySpyProject.load_project_from_cache(args.project_pickle)
 workflowDictSubjectSets = gspyproject.get_level_structure(IDfilter='O2')
+classes = sorted(workflowDictSubjectSets["7766"].keys())
+print(classes)
 
 # From ansers Dict determine number of classes
-numClasses = len(workflowDictSubjectSets["7766"].keys())
+numClasses = len(classes)
+print(numClasses)
 
 # Flat retirement criteria #FIXME make this work for vector of thresholds
 ret_thresh = float(args.ret_thresh)*np.ones(numClasses)
@@ -51,11 +53,11 @@ if args.prior == 'uniform':
 print('\nreading classifications...')
 query = ("SELECT classificationsdev.id, classificationsdev.links_user, "
         "classificationsdev.links_subjects, classificationsdev.links_workflow, "
-        "classificationsdev.\"annotations_value_choiceINT\", glitches.gravityspy_id, "
-        "glitches.ml_confidence, glitches.ml_label, "
-        "glitches.\"1400Ripples\", glitches.\"1080Lines\", glitches.\"Air_Compressor\", glitches.\"Blip\", glitches.\"Chirp\", glitches.\"Extremely_Loud\", glitches.\"Helix\", glitches.\"Koi_Fish\", "
-        "glitches.\"Light_Modulation\", glitches.\"Low_Frequency_Burst\", glitches.\"Low_Frequency_Lines\", glitches.\"No_Glitch\" ,glitches.\"None_of_the_Above\", glitches.\"Paired_Doves\", glitches.\"Power_Line\", glitches.\"Repeating_Blips\", glitches.\"Scattered_Light\", glitches.\"Scratchy\", glitches.\"Tomte\", glitches.\"Violin_Mode\", glitches.\"Wandering_Line\", glitches.\"Whistle\" "
-        "FROM classificationsdev INNER JOIN glitches ON classificationsdev.links_subjects = glitches.links_subjects "
+        "classificationsdev.\"annotations_value_choiceINT\", retirement_project_glitches.gravityspy_id, "
+        "retirement_project_glitches.ml_confidence, retirement_project_glitches.ml_label, "
+        "retirement_project_glitches.\"1400Ripples\", retirement_project_glitches.\"1080Lines\", retirement_project_glitches.\"Air_Compressor\", retirement_project_glitches.\"Blip\", retirement_project_glitches.\"Chirp\", retirement_project_glitches.\"Extremely_Loud\", retirement_project_glitches.\"Helix\", retirement_project_glitches.\"Koi_Fish\", "
+        "retirement_project_glitches.\"Light_Modulation\", retirement_project_glitches.\"Low_Frequency_Burst\", retirement_project_glitches.\"Low_Frequency_Lines\", retirement_project_glitches.\"No_Glitch\" ,retirement_project_glitches.\"None_of_the_Above\", retirement_project_glitches.\"Paired_Doves\", retirement_project_glitches.\"Power_Line\", retirement_project_glitches.\"Repeating_Blips\", retirement_project_glitches.\"Scattered_Light\", retirement_project_glitches.\"Scratchy\", retirement_project_glitches.\"Tomte\", retirement_project_glitches.\"Violin_Mode\", retirement_project_glitches.\"Wandering_Line\", retirement_project_glitches.\"Whistle\" "
+        "FROM classificationsdev INNER JOIN retirement_project_glitches ON classificationsdev.links_subjects = retirement_project_glitches.links_subjects "
         "WHERE classificationsdev.\"annotations_value_choiceINT\" != -1 AND "
         "classificationsdev.\"annotations_value_choiceINT\" != 12 AND "
         "classificationsdev.links_user != 0")
@@ -66,6 +68,7 @@ classifications = classifications.sort_values('id')
 classifications.drop_duplicates(['links_subjects','links_user'], keep='first', inplace=True)
 
 # Load confusion matrices
+print("Calculating the confusion matrix timeseries for each user")
 huge_dict = gspyproject.calculate_confusion_matrices_per_classification()
 
 # Create imageDB
@@ -84,17 +87,18 @@ def extract_user_conf_matrix(user_id, classification_id):
     user_conf_matrix_time_series = huge_dict[user_id]
     classification_list = list(user_conf_matrix_time_series.keys())
     conf_index = np.searchsorted(classification_list, classification_id)
-    return user_conf_matrix_time_series[classification_list[conf_index]]
+    conf_index = max(0, conf_index-1)
+    conf_matrix = user_conf_matrix_time_series[classification_list[conf_index]]
+    return conf_matrix.toarray()
 
 def get_post_contribution(x):
     # NOTE: the variable 'x' is the subject link
     # find all classifications for a particular subject
     glitch = classifications[classifications.links_subjects==x]
-    breakpoint()
-    glitch.apply(lambda x: extract_user_conf_matrix(x["links_user"], x["id"]))
-    # ensure each classification id has a confusion matrix
-    matrices = classifications[classifications.id.isin(glitch.id)]
-    glitch = glitch[glitch.id.isin(matrices.id)]
+    # make sure that all users who classified this glitch have a confusion matrix.
+    glitch = glitch.loc[glitch.links_user.isin(huge_dict.keys())]
+    # obtain confusion amtrices
+    glitch["conf_matrices_for_this_glitch"] = glitch.apply(lambda x: extract_user_conf_matrix(x["links_user"], x["id"]), axis=1)
     # sort based on when the classification was made
     glitch = glitch.sort_values('id')
     # counter to keep track of the weighting normalization, starts at 1.0 for machine
@@ -116,8 +120,7 @@ def get_post_contribution(x):
 
         # grab first person's annotation of the glitch
         classification = glitch[glitch.links_user == person]
-        # save the correct confusion matrix
-        matrix = matrices[matrices.id == int(classification.id)].conf_matrix.values[0]
+        matrix = classification.conf_matrices_for_this_glitch.iloc[0]
         # find the row associated with the annotation the user made
         row = int(classification.annotations_value_choiceINT)
         # get the unweighted posterior contribution
@@ -147,7 +150,7 @@ def get_post_contribution(x):
         # grab the posterior contribution for that class, weighted by classification weight
         posteriorToAdd = weight*post_contribution[row, :]
         # concatenate the new posterior contribution to tracker
-        tracker = np.concatenate((tracker, np.asarray(posteriorToAdd)))
+        tracker = np.vstack((tracker, posteriorToAdd))
         # update image_db with the posterior contribution
         image_db.loc[x, classes] = image_db.loc[x, classes].add(np.asarray(posteriorToAdd).squeeze())
         # add 1 to numLabels for all images
@@ -181,29 +184,15 @@ print('determining retired images...')
 subjects = classifications.links_subjects.unique()
 subjects.sort()
 
+if not os.path.isdir(args.output):
+    os.makedirs(args.output)
 
 # implementation for multiprocessing
-if args.multiproc:
-    breakdown = np.linspace(0,len(subjects),args.num_cores+1)
-    indices = np.arange(args.starting_index,args.num_cores+1)
-    for j in indices:
-        print('Index: %i' % j)
-        #subjects = subjects[int(np.floor(breakdown[args.index-1])):int(np.floor(breakdown[args.index]))]
-        subjects_cut = subjects[int(np.floor(breakdown[j-1])):int(np.floor(breakdown[j]))]
-        #image_db = image_db.loc[subjects]
+with Pool(args.num_cores) as pool:
+    #image_db = image_db.loc[subjects]
 
-        # do the loop
-        for idx, g in enumerate(subjects_cut):
-            get_post_contribution(g)
-            if idx%100 == 0:
-                print('%.2f%% complete' % (100*float(idx)/len(subjects_cut)))
+    pool.map(get_post_contribution, subjects)
 
-        image_db_cut = image_db.loc[subjects_cut]
-
-        # save image and retirement data as hdf5 files
-        if args.multiproc:
-            #image_db.to_hdf('../output/retired_'+args.file_name+str(args.index)+'.hdf5', key='retired')
-            image_db_cut.to_hdf('../output/retired_'+args.file_name+str(j)+'.hdf5', key='retired')
-        else:
-            image_db.to_hdf('../output/retired_'+args.file_name+'.hdf5', key='retired')
+    # save image and retirement data as hdf5 files
+    image_db.to_hdf('{0}/retired_{1}.hdf5'.format(args.output, args.file_name), key='retired')
 
