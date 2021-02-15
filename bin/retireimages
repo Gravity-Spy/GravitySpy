@@ -128,10 +128,10 @@ def get_post_contribution(x):
         # find the row associated with the annotation the user made
         row = int(classification.annotations_value_choiceINT)
         # get the unweighted posterior contribution
-        post_contribution = matrix/np.sum(matrix, axis=1)
+        post_contribution, _, _, _ = np.linalg.lstsq(np.diagflat(matrix.sum(axis=1)),matrix)
 
         # If this user hasn't classified any golden images of this type, move on
-        if np.isnan(post_contribution[row,:]).all():
+        if (post_contribution[row,:] == 0).all():
             # if this is the last user in the group, save pertinent info
             if person == glitch.links_user.iloc[-1]:
                 # first, make sure someone has contributed to the posterior for this image
@@ -147,8 +147,6 @@ def get_post_contribution(x):
             else:
                 continue
 
-        # some entries may be nans but just need to convert ot 0s.
-        post_contribution[np.isnan(post_contribution)] = 0
         # calculate the weight of the user for this glitch classification
         weight = weighting.default(classifications, person, x)
         # keep track of weighting counter for normalization purposes
