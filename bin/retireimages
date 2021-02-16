@@ -192,6 +192,7 @@ if not os.path.isdir(args.output):
     os.makedirs(args.output)
 
 # implementation for multiprocessing
+pdb.set_trace()
 if args.num_cores == 1:
     for g in tqdm(subjects):
         get_post_contribution(g)
@@ -203,7 +204,7 @@ else:
 
 # save image and retirement data as hdf5 files
 dirpath = str(args.output)
-if args.file_namefname = 'retired_'+str(args.file_name)+'.hdf5'
+if args.file_namefname == 'retired_'+str(args.file_name)+'.hdf5':
     fname = 'retired_'+str(args.file_name)+'.hdf5'
 else:
     fname = 'retired.hdf5'
