@@ -203,6 +203,8 @@ else:
 
 # save image and retirement data as hdf5 files
 dirpath = str(args.output)
-fname = 'retired_'+str(args.file_name)+'.hdf5'
+if args.file_namefname = 'retired_'+str(args.file_name)+'.hdf5'
+    fname = 'retired_'+str(args.file_name)+'.hdf5'
+else:
+    fname = 'retired.hdf5'
 image_db.to_hdf(os.path.join(dirpath,fname), key='imageDB')
-
