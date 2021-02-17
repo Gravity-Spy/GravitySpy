@@ -6,7 +6,8 @@ import os, sys
 import pickle
 import pdb
 import argparse
-import pandas
+import multiprocessing
+from functools import partial
 
 from sqlalchemy.engine import create_engine
 from gravityspy.api import params
@@ -21,15 +22,15 @@ weighting = params.Weighting()
 ### Argument handling ###
 
 argp = argparse.ArgumentParser()
-argp.add_argument("-f", "--file-name", default='', type=str, help="File stem for output data")
 argp.add_argument("-o", "--output", required=True, type=str, help="Where do you want the results to go?")
-argp.add_argument("-p", "--project-pickle", type=str, help="Project information pickle")
+argp.add_argument("-p", "--project-pickle", required=True, type=str, help="Project information pickle")
+argp.add_argument("-f", "--file-name", type=str, help="File stem for output data")
 argp.add_argument("-nc", "--num-cores", default=1, type=int, help="Specify the number of cores that the retirement code will be parallelized over")
 argp.add_argument("--min-label", default=1, type=int, help="Minimum number of citizen labels that an image must receive before it is retired. Default=1")
 argp.add_argument("--max-label", default=50, type=int, help="Maximum number of citizen labels that an image must receive before it is retired as NOA. Default=50")
-argp.add_argument("--ret-thresh", default=0.8, help="Retirement threshold that must be achieved to retire a particular class. Can be a float, or a 22-length vector of floats. Default = 0.8")
+argp.add_argument("--ret-thresh", default=0.8, help="Retirement threshold that must be achieved to retire a particular class. Can be a float, or a 22-length vector of floats. Default=0.8")
 argp.add_argument("--prior", default='uniform', type=str, help="String indicating the prior choice for the subjects. Calls function from class params.py. Default=uniform")
-argp.add_argument("--weighting", default='default', type=str, help="String indicating the weighting choice for the subjects. Calls function from class params.py. Default=default, where all users receive an equal weight")
+argp.add_argument("--weighting", default='uniform', type=str, help="String indicating the weighting choice for the subjects. Calls function from class params.py. Default=uniform, where all users and ML receive an equal weight")
 args = argp.parse_args()
 
 # Obtain number of classes from API
@@ -39,14 +40,19 @@ classes = sorted(workflowDictSubjectSets["7766"].keys())
 numClasses = len(classes)
 print("\nglitch classes: {}".format(classes))
 
-# Flat retirement criteria
+# Class-by-class retirement criteria (array)
 #FIXME make this work for vector of thresholds
 ret_thresh = float(args.ret_thresh)*np.ones(numClasses)
 
-# Flat priors b/c we do not know what category the image is in
-#FIXME make this work for other defined priors
+# Class-by-class prior (array)
+#FIXME make this work for other defined prior schemes
 if args.prior == 'uniform':
     prior = priors.uniform(numClasses)
+
+# Weighting prescription (function)
+#FIXME make this work for other defined weighting schemes
+if args.weighting == 'uniform':
+    weighting_scheme = weighting.default
 
 # Load classifications
 print('\nreading classifications...')
@@ -61,42 +67,36 @@ query = ("SELECT classificationsdev.id, classificationsdev.links_user, "
         "classificationsdev.\"annotations_value_choiceINT\" != 12 AND "
         "classificationsdev.links_user != 0")
 
-classifications = pandas.read_sql(query, engine)   # takes a little bit of time
+classifications = pd.read_sql(query, engine)   # takes a little bit of time
 classifications = classifications.sort_values('id')
 # If a user has classifiied a glitch more than once, use earliest classification
 classifications.drop_duplicates(['links_subjects','links_user'], keep='first', inplace=True)
 
 # Load confusion matrices
-print("\ncalculating the confusion matrix timeseries for each user")
+print("\ncalculating the confusion matrix timeseries for each user...")
 conf_matrix_dict = gspyproject.calculate_confusion_matrices_per_classification()   # takes a lot of time
 
 # Create imageDB
 columnsForImageDB = classes+['gravityspy_id','links_subjects','ml_confidence','ml_label','id']
 image_db = classifications[columnsForImageDB].drop_duplicates(['links_subjects'])
 image_db.set_index(['links_subjects'],inplace=True)
-image_db['numLabel'] = 0
-image_db['retired'] = 0
-image_db['numClassifications'] = 0
-image_db['finalScore'] = 0.0
-image_db['finalLabel'] = ''
-image_db['cumWeight'] = 0.0
 
-def extract_user_conf_matrix(user_id, classification_id):
-    """
-    Gets confusion matrix for user=`user_id` at the particular time when classification=`classification_id` was made
-    Returns: 22x22 confusion matrix
-    """
-    user_conf_matrix_time_series = conf_matrix_dict[user_id]
-    classification_list = list(user_conf_matrix_time_series.keys())
-    conf_index = np.searchsorted(classification_list, classification_id)
-    conf_index = max(0, conf_index-1)
-    conf_matrix = user_conf_matrix_time_series[classification_list[conf_index]]
-    return conf_matrix.toarray()
-
-def get_post_contribution(x):
+def get_post_contribution(x, classes, classifications, conf_matrix_dict, min_label, max_label, ret_thresh, prior, weighting_scheme):
     """
     Determines the posterior support across all classes for glitch with subject_link=`x`
     """
+    def extract_user_conf_matrix(user_id, classification_id):
+        """
+        Gets confusion matrix for user=`user_id` at the particular time when classification=`classification_id` was made
+        Returns: 22x22 confusion matrix
+        """
+        user_conf_matrix_time_series = conf_matrix_dict[user_id]
+        classification_list = list(user_conf_matrix_time_series.keys())
+        conf_index = np.searchsorted(classification_list, classification_id)
+        conf_index = max(0, conf_index-1)
+        conf_matrix = user_conf_matrix_time_series[classification_list[conf_index]]
+        return conf_matrix.toarray()
+
     # find all classifications for a particular subject
     glitch = classifications[classifications.links_subjects==x]
     # make sure that all users who classified this glitch have a confusion matrix
@@ -105,22 +105,27 @@ def get_post_contribution(x):
     glitch["conf_matrices_for_this_glitch"] = glitch.apply(lambda x: extract_user_conf_matrix(x["links_user"], x["id"]), axis=1)
     # sort based on when the classification was made
     glitch = glitch.sort_values('id')
+
+    # number of labels made by users
+    numLabel = 0
     # counter to keep track of the weighting normalization, starts at 1.0 for machine
     weight_ctr = 1.0
+    # initialize the posterior with the ML scores
+    posterior = glitch.iloc[0][classes]
     # track the contribution of each user towards retirement, initialize with ML score
-    tracker = np.atleast_2d(glitch.iloc[0][classes].values)
+    tracks = np.atleast_2d(posterior.values)
 
 
     # Loop through all people that classified, or until retirement criteria are met
     for idx, person in enumerate(glitch.links_user):
 
         # Check for maximum number of labels
-        if image_db.loc[x, 'numLabel'] > args.max_label:
-            image_db.loc[x, 'numClassifications'] = args.max_label
-            image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
-            image_db.loc[x, 'finalLabel'] = classes[np.asarray(posterior.divide(weight_ctr)).argmax()]
-            image_db.loc[x, 'tracks'] = [tracker]
-            return
+        if numLabel > max_label:
+            retired = 0
+            numClassifications = max_label
+            finalScore = posterior.divide(weight_ctr).max()
+            finalLabel = classes[np.asarray(posterior.divide(weight_ctr)).argmax()]
+            return retired, numClassifications, finalScore, finalLabel, tracks
 
         # grab first person's annotation of the glitch
         classification = glitch[glitch.links_user == person]
@@ -128,7 +133,7 @@ def get_post_contribution(x):
         # find the row associated with the annotation the user made
         row = int(classification.annotations_value_choiceINT)
         # get the unweighted posterior contribution
-        post_contribution, _, _, _ = np.linalg.lstsq(np.diagflat(matrix.sum(axis=1)),matrix)
+        post_contribution, _, _, _ = np.linalg.lstsq(np.diagflat(matrix.sum(axis=1)),matrix, rcond=None)
 
         # If this user hasn't classified any golden images of this type, move on
         if (post_contribution[row,:] == 0).all():
@@ -139,73 +144,91 @@ def get_post_contribution(x):
                     posterior
                 except NameError:
                     continue
-                image_db.loc[x, 'numClassifications'] = image_db.loc[x, 'numLabel']
-                image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
-                image_db.loc[x, 'finalLabel'] = classes[np.asarray(posterior.divide(weight_ctr)).argmax()]
-                image_db.loc[x, 'tracks'] = [tracker]
-                return
+                retired = 0
+                numClassifications = numLabel
+                finalScore = posterior.divide(weight_ctr).max()
+                finalLabel = classes[np.asarray(posterior.divide(weight_ctr)).argmax()]
+                return retired, numClassifications, finalScore, finalLabel, tracks
             else:
                 continue
 
         # calculate the weight of the user for this glitch classification
-        weight = weighting.default(classifications, person, x)
+        weight = weighting_scheme(classifications, person, x)
         # keep track of weighting counter for normalization purposes
         weight_ctr += weight
         # grab the posterior contribution for that class, weighted by classification weight
         posteriorToAdd = weight*post_contribution[row, :]
-        # concatenate the new posterior contribution to tracker
-        tracker = np.vstack((tracker, posteriorToAdd))
-        # update image_db with the posterior contribution
-        image_db.loc[x, classes] = image_db.loc[x, classes].add(np.asarray(posteriorToAdd).squeeze())
+        # concatenate the new posterior contribution to tracks
+        tracks = np.vstack((tracks, posteriorToAdd))
+        # update glitch-dependent posterior with the posterior contribution
+        posterior = posterior.add(posteriorToAdd)
         # add 1 to numLabels for all images
-        image_db.loc[x, 'numLabel'] += 1
-        # get the total (unnormalized) posterior contribution at this point
-        posterior = image_db.loc[x][classes]
+        numLabel += 1
 
         # Check for retirement threshold and minimum number of labels
-        if ((posterior.divide(weight_ctr) > ret_thresh).any() and image_db.loc[x, 'numLabel'] >= args.min_label):
+        if ((posterior.divide(weight_ctr) > ret_thresh).any() and numLabel >= min_label):
             # save pertinent info of the retired image
-            image_db.loc[x, classes] = image_db.loc[x, classes].divide(weight_ctr)
-            image_db.loc[x, 'numClassifications'] = image_db.loc[x, 'numLabel']
-            image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
-            image_db.loc[x, 'finalLabel'] = classes[np.asarray(posterior.divide(weight_ctr)).argmax()]
-            image_db.loc[x, 'retired'] = 1
-            image_db.loc[x, 'cumWeight'] = weight_ctr
-            image_db.loc[x, 'tracks'] = [tracker]
-            return
+            retired = 1
+            numClassifications = numLabel
+            finalScore = np.asarray(posterior.divide(weight_ctr)).max()
+            finalLabel = classes[np.asarray(posterior.divide(weight_ctr)).argmax()]
+            return retired, numClassifications, finalScore, finalLabel, tracks
 
        # If all people have been accounted for and image not retired, save info to image_db and tracks
         if person == glitch.links_user.iloc[-1]:
-            image_db.loc[x, 'numClassifications'] = image_db.loc[x, 'numLabel']
-            image_db.loc[x, 'finalScore'] = posterior.divide(weight_ctr).max()
-            image_db.loc[x, 'finalLabel'] = classes[np.asarray(posterior.divide(weight_ctr)).argmax()]
-            image_db.loc[x, 'tracks'] = [tracker]
-            return
+            retired = 0
+            numClassifications = numLabel
+            finalScore = posterior.divide(weight_ctr).max()
+            finalLabel = classes[np.asarray(posterior.divide(weight_ctr)).argmax()]
+            return retired, numClassifications, finalScore, finalLabel, tracks
 
 
 print('\ndetermining retired images...')
 # sort data based on subjects number
-subjects = classifications.links_subjects.unique()
+subjects = classifications.links_subjects.unique()   # redundancy
 subjects.sort()
 
 if not os.path.isdir(args.output):
     os.makedirs(args.output)
 
-# implementation for multiprocessing
-pdb.set_trace()
+# implementation for single-core w/ progress bar and multiprocessing
 if args.num_cores == 1:
+    retired_list = []
+    numClassifications_list = []
+    finalScore_list = []
+    finalLabel_list = []
+    tracks_list = []
+    # single core
     for g in tqdm(subjects):
-        get_post_contribution(g)
-else:
-    with Pool(args.num_cores) as pool:
-        #image_db = image_db.loc[subjects]
+        retired, numClassifications, finalScore, finalLabel, tracks = get_post_contribution(g, classes=classes, classifications=classifications, conf_matrix_dict=conf_matrix_dict, min_label=args.min_label, max_label=args.max_label, ret_thresh=args.ret_thresh, prior=prior, weighting_scheme=weighting_scheme)
 
-        pool.map(get_post_contribution, subjects)
+        retired_list.append(retired)
+        numClassifications_list.append(numClassifications)
+        finalScore_list.append(finalScore)
+        finalLabel_list.append(finalLabel)
+        tracks_list.append(tracks)
+else:
+    # multiprocessing
+    func = partial(get_post_contribution, classes=classes, classifications=classifications, conf_matrix_dict=conf_matrix_dict, min_label=args.min_label, max_label=args.max_label, ret_thresh=args.ret_thresh, prior=prior, weighting_scheme=weighting_scheme)
+    pool = multiprocessing.Pool(args.num_cores)
+    results = pool.map(func, subjects)
+
+    retired_list = results[0]
+    numClassifications_list = results[1]
+    finalScore_list = results[2]
+    finalLabel_list = results[3]
+    tracks_list = results[4]
+
+# merge retired data with image_db
+retired_data = pd.DataFrame({'links_subjects':subjects, 'retired':retired_list, 'Nclassifications':numClassifications_list, 'final_score':finalScore_list, 'final_label':finalLabel_list, 'tracks':tracks_list})
+retired_data.set_index(['links_subjects'],inplace=True)
+image_db = image_db.join(retired_data, on='links_subjects')
 
 # save image and retirement data as hdf5 files
+print('\nsaving image database...')
 dirpath = str(args.output)
-if args.file_namefname == 'retired_'+str(args.file_name)+'.hdf5':
+if args.file_name:
     fname = 'retired_'+str(args.file_name)+'.hdf5'
 else:
     fname = 'retired.hdf5'
-image_db.to_hdf(os.path.join(dirpath,fname), key='imageDB')
+image_db.to_hdf(os.path.join(dirpath,fname), key='image_db')

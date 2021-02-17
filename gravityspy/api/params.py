@@ -25,7 +25,7 @@ class Weighting:
         workflow_dict = {'1610': 'B1', '1934': 'B2', '1935': 'B3', '7765': 'B4', '7766': 'A', '7767': 'M'}
         b05_a1_m2_dict = {'B1': 0.5, 'B2': 0.5, 'B3': 0.5, 'B4' : 0.5, 'A': 1.0, 'M': 2.0}
 
-    def default(self, data, user, glitch):
+    def uniform(self, data, user, glitch):
         """
         default weighting scheme where all users are created equal
         """
@@ -61,13 +61,6 @@ class Weighting:
             weight = 1.0
         else:
             weight = 0.5
-        return weight
-
-    def uniform(self, data, user, glitch):
-        """
-        uniform weighting weights all humans and the machine the same
-        """
-        weight = 1.0
         return weight
 
     def machine_dominated(self, data, user, glitch):
@@ -114,5 +107,4 @@ class NOA:
         """
         prior = np.ones((numClasses))/numClasses
         return prior
-
 
