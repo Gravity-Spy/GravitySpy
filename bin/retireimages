@@ -67,6 +67,7 @@ query = ("SELECT classificationsdev.id, classificationsdev.links_user, "
         "classificationsdev.\"annotations_value_choiceINT\" != 12 AND "
         "classificationsdev.links_user != 0")
 
+global classifications
 classifications = pd.read_sql(query, engine)   # takes a little bit of time
 classifications = classifications.sort_values('id')
 # If a user has classifiied a glitch more than once, use earliest classification
@@ -74,6 +75,7 @@ classifications.drop_duplicates(['links_subjects','links_user'], keep='first', i
 
 # Load confusion matrices
 print("\ncalculating the confusion matrix timeseries for each user...")
+global conf_matrix_dict
 conf_matrix_dict = gspyproject.calculate_confusion_matrices_per_classification()   # takes a lot of time
 
 # Create imageDB
@@ -81,7 +83,7 @@ columnsForImageDB = classes+['gravityspy_id','links_subjects','ml_confidence','m
 image_db = classifications[columnsForImageDB].drop_duplicates(['links_subjects'])
 image_db.set_index(['links_subjects'],inplace=True)
 
-def get_post_contribution(x, classes, classifications, conf_matrix_dict, min_label, max_label, ret_thresh, prior, weighting_scheme):
+def get_post_contribution(x, classes, min_label, max_label, ret_thresh, prior, weighting_scheme):
     """
     Determines the posterior support across all classes for glitch with subject_link=`x`
     """
@@ -200,7 +202,7 @@ if args.num_cores == 1:
     tracks_list = []
     # single core
     for g in tqdm(subjects):
-        retired, numClassifications, finalScore, finalLabel, tracks = get_post_contribution(g, classes=classes, classifications=classifications, conf_matrix_dict=conf_matrix_dict, min_label=args.min_label, max_label=args.max_label, ret_thresh=args.ret_thresh, prior=prior, weighting_scheme=weighting_scheme)
+        retired, numClassifications, finalScore, finalLabel, tracks = get_post_contribution(g, classes=classes, min_label=args.min_label, max_label=args.max_label, ret_thresh=args.ret_thresh, prior=prior, weighting_scheme=weighting_scheme)
 
         retired_list.append(retired)
         numClassifications_list.append(numClassifications)
@@ -209,15 +211,15 @@ if args.num_cores == 1:
         tracks_list.append(tracks)
 else:
     # multiprocessing
-    func = partial(get_post_contribution, classes=classes, classifications=classifications, conf_matrix_dict=conf_matrix_dict, min_label=args.min_label, max_label=args.max_label, ret_thresh=args.ret_thresh, prior=prior, weighting_scheme=weighting_scheme)
+    func = partial(get_post_contribution, classes=classes, min_label=args.min_label, max_label=args.max_label, ret_thresh=args.ret_thresh, prior=prior, weighting_scheme=weighting_scheme)
     pool = multiprocessing.Pool(args.num_cores)
     results = pool.map(func, subjects)
 
-    retired_list = results[0]
-    numClassifications_list = results[1]
-    finalScore_list = results[2]
-    finalLabel_list = results[3]
-    tracks_list = results[4]
+    retired_list = [r[0] for r in results]
+    numClassifications_list = [r[1] for r in results]
+    finalScore_list = [r[2] for r in results]
+    finalLabel_list = [r[3] for r in results]
+    tracks_list = [r[4] for r in results]
 
 # merge retired data with image_db
 retired_data = pd.DataFrame({'links_subjects':subjects, 'retired':retired_list, 'Nclassifications':numClassifications_list, 'final_score':finalScore_list, 'final_label':finalLabel_list, 'tracks':tracks_list})
