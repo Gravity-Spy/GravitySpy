@@ -52,7 +52,7 @@ if args.prior == 'uniform':
 # Weighting prescription (function)
 #FIXME make this work for other defined weighting schemes
 if args.weighting == 'uniform':
-    weighting_scheme = weighting.default
+    weighting_scheme = weighting.uniform
 
 # Load classifications
 print('\nreading classifications...')
