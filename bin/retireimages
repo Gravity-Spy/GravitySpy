@@ -55,6 +55,7 @@ if args.weighting == 'uniform':
     weighting_scheme = weighting.uniform
 
 # Load classifications
+"""
 print('\nreading classifications...')
 query = ("SELECT classificationsdev.id, classificationsdev.links_user, "
         "classificationsdev.links_subjects, classificationsdev.links_workflow, "
@@ -63,6 +64,31 @@ query = ("SELECT classificationsdev.id, classificationsdev.links_user, "
         "retirement_project_glitches.\"1400Ripples\", retirement_project_glitches.\"1080Lines\", retirement_project_glitches.\"Air_Compressor\", retirement_project_glitches.\"Blip\", retirement_project_glitches.\"Chirp\", retirement_project_glitches.\"Extremely_Loud\", retirement_project_glitches.\"Helix\", retirement_project_glitches.\"Koi_Fish\", "
         "retirement_project_glitches.\"Light_Modulation\", retirement_project_glitches.\"Low_Frequency_Burst\", retirement_project_glitches.\"Low_Frequency_Lines\", retirement_project_glitches.\"No_Glitch\" ,retirement_project_glitches.\"None_of_the_Above\", retirement_project_glitches.\"Paired_Doves\", retirement_project_glitches.\"Power_Line\", retirement_project_glitches.\"Repeating_Blips\", retirement_project_glitches.\"Scattered_Light\", retirement_project_glitches.\"Scratchy\", retirement_project_glitches.\"Tomte\", retirement_project_glitches.\"Violin_Mode\", retirement_project_glitches.\"Wandering_Line\", retirement_project_glitches.\"Whistle\" "
         "FROM classificationsdev INNER JOIN retirement_project_glitches ON classificationsdev.links_subjects = retirement_project_glitches.links_subjects "
+        "WHERE classificationsdev.\"annotations_value_choiceINT\" != -1 AND "
+        "classificationsdev.\"annotations_value_choiceINT\" != 12 AND "
+        "classificationsdev.links_user != 0")
+       
+
+print('\nreading classifications...')
+query = ("SELECT classificationsdev.id, classificationsdev.links_user, "
+        "classificationsdev.links_subjects, classificationsdev.links_workflow, "
+        "classificationsdev.\"annotations_value_choiceINT\", glitches.gravityspy_id, "
+        "glitches.ml_confidence, glitches.ml_label, "
+        "glitches.\"1400Ripples\", glitches.\"1080Lines\", glitches.\"Air_Compressor\", glitches.\"Blip\", glitches.\"Chirp\", glitches.\"Extremely_Loud\", glitches.\"Helix\", glitches.\"Koi_Fish\", "
+        "glitches.\"Light_Modulation\", glitches.\"Low_Frequency_Burst\", glitches.\"Low_Frequency_Lines\", glitches.\"No_Glitch\" ,glitches.\"None_of_the_Above\", glitches.\"Paired_Doves\", glitches.\"Power_Line\", glitches.\"Repeating_Blips\", glitches.\"Scattered_Light\", glitches.\"Scratchy\", glitches.\"Tomte\", glitches.\"Violin_Mode\", glitches.\"Wandering_Line\", glitches.\"Whistle\" "
+        "FROM classificationsdev INNER JOIN glitches ON classificationsdev.links_subjects = glitches.links_subjects "
+        "WHERE classificationsdev.\"annotations_value_choiceINT\" != -1 AND "
+        "classificationsdev.\"annotations_value_choiceINT\" != 12 AND "
+        "classificationsdev.links_user != 0")
+"""
+
+query = ("SELECT classificationsdev.id, classificationsdev.links_user, "
+        "classificationsdev.links_subjects, classificationsdev.links_workflow, "
+        "classificationsdev.\"annotations_value_choiceINT\", final_data_for_retirement_project.gravityspy_id, "
+        "final_data_for_retirement_project.ml_confidence, final_data_for_retirement_project.ml_label, "
+        "final_data_for_retirement_project.\"1400Ripples\", final_data_for_retirement_project.\"1080Lines\", final_data_for_retirement_project.\"Air_Compressor\", final_data_for_retirement_project.\"Blip\", final_data_for_retirement_project.\"Chirp\", final_data_for_retirement_project.\"Extremely_Loud\", final_data_for_retirement_project.\"Helix\", final_data_for_retirement_project.\"Koi_Fish\", "
+        "final_data_for_retirement_project.\"Light_Modulation\", final_data_for_retirement_project.\"Low_Frequency_Burst\", final_data_for_retirement_project.\"Low_Frequency_Lines\", final_data_for_retirement_project.\"No_Glitch\" ,final_data_for_retirement_project.\"None_of_the_Above\", final_data_for_retirement_project.\"Paired_Doves\", final_data_for_retirement_project.\"Power_Line\", final_data_for_retirement_project.\"Repeating_Blips\", final_data_for_retirement_project.\"Scattered_Light\", final_data_for_retirement_project.\"Scratchy\", final_data_for_retirement_project.\"Tomte\", final_data_for_retirement_project.\"Violin_Mode\", final_data_for_retirement_project.\"Wandering_Line\", final_data_for_retirement_project.\"Whistle\" "
+        "FROM classificationsdev INNER JOIN final_data_for_retirement_project ON classificationsdev.links_subjects = final_data_for_retirement_project.links_subjects "
         "WHERE classificationsdev.\"annotations_value_choiceINT\" != -1 AND "
         "classificationsdev.\"annotations_value_choiceINT\" != 12 AND "
         "classificationsdev.links_user != 0")
