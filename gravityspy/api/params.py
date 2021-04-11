@@ -32,27 +32,30 @@ class Weighting:
         weight = 1.0
         return weight
 
-    def b05_a1_m2(self, data, user, glitch):
+    def ranked(self, data, user, glitch):
         """
         our default weighting is to give beginner users 0.5 the weight of the machine, apprentice user 1.0, master users 2.0
         """
-        # sort classifications by date
+
+
+        # select classifications for user, ordered by id
         userClassifications = data[data.links_user == user]
-        userClassifications = userClassifications.sort_values(by=['metadata_finished_at'])
 
         # find the ID of the glitch classification in question (should only be 1 classification)
-        classificationNum=np.argwhere(userClassifications.links_subjects == glitch).min()
+        classificationNum = userClassifications[userClassifications.links_subjects == glitch].id.values[0]
+
         # find IDs of apprentice and master workflow classificaitons
-        apprenticeClass = np.argwhere(userClassifications.links_workflow == 7766)
+        apprenticeClass = userClassifications[userClassifications.links_workflow.isin([2360,7766])].id.values
         if len(apprenticeClass) > 0:
             apprenticeNum = apprenticeClass.min()
         else:
             apprenticeNum = -1
-        masterClass = np.argwhere(userClassifications.links_workflow == 7767)
+        masterClass = userClassifications[userClassifications.links_workflow.isin([2117,7767])].id.values
         if len(masterClass) > 0:
             masterNum = masterClass.min()
         else:
             masterNum = -1
+
 
         # apply the proper weight
         if (masterNum > 0) & (masterNum < classificationNum):
@@ -61,6 +64,10 @@ class Weighting:
             weight = 1.0
         else:
             weight = 0.5
+
+        if (apprenticeNum > masterNum) & (masterNum > 0):
+            raise ValueError
+
         return weight
 
     def machine_dominated(self, data, user, glitch):

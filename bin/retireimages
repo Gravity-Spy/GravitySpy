@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+from gravityspy.api import params
+from gravityspy.api.project import GravitySpyProject
+
 import pandas as pd
 import numpy as np
 import os, sys
@@ -10,8 +13,6 @@ import multiprocessing
 from functools import partial
 
 from sqlalchemy.engine import create_engine
-from gravityspy.api import params
-from gravityspy.api.project import GravitySpyProject
 from tqdm import tqdm
 from multiprocessing import Pool
 
@@ -49,12 +50,16 @@ ret_thresh = float(args.ret_thresh)*np.ones(numClasses)
 if args.prior == 'uniform':
     prior = priors.uniform(numClasses)
 
+
 # Weighting prescription (function)
 #FIXME make this work for other defined weighting schemes
 if args.weighting == 'uniform':
     weighting_scheme = weighting.uniform
+elif args.weighting == 'ranked':
+    weighting_scheme = weighting.ranked #weighting.b05_a1_m2
 
 # Load classifications
+"""
 print('\nreading classifications...')
 query = ("SELECT classificationsdev.id, classificationsdev.links_user, "
         "classificationsdev.links_subjects, classificationsdev.links_workflow, "
@@ -66,10 +71,36 @@ query = ("SELECT classificationsdev.id, classificationsdev.links_user, "
         "WHERE classificationsdev.\"annotations_value_choiceINT\" != -1 AND "
         "classificationsdev.\"annotations_value_choiceINT\" != 12 AND "
         "classificationsdev.links_user != 0")
+       
+
+print('\nreading classifications...')
+query = ("SELECT classificationsdev.id, classificationsdev.links_user, "
+        "classificationsdev.links_subjects, classificationsdev.links_workflow, "
+        "classificationsdev.\"annotations_value_choiceINT\", glitches.gravityspy_id, "
+        "glitches.ml_confidence, glitches.ml_label, "
+        "glitches.\"1400Ripples\", glitches.\"1080Lines\", glitches.\"Air_Compressor\", glitches.\"Blip\", glitches.\"Chirp\", glitches.\"Extremely_Loud\", glitches.\"Helix\", glitches.\"Koi_Fish\", "
+        "glitches.\"Light_Modulation\", glitches.\"Low_Frequency_Burst\", glitches.\"Low_Frequency_Lines\", glitches.\"No_Glitch\" ,glitches.\"None_of_the_Above\", glitches.\"Paired_Doves\", glitches.\"Power_Line\", glitches.\"Repeating_Blips\", glitches.\"Scattered_Light\", glitches.\"Scratchy\", glitches.\"Tomte\", glitches.\"Violin_Mode\", glitches.\"Wandering_Line\", glitches.\"Whistle\" "
+        "FROM classificationsdev INNER JOIN glitches ON classificationsdev.links_subjects = glitches.links_subjects "
+        "WHERE classificationsdev.\"annotations_value_choiceINT\" != -1 AND "
+        "classificationsdev.\"annotations_value_choiceINT\" != 12 AND "
+        "classificationsdev.links_user != 0")
+"""
+
+query = ("SELECT classificationsdev.id, classificationsdev.links_user, "
+        "classificationsdev.links_subjects, classificationsdev.links_workflow, "
+        "classificationsdev.\"annotations_value_choiceINT\", final_data_for_retirement_project.gravityspy_id, "
+        "final_data_for_retirement_project.ml_confidence, final_data_for_retirement_project.ml_label, "
+        "final_data_for_retirement_project.\"1400Ripples\", final_data_for_retirement_project.\"1080Lines\", final_data_for_retirement_project.\"Air_Compressor\", final_data_for_retirement_project.\"Blip\", final_data_for_retirement_project.\"Chirp\", final_data_for_retirement_project.\"Extremely_Loud\", final_data_for_retirement_project.\"Helix\", final_data_for_retirement_project.\"Koi_Fish\", "
+        "final_data_for_retirement_project.\"Light_Modulation\", final_data_for_retirement_project.\"Low_Frequency_Burst\", final_data_for_retirement_project.\"Low_Frequency_Lines\", final_data_for_retirement_project.\"No_Glitch\" ,final_data_for_retirement_project.\"None_of_the_Above\", final_data_for_retirement_project.\"Paired_Doves\", final_data_for_retirement_project.\"Power_Line\", final_data_for_retirement_project.\"Repeating_Blips\", final_data_for_retirement_project.\"Scattered_Light\", final_data_for_retirement_project.\"Scratchy\", final_data_for_retirement_project.\"Tomte\", final_data_for_retirement_project.\"Violin_Mode\", final_data_for_retirement_project.\"Wandering_Line\", final_data_for_retirement_project.\"Whistle\" "
+        "FROM classificationsdev INNER JOIN final_data_for_retirement_project ON classificationsdev.links_subjects = final_data_for_retirement_project.links_subjects "
+        "WHERE classificationsdev.\"annotations_value_choiceINT\" != -1 AND "
+        "classificationsdev.\"annotations_value_choiceINT\" != 12 AND "
+        "classificationsdev.links_user != 0")
 
 global classifications
 classifications = pd.read_sql(query, engine)   # takes a little bit of time
 classifications = classifications.sort_values('id')
+
 # If a user has classifiied a glitch more than once, use earliest classification
 classifications.drop_duplicates(['links_subjects','links_user'], keep='first', inplace=True)
 
@@ -99,6 +130,7 @@ def get_post_contribution(x, classes, min_label, max_label, ret_thresh, prior, w
         conf_matrix = user_conf_matrix_time_series[classification_list[conf_index]]
         return conf_matrix.toarray()
 
+
     # find all classifications for a particular subject
     glitch = classifications[classifications.links_subjects==x]
     # make sure that all users who classified this glitch have a confusion matrix
@@ -117,7 +149,7 @@ def get_post_contribution(x, classes, min_label, max_label, ret_thresh, prior, w
     # track the contribution of each user towards retirement, initialize with ML score
     tracks = np.atleast_2d(posterior.values)
 
-
+    
     # Loop through all people that classified, or until retirement criteria are met
     for idx, person in enumerate(glitch.links_user):
 
@@ -156,14 +188,19 @@ def get_post_contribution(x, classes, min_label, max_label, ret_thresh, prior, w
 
         # calculate the weight of the user for this glitch classification
         weight = weighting_scheme(classifications, person, x)
+
         # keep track of weighting counter for normalization purposes
         weight_ctr += weight
+
         # grab the posterior contribution for that class, weighted by classification weight
         posteriorToAdd = weight*post_contribution[row, :]
+
         # concatenate the new posterior contribution to tracks
         tracks = np.vstack((tracks, posteriorToAdd))
+
         # update glitch-dependent posterior with the posterior contribution
         posterior = posterior.add(posteriorToAdd)
+
         # add 1 to numLabels for all images
         numLabel += 1
 
@@ -201,8 +238,9 @@ if args.num_cores == 1:
     finalLabel_list = []
     tracks_list = []
     # single core
-    for g in tqdm(subjects):
-        retired, numClassifications, finalScore, finalLabel, tracks = get_post_contribution(g, classes=classes, min_label=args.min_label, max_label=args.max_label, ret_thresh=args.ret_thresh, prior=prior, weighting_scheme=weighting_scheme)
+    for g in subjects:
+    #for g in tqdm(subjects):
+        retired, numClassifications, finalScore, finalLabel, tracks = get_post_contribution(g, classes=classes, min_label=args.min_label, max_label=args.max_label, ret_thresh=ret_thresh, prior=prior, weighting_scheme=weighting_scheme)
 
         retired_list.append(retired)
         numClassifications_list.append(numClassifications)
@@ -211,7 +249,7 @@ if args.num_cores == 1:
         tracks_list.append(tracks)
 else:
     # multiprocessing
-    func = partial(get_post_contribution, classes=classes, min_label=args.min_label, max_label=args.max_label, ret_thresh=args.ret_thresh, prior=prior, weighting_scheme=weighting_scheme)
+    func = partial(get_post_contribution, classes=classes, min_label=args.min_label, max_label=args.max_label, ret_thresh=ret_thresh, prior=prior, weighting_scheme=weighting_scheme)
     pool = multiprocessing.Pool(args.num_cores)
     results = pool.map(func, subjects)
 
