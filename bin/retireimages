@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+from gravityspy.api import params
+from gravityspy.api.project import GravitySpyProject
+
 import pandas as pd
 import numpy as np
 import os, sys
@@ -10,8 +13,6 @@ import multiprocessing
 from functools import partial
 
 from sqlalchemy.engine import create_engine
-from gravityspy.api import params
-from gravityspy.api.project import GravitySpyProject
 from tqdm import tqdm
 from multiprocessing import Pool
 
@@ -49,10 +50,13 @@ ret_thresh = float(args.ret_thresh)*np.ones(numClasses)
 if args.prior == 'uniform':
     prior = priors.uniform(numClasses)
 
+
 # Weighting prescription (function)
 #FIXME make this work for other defined weighting schemes
 if args.weighting == 'uniform':
     weighting_scheme = weighting.uniform
+elif args.weighting == 'ranked':
+    weighting_scheme = weighting.ranked #weighting.b05_a1_m2
 
 # Load classifications
 """
@@ -96,6 +100,7 @@ query = ("SELECT classificationsdev.id, classificationsdev.links_user, "
 global classifications
 classifications = pd.read_sql(query, engine)   # takes a little bit of time
 classifications = classifications.sort_values('id')
+
 # If a user has classifiied a glitch more than once, use earliest classification
 classifications.drop_duplicates(['links_subjects','links_user'], keep='first', inplace=True)
 
@@ -233,7 +238,8 @@ if args.num_cores == 1:
     finalLabel_list = []
     tracks_list = []
     # single core
-    for g in tqdm(subjects):
+    for g in subjects:
+    #for g in tqdm(subjects):
         retired, numClassifications, finalScore, finalLabel, tracks = get_post_contribution(g, classes=classes, min_label=args.min_label, max_label=args.max_label, ret_thresh=ret_thresh, prior=prior, weighting_scheme=weighting_scheme)
 
         retired_list.append(retired)
