@@ -106,7 +106,7 @@ def label_glitches(image_data, model_name,
     concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
                             test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], False, order_of_channels)
 
-    confidence_array = final_model.predict_proba(concat_test_unlabelled, verbose=0)
+    confidence_array = final_model.predict(concat_test_unlabelled, verbose=0)
     index_label = confidence_array.argmax(1)
 
     ids = []
