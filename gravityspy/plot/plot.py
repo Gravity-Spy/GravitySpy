@@ -113,7 +113,7 @@ def plot_qtransform(specsgrams, plot_normalized_energy_range, plot_time_ranges,
 
         ax = ind_fig.gca()
         ax.set_position([0.125, 0.1, 0.775, 0.8])
-        ax.set_yscale('log', basey=2)
+        ax.set_yscale('log', base=2)
         ax.set_xscale('linear')
         ax.grid(False)
 
@@ -164,7 +164,7 @@ def plot_qtransform(specsgrams, plot_normalized_energy_range, plot_time_ranges,
     for iax, spec in zip(axes, specsgrams):
         iax.imshow(spec)
 
-        iax.set_yscale('log', basey=2)
+        iax.set_yscale('log', base=2)
         iax.set_xscale('linear')
 
         xticks = numpy.linspace(spec.xindex.min().value,
