@@ -56,7 +56,7 @@ def read_grayscale(filename, resolution=0.3, x=[66, 532], y=[105, 671],
 
     image_data = rgb2gray(image_data)
     image_data = rescale(image_data, resolution, mode='constant',
-                         preserve_range='True', channel_axis=False)
+                         preserve_range='True', multichannel=False)
 
     dim = np.int(reduce(lambda x, y: x * y, image_data.shape))
     image_data = np.reshape(image_data, (dim))
@@ -85,7 +85,7 @@ def read_rgb(filename, resolution=0.3, x=[66, 532], y=[105, 671],
     """
     image_data = read_and_crop_image(filename, x=x, y=y)
     image_data = rescale(image_data, resolution, mode='constant',
-                         preserve_range='True', channel_axis=True)
+                         preserve_range='True', multichannel=True)
     dim = np.int(reduce(lambda x, y: x * y, image_data[:,:,0].shape))
     image_data_r = np.reshape(image_data[:,:,0], (dim))
     image_data_g = np.reshape(image_data[:,:,1], (dim))
