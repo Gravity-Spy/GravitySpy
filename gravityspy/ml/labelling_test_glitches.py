@@ -1,19 +1,19 @@
+import numpy
+from keras.applications.vgg16 import preprocess_input
+from PIL import Image
+from keras.models import load_model
 from .GS_utils import concatenate_views
 from keras import backend as K
 K.set_image_data_format("channels_last")
-from keras.models import load_model
-from PIL import Image
-from keras.applications.vgg16 import preprocess_input
-from keras.optimizers import RMSprop
 
-import numpy
-import os
 
 '''
 By Sara Bahaadini and Neda Rohani, IVPL, Northwestern University.
-This function reads the trained ML classifier and pickle files of unlabelled glitches and generate the score
+This function reads the trained ML classifier and pickle files
+of unlabelled glitches and generate the score
 file in a .csv file
 '''
+
 
 def main(image_data, model_adr, image_size=[140, 170], verbose=False):
     """
@@ -35,7 +35,7 @@ def main(image_data, model_adr, image_size=[140, 170], verbose=False):
     -------
     """
 
-    dw = label_glitches(pickle_adr, model_adr, image_size, verbose)
+    dw = label_glitches(image_data, model_adr, image_size, verbose)
     dwslice = dw[0][1:]
     dwslice = numpy.array(map(float, dwslice))
 
@@ -92,28 +92,43 @@ def label_glitches(image_data, model_name,
                         optimizer='adadelta',
                         metrics=['accuracy'])
 
-    first_image_in_panel = sorted(image_data.filter(regex=(image_order[0])).keys())
-    second_image_in_panel = sorted(image_data.filter(regex=(image_order[1])).keys())
-    third_image_in_panel = sorted(image_data.filter(regex=(image_order[2])).keys())
-    fourth_image_in_panel = sorted(image_data.filter(regex=(image_order[3])).keys())
-    
+    first_image_in_panel = sorted(
+        image_data.filter(regex=(image_order[0])).keys())
+    second_image_in_panel = sorted(
+        image_data.filter(regex=(image_order[1])).keys())
+    third_image_in_panel = sorted(
+        image_data.filter(regex=(image_order[2])).keys())
+    fourth_image_in_panel = sorted(
+        image_data.filter(regex=(image_order[3])).keys())
     # read in 4 durations
-    test_set_unlabelled_x_1 = numpy.vstack(image_data[first_image_in_panel].iloc[0]).reshape(reshape_order)
-    test_set_unlabelled_x_2 = numpy.vstack(image_data[second_image_in_panel].iloc[0]).reshape(reshape_order)
-    test_set_unlabelled_x_3 = numpy.vstack(image_data[third_image_in_panel].iloc[0]).reshape(reshape_order)
-    test_set_unlabelled_x_4 = numpy.vstack(image_data[fourth_image_in_panel].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_1 = numpy.vstack(
+        image_data[first_image_in_panel].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_2 = numpy.vstack(
+        image_data[second_image_in_panel].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_3 = numpy.vstack(
+        image_data[third_image_in_panel].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_4 = numpy.vstack(
+        image_data[fourth_image_in_panel].iloc[0]).reshape(reshape_order)
 
     concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
-                            test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], False, order_of_channels)
+                                               test_set_unlabelled_x_2,
+                                               test_set_unlabelled_x_3,
+                                               test_set_unlabelled_x_4,
+                                               [img_rows, img_cols],
+                                               False, order_of_channels)
 
-    confidence_array = final_model.predict_proba(concat_test_unlabelled, verbose=0)
+    confidence_array = final_model.predict(concat_test_unlabelled, verbose=0)
     index_label = confidence_array.argmax(1)
 
     ids = []
     for uid in first_image_in_panel:
         ids.append(uid.split('_')[1])
 
-    return confidence_array, index_label, ids, first_image_in_panel, second_image_in_panel, third_image_in_panel, fourth_image_in_panel
+    ca, il,  = confidence_array, index_label
+    fiip, siip = first_image_in_panel, second_image_in_panel
+    tiip, fiip = third_image_in_panel, fourth_image_in_panel
+    return ca, il, ids, fiip, siip, tiip, fiip
+
 
 def get_feature_space(image_data, semantic_model_name, image_size=[140, 170],
                       verbose=False):
@@ -143,7 +158,8 @@ def get_feature_space(image_data, semantic_model_name, image_size=[140, 170],
     """
     img_rows, img_cols = image_size[0], image_size[1]
     semantic_idx_model = load_model(semantic_model_name)
-    test_data = image_data.filter(regex=("1.0.png")).iloc[0].iloc[0].reshape(-1, 1, img_rows, img_cols)
+    test_data = image_data.filter(
+        regex=("1.0.png")).iloc[0].iloc[0].reshape(-1, 1, img_rows, img_cols)
     test_data = test_data.reshape([test_data.shape[0], img_rows, img_cols, 1])
     test_data = numpy.repeat(test_data, 3, axis=3)
     new_data2 = []
@@ -198,13 +214,21 @@ def get_multiview_feature_space(image_data, semantic_model_name,
     two_second_images = sorted(image_data.filter(regex=("2.0.png")).keys())
     four_second_images = sorted(image_data.filter(regex=("4.0.png")).keys())
 
-    test_set_unlabelled_x_1 = numpy.vstack(image_data[half_second_images].iloc[0]).reshape(reshape_order)
-    test_set_unlabelled_x_2 = numpy.vstack(image_data[one_second_images].iloc[0]).reshape(reshape_order)
-    test_set_unlabelled_x_3 = numpy.vstack(image_data[two_second_images].iloc[0]).reshape(reshape_order)
-    test_set_unlabelled_x_4 = numpy.vstack(image_data[four_second_images].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_1 = numpy.vstack(
+        image_data[half_second_images].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_2 = numpy.vstack(
+        image_data[one_second_images].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_3 = numpy.vstack(
+        image_data[two_second_images].iloc[0]).reshape(reshape_order)
+    test_set_unlabelled_x_4 = numpy.vstack(
+        image_data[four_second_images].iloc[0]).reshape(reshape_order)
 
     concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
-                            test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], True, order_of_channels)
+                                               test_set_unlabelled_x_2,
+                                               test_set_unlabelled_x_3,
+                                               test_set_unlabelled_x_4,
+                                               [img_rows, img_cols],
+                                               True, order_of_channels)
 
     concat_test_unlabelled = preprocess_input(concat_test_unlabelled)
 
@@ -252,7 +276,7 @@ def get_deeplayer(image_data, model_name, image_size=[140, 170],
 
     # load a model and weights
     if verbose:
-        print ('Retrieving the trained ML classifier')
+        print('Retrieving the trained ML classifier')
     final_model = load_model(model_name)
 
     final_model.compile(loss='categorical_crossentropy',
@@ -260,7 +284,7 @@ def get_deeplayer(image_data, model_name, image_size=[140, 170],
                         metrics=['accuracy'])
 
     if verbose:
-        print ('Scoring unlabelled glitches')
+        print('Scoring unlabelled glitches')
 
     half_second_images = sorted(image_data.filter(regex=("0.5.png")).keys())
     one_second_images = sorted(image_data.filter(regex=("1.0.png")).keys())
@@ -268,24 +292,36 @@ def get_deeplayer(image_data, model_name, image_size=[140, 170],
     four_second_images = sorted(image_data.filter(regex=("4.0.png")).keys())
 
     # read in 4 durations
-    test_set_unlabelled_x_1 = numpy.vstack(image_data[half_second_images].iloc[0].values)
-    test_set_unlabelled_x_1 = test_set_unlabelled_x_1.reshape(-1, 1, img_rows, img_cols)
+    test_set_unlabelled_x_1 = numpy.vstack(
+        image_data[half_second_images].iloc[0].values)
+    test_set_unlabelled_x_1 = test_set_unlabelled_x_1.reshape(
+        -1, 1, img_rows, img_cols)
 
-    test_set_unlabelled_x_2 = numpy.vstack(image_data[four_second_images].iloc[0].values)
-    test_set_unlabelled_x_2 = test_set_unlabelled_x_2.reshape(-1, 1, img_rows, img_cols)
+    test_set_unlabelled_x_2 = numpy.vstack(
+        image_data[four_second_images].iloc[0].values)
+    test_set_unlabelled_x_2 = test_set_unlabelled_x_2.reshape(
+        -1, 1, img_rows, img_cols)
 
-    test_set_unlabelled_x_3 = numpy.vstack(image_data[one_second_images].iloc[0].values)
-    test_set_unlabelled_x_3 = test_set_unlabelled_x_3.reshape(-1, 1, img_rows, img_cols)
+    test_set_unlabelled_x_3 = numpy.vstack(
+        image_data[one_second_images].iloc[0].values)
+    test_set_unlabelled_x_3 = test_set_unlabelled_x_3.reshape(
+        -1, 1, img_rows, img_cols)
 
-    test_set_unlabelled_x_4 = numpy.vstack(image_data[two_second_images].iloc[0].values)
-    test_set_unlabelled_x_4 = test_set_unlabelled_x_4.reshape(-1, 1, img_rows, img_cols)
+    test_set_unlabelled_x_4 = numpy.vstack(
+        image_data[two_second_images].iloc[0].values)
+    test_set_unlabelled_x_4 = test_set_unlabelled_x_4.reshape(
+        -1, 1, img_rows, img_cols)
 
     concat_test_unlabelled = concatenate_views(test_set_unlabelled_x_1,
-                            test_set_unlabelled_x_2, test_set_unlabelled_x_3, test_set_unlabelled_x_4, [img_rows, img_cols], False)
+                                               test_set_unlabelled_x_2,
+                                               test_set_unlabelled_x_3,
+                                               test_set_unlabelled_x_4,
+                                               [img_rows, img_cols], False)
 
-    feature_exc1 = K.function([final_model.layers[0].get_input_at(node_index=0),
-                K.learning_phase()],
-               [final_model.layers[0].get_layer(index=20).output])
+    fml_inpt = final_model.layers[0].get_input_at(node_index=0)
+    fml_opt = final_model.layers[0].get_layer(index=20).output
+    feature_exc1 = K.function([fml_inpt, K.learning_phase()],
+                              [fml_opt])
 
     deeplayer = feature_exc1([concat_test_unlabelled, 0])[0]
 
@@ -293,7 +329,11 @@ def get_deeplayer(image_data, model_name, image_size=[140, 170],
     for uid in half_second_images:
         ids.append(uid.split('_')[1])
 
-    confidence_array = final_model.predict_proba(concat_test_unlabelled, verbose=0)
+    confidence_array = final_model.predict_proba(
+        concat_test_unlabelled, verbose=0)
     index_label = confidence_array.argmax(1)
 
-    return confidence_array, index_label, deeplayer, ids, half_second_images, one_second_images, two_second_images, four_second_images
+    ca, il, dl = confidence_array, index_label, deeplayer
+    hsi, osi = half_second_images, one_second_images
+    tsi, fsi = two_second_images, four_second_images
+    return ca, il, dl, ids, hsi, osi, tsi, fsi
