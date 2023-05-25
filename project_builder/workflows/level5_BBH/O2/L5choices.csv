@@ -1,0 +1,23 @@
+Name,Description,Images,No questions
+1080 Line,"1080 lines look like a string of short yellow dots, sometimes connected to form a line, with a frequency around 1080 Hz",1080-1.jpg;1080-2.gif;1080-3.gif,N
+1400 Ripple,"1400 ripples are short duration lines at a frequency of 1400 Hz and are usually isolated",1400-1.jpg;1400-2.gif;1400-3.gif,N
+Air Compressor (50 Hz),"Air compressors look like fat lines and occur at a frequency of 50 Hz",50hz-1.jpg;50hz-2.gif;50hz-3.gif,N
+Blip,"Blips are short glitches with usually a symmetric 'teardrop' shape",blip-1.jpg;blip-2.gif;blip-3.gif,N
+Chirp,"Chirps are the characteristic shape created by gravitational waves from inspiraling compact objects, sweeping upwards in frequency over time",chirp-1.jpg;chirp-2.gif;chirp-3.gif,N
+Extremely Loud,"Extremely Loud are caused by a major disturbance in the detectors, and cover most of the image",exloud-1.jpg;exloud-2.gif;exloud-3.gif,N
+Helix,"Helix occur at mid frequencies, and often come in groups",helix-1.jpg;helix-2.gif;helix-3.gif,N
+Koi Fish,"Koi Fish are similar to blip glitches, but resemble a fish with a head, fins, and thin tail",koifish-1.jpg;koifish-2.gif;koifish-3.gif,N
+Light Modulation,"Light modulation are caused by a malfunction of the 45 MHz modulation signal at Hanford, it often looks like several bright spikes in close succession with low frequency noise at the same time",45mhz-1.jpg;45mhz-2.gif;45mhz-3.gif,N
+Low Frequency Burst,"Low Frequency Bursts are short or long bursts of low frequency noise, usually lower than about 50 Hz",lowfreqburst-1.jpg;lowfreqburst-2.gif;lowfreqburst-3.gif,N
+Low Frequency Line,"Low Frequency Lines occur at very low frequencies, and do not vary in frequency over long durations",lowfreqline-1.jpg;lowfreqline-2.gif;lowfreqline-3.gif,N
+None of the Above,"This category is for glitches that do not look like any of the other categories",noa-1.jpg;noa-2.gif;noa-3.gif;noa-4.gif;noa-5.gif;noa-6.gif,N
+No Glitch,"If you do not see any glitch in the image , choose this option",noglitch-1.jpg;noglitch-2.gif;noglitch-3.gif,N
+Paired Doves,"Paired Doves are repeating, chirp-like features that alternate in sweeping up and down in frequency",paireddoves-1.jpg;paireddoves-2.gif;paireddoves-3.gif,N
+Power Line (60 Hz),"Power Line are narrow in frequency around 60 Hz and its harmonics (multiples of 60 Hz - i.e. 120 Hz, 180 Hz) and last 0.2-0.5 seconds",powerline-1.jpg;powerline-2.gif;powerline-3.gif,N
+Repeating Blips,"Repeating Blips are blips that are observed to repeat, often 0.25 or 0.5 seconds after one another",repeatingblips-1.jpg;repeatingblips-2.gif;repeatingblips-3.gif,N
+Scattered Light,"Scattered Light are low-frequency, long duration, humpy glitches that usually have several lines stacked on top of each other",scatteredlight-1.jpg;scatteredlight-2.gif;scatteredlight-3.gif,N
+Scratchy,"Scratchy glitches are repeated, small glitches at mid and high frequencies",scratchy-1.jpg;scratchy-2.gif;scratchy-3.gif,N
+Tomte,"Tomtes are lower-frequency blip-like glitches that are usually triangular, and look like the hat that would be worn by a garden gnome",tomte-1.jpg;tomte-2.gif;tomte-3.gif,N
+Violin Mode Harmonic,"Violin modes are short glitches at 500 Hz and harmonics (multiples of 500 Hz - i.e. 1000 Hz, 1500 Hz)",violinmode-1.jpg;violinmode-2.gif;violinmode-3.gif,N
+Wandering Line,"Wandering line glitchess meander slowly in frequency",wanderingline-1.jpg;wanderingline-2.gif;wanderingline-3.gif,N
+Whistle,"Whistles (a.k.a. Radio Frequency Beat Notes) have a characteristic 'W' or 'V' shape",whistle-1.jpg;whistle-2.gif;whistle-3.gif,N
