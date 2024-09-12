@@ -29,6 +29,7 @@ import numpy
 import h5py
 import os
 import pandas
+from gwpy.table import EventTable
 import matplotlib.pyplot as plt
 
 class GravitySpyConfigFile(object):
@@ -274,6 +275,74 @@ def label_q_scans(plot_directory, path_to_cnn, **kwargs):
     scores_table['ml_confidence'] = scores.max(1)
 
     return scores_table
+
+
+def gspy_triggers(start_time, end_time, ifo, label=False, confidence=0.0,
+                  snr_low=7.50, snr_high=30000.0, savefile=False):
+    """Fetches triggers classified by GravitySpy.
+
+       This utility returns a  pandas dataframe of triggers as classified by
+       GravitySpy between a given start and end time with a given confidence
+       threshold.
+
+       Parameters
+       ---------
+       start_time, end_time : `str` or `float`
+           start and end GPS times for this analysis
+       ifo : `str`
+           string denoting the interferometer, e.g. ``'H1'`` for Hanford
+       label : 'str', optional
+           glitch class label, e.g. ``'Blip'``
+       confidence : 'float', optional
+           minimum machine learning confidence, between 0.0 and 1.0
+       snr_low, snr_high : 'float', optional
+           minimum and maximum SNR for the analysis
+       savefile : 'bool', optional
+           if True, will save the data in a csv file
+
+       Returns
+       -------
+       tabular data : 'pandas.core.frame.DataFrame'
+       a catalogue of triggers classifed by GravitySpy
+    """
+
+    table = 'glitches_v2d0'
+
+    if label:
+        filters = ['ml_label={}'.format(label),
+                   '{0}<=ml_confidence<=1.0'.format(confidence),
+                   '{0}<=snr<={1}'.format(snr_low, snr_high),
+                   'ifo={0}'.format(ifo),
+                   '{0:d}<event_time<{1:d}'.format(int(start_time),
+                                                   int(end_time))]
+        filename = '{0}_{1}_{2}_{3}_{4}.csv'.format(ifo, label, start_time,
+                                                    end_time, confidence)
+    else:
+        filters = ['{0}<=ml_confidence<=1.0'.format(confidence),
+                   '{0}<=snr<={1}'.format(snr_low, snr_high),
+                   'ifo={0}'.format(ifo),
+                   '{0:d}<event_time<{1:d}'.format(int(start_time),
+                                                   int(end_time))]
+        filename = '{0}_{1}_{2}_{3}_{4}.csv'.format(ifo, 'all', start_time,
+                                                    end_time, confidence)
+
+    t = EventTable.fetch('gravityspy', table, selection=filters,
+                         host='gravityspyplus.ciera.northwestern.edu')
+
+    dft = t.to_pandas()
+    cols = ['event_time', 'snr', 'peak_frequency', 'duration',
+            'amplitude', 'central_freq', 'bandwidth', 'chisq', 'chisq_dof',
+            'channel', 'gravityspy_id', 'q_value',
+            'ml_label', 'ml_confidence', 'ifo']
+
+    dft = dft[cols]
+
+    if savefile:
+        df = t.to_pandas()
+        df = df[cols]
+        df.to_csv(filename, index=None)
+    return dft
+
 
 def label_select_images(filename1, filename2, filename3, filename4,
                         path_to_cnn, **kwargs):
